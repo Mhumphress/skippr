@@ -45,13 +45,25 @@
       transition: background 0.3s;
     }
     .nav-logo {
-      font-family: var(--font-display);
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: var(--gold);
-      letter-spacing: 0.08em;
-      text-decoration: none;
-    }
+  display: flex;
+  align-items: center;
+  gap: 0.8rem; /* Space between logo and text */
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.nav-logo span {
+  /* This matches your existing "Skippr" footer style and Cormorant font */
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: none; /* Keeps it as 'Skippr' rather than 'SKIPPR' */
+  line-height: 1;
+  margin-top: 2px; /* Optical alignment fix */
+}
     .nav-links { display: flex; gap: 2.4rem; list-style: none; }
     .nav-links a {
       color: rgba(255,255,255,0.75);
@@ -82,7 +94,8 @@
       text-align: center;
       position: relative;
       overflow: hidden;
-      padding: 8rem 2rem 4rem;
+      /* FIX: Increased bottom padding to prevent overlap with scroll indicator */
+      padding: 8rem 2rem 10rem; 
     }
     .hero-bg {
       position: absolute; inset: 0;
@@ -138,6 +151,9 @@
       display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
       opacity: 0;
       animation: fadeUp 0.9s 1s ease forwards;
+      /* FIX: Ensure actions stay above other elements */
+      position: relative;
+      z-index: 10;
     }
     .btn-primary {
       background: var(--gold);
@@ -173,10 +189,13 @@
     .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
 
     .hero-scroll {
-      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      /* FIX: Lowered position and added pointer-events: none */
+      position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
       display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
       opacity: 0;
       animation: fadeUp 1s 1.4s ease forwards;
+      pointer-events: none;
+      z-index: 5;
     }
     .hero-scroll span {
       font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase;
@@ -575,19 +594,18 @@
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <a href="#home" class="nav-logo">
+  <a href="index.html" class="nav-logo">
     <img src="logo.png" alt="Skippr" style="height:38px; width:auto; display:block;" />
+   <span>Skippr</span>
   </a>
   <ul class="nav-links">
-    <li><a href="#about">How It Works</a></li>
-    <li><a href="#services">Services</a></li>
-    <li><a href="#contact" class="nav-cta">Book a Consult</a></li>
-  </ul>
+  <li><a href="about.html">How It Works</a></li>
+  <li><a href="services.html">Services</a></li>
+  <li><a href="consult.html" class="nav-cta">Book a Consult</a></li>
+</ul>
 </nav>
 
-<!-- HERO -->
 <section id="home">
   <div class="hero-bg"></div>
   <div class="hero-line"></div>
@@ -596,16 +614,15 @@
   <h1 class="hero-title">Your <em>advocate</em><br>at the dealership.</h1>
   <p class="hero-sub">Skippr handles every call, every negotiation, and every dealer tactic — so you get the car you want at the best possible price. No stress. No games.</p>
   <div class="hero-actions">
-    <a href="#contact" class="btn-primary">Book Free Consultation</a>
-    <a href="#services" class="btn-ghost">View Packages</a>
-  </div>
+  <a href="consult.html" class="btn-primary">Book Free Consultation</a>
+  <a href="services.html" class="btn-ghost">View Packages</a>
+</div>
   <div class="hero-scroll">
     <span>Scroll</span>
     <div class="scroll-dot"></div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
 <section id="about">
   <div class="section-inner">
     <p class="section-label">The Process</p>
@@ -646,7 +663,6 @@
   </div>
 </section>
 
-<!-- SERVICES -->
 <section id="services">
   <div class="section-inner">
     <p class="section-label">Packages</p>
@@ -655,7 +671,6 @@
     <p class="section-body" style="color:rgba(255,255,255,0.4);">Whether you want us to handle the deal or the entire experience, we have a package built for you.</p>
 
     <div class="tiers">
-      <!-- TIER 1 -->
       <div class="tier">
         <p class="tier-name">Tier 1 — Basic</p>
         <div class="tier-price"><sup>$</sup>750</div>
@@ -669,7 +684,6 @@
         </ul>
       </div>
 
-      <!-- TIER 2 -->
       <div class="tier featured">
         <div class="tier-badge">Most Popular</div>
         <p class="tier-name">Tier 2 — Full Service</p>
@@ -686,7 +700,6 @@
       </div>
     </div>
 
-    <!-- ADD ONS -->
     <p style="font-size:0.68rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; text-align:center;">Add-Ons</p>
     <div class="addons-row">
       <div class="addon">
@@ -705,14 +718,12 @@
   </div>
 </section>
 
-<!-- FREE CONSULT BANNER -->
 <div class="consult-banner">
   <h2>Free 15-Minute <em>Consultation.</em></h2>
   <p>We'll walk through your situation, your market, and what realistically makes sense — zero cash obligation, zero pressure.</p>
   <a href="#contact" class="btn-dark">Book Your Free Call</a>
 </div>
 
-<!-- CONTACT -->
 <section id="contact">
   <div class="contact-grid">
     <div class="contact-left">
@@ -783,13 +794,12 @@
   </div>
 </section>
 
-<!-- FOOTER -->
 <footer>
   <div class="footer-logo">Skippr</div>
   <div class="footer-links">
-    <a href="#about">How It Works</a>
-    <a href="#services">Services</a>
-    <a href="#contact">Contact</a>
+    <a href="about.html">How It Works</a>
+    <a href="services.html">Services</a>
+    <a href="consult.html">Contact</a>
   </div>
   <p class="footer-copy">© 2025 Skippr. All rights reserved.</p>
 </footer>

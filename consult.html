@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Consultation — Skippr</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #C9A84C; --black: #0A0A0A; --white: #FAFAFA; --off-white: #F3F0EA; --gray: #888;
+      --font-display: 'Cormorant Garamond', Georgia, serif; --font-body: 'Outfit', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--off-white); color: var(--black); line-height: 1.6; min-height: 100vh; }
+
+    /* NAVIGATION */
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 4rem; background: rgba(10,10,10,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(201,168,76,0.2); }
+    .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .nav-logo-text { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
+    .nav-links a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta { border: 1px solid var(--gold); color: var(--gold) !important; padding: 0.5rem 1.3rem; }
+
+    /* LAYOUT */
+    .consult-wrapper { display: grid; grid-template-columns: 1fr 1.2fr; min-height: 100vh; padding-top: 80px; }
+
+    /* LEFT SIDE: BRANDING */
+    .consult-sidebar { background: var(--black); color: white; padding: 6rem 4rem; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+    .consult-sidebar::after { content: ''; position: absolute; bottom: -10%; left: -10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 70%); }
+    
+    .sidebar-label { font-size: 0.7rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 2rem; }
+    .sidebar-title { font-family: var(--font-display); font-size: clamp(2.5rem, 4vw, 4rem); font-weight: 300; line-height: 1.1; margin-bottom: 2rem; }
+    .sidebar-title em { font-style: italic; color: var(--gold); }
+    .sidebar-list { list-style: none; margin-top: 2rem; }
+    .sidebar-list li { margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 1rem; color: rgba(255,255,255,0.6); font-weight: 300; }
+    .sidebar-list li span { color: var(--gold); font-size: 1.2rem; line-height: 1; }
+
+    /* RIGHT SIDE: FORM */
+    .consult-form-area { padding: 6rem 4rem; display: flex; align-items: center; background: var(--off-white); }
+    .form-card { width: 100%; max-width: 600px; background: white; padding: 4rem; box-shadow: 0 30px 60px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.02); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+    .input-group { position: relative; margin-bottom: 2rem; }
+    
+    label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--gray); display: block; margin-bottom: 0.8rem; font-weight: 600; }
+    
+    input, select, textarea { 
+      width: 100%; padding: 0.8rem 0; border: none; border-bottom: 1px solid #ddd; 
+      background: transparent; font-family: var(--font-body); font-size: 1rem; outline: none; transition: 0.3s;
+    }
+    input:focus, select:focus, textarea:focus { border-bottom-color: var(--gold); }
+    
+    .submit-btn { 
+      width: 100%; background: var(--black); color: var(--gold); border: none; padding: 1.4rem; 
+      text-transform: uppercase; letter-spacing: 0.3em; font-weight: 600; font-size: 0.8rem;
+      cursor: pointer; transition: 0.4s; margin-top: 1rem;
+    }
+    .submit-btn:hover { background: var(--gold); color: var(--black); transform: translateY(-3px); }
+
+    @media (max-width: 1024px) {
+      .consult-wrapper { grid-template-columns: 1fr; }
+      .consult-sidebar { padding: 4rem 2rem; }
+      .consult-form-area { padding: 4rem 2rem; }
+      .form-card { padding: 2.5rem; }
+      nav { padding: 1.4rem 2rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <img src="logo.png" alt="Skippr" style="height:32px; width:auto;" />
+      <span class="nav-logo-text">Skippr</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="about.html">How It Works</a></li>
+      <li><a href="services.html">Services</a></li>
+      <li><a href="consult.html" class="nav-cta">Book a Consult</a></li>
+    </ul>
+  </nav>
+
+  <div class="consult-wrapper">
+    <aside class="consult-sidebar">
+      <span class="sidebar-label">Consultation</span>
+      <h1 class="sidebar-title">Secure your <em>advocate</em> today.</h1>
+      <p style="color: rgba(255,255,255,0.5); font-weight: 300;">We don't just find cars; we engineer deals. Tell us what you're looking for, and we'll handle the rest.</p>
+      
+      <ul class="sidebar-list">
+        <li><span>✦</span> 15-Minute complimentary strategy session.</li>
+        <li><span>✦</span> Nationwide market availability check.</li>
+        <li><span>✦</span> Professional lease/finance audit.</li>
+      </ul>
+    </aside>
+
+    <main class="consult-form-area">
+      <div class="form-card">
+        <form action="https://formspree.io/f/mpqoqabj" method="POST">
+          <div class="form-row">
+            <div class="input-group">
+              <label>Full Name</label>
+              <input type="text" name="name" placeholder="John Doe" required>
+            </div>
+            <div class="input-group">
+              <label>Email</label>
+              <input type="email" name="email" placeholder="john@example.com" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Service Interest</label>
+            <select name="service">
+              <option value="tier-1">Tier 1 — Essential Acquisition ($750)</option>
+              <option value="tier-2" selected>Tier 2 — White Glove Concierge ($2,000)</option>
+              <option value="custom">General Inquiry</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Desired Vehicle</label>
+            <input type="text" name="vehicle" placeholder="e.g. 2026 Toyota 4Runner">
+          </div>
+
+          <div class="input-group">
+            <label>Your Message (Optional)</label>
+            <textarea name="message" rows="3" placeholder="Tell us about any specific specs or trade-ins..."></textarea>
+          </div>
+
+          <button type="submit" class="submit-btn">Request Invitation</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>
