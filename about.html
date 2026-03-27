@@ -8,57 +8,161 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --gold: #C9A84C; --black: #0A0A0A; --white: #FAFAFA; --off-white: #F3F0EA; --gray: #888;
-      --font-display: 'Cormorant Garamond', Georgia, serif; --font-body: 'Outfit', sans-serif;
+      --gold: #C9A84C;
+      --gold-light: #E2C97E;
+      --gold-dim: rgba(201,168,76,0.15);
+      --black: #0A0A0A;
+      --off-black: #111111;
+      --dark: #1A1A1A;
+      --white: #FAFAFA;
+      --off-white: #F3F0EA;
+      --gray: #888;
+      --light-gray: #ddd;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'Outfit', sans-serif;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font-body); background: var(--white); color: var(--black); line-height: 1.6; }
+    body {
+      font-family: var(--font-body);
+      background: var(--white);
+      color: var(--black);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
 
-    /* NAVIGATION */
-    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 4rem; background: rgba(10,10,10,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(201,168,76,0.2); }
-    .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .nav-logo-text { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
-    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
-    .nav-links a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    /* ── NAV (Matched to Index) ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.4rem 4rem;
+      background: rgba(10,10,10,0.85); /* Slightly more opaque for readability on light bg */
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 0.8rem;
+      font-family: var(--font-display);
+      font-size: 1.8rem; font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-decoration: none;
+    }
+
+    .nav-logo span {
+      text-transform: none; /* Keeps it 'Skippr' */
+      margin-top: 2px;
+    }
+
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; }
+    .nav-links a {
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
     .nav-links a:hover { color: var(--gold); }
-    .nav-cta { border: 1px solid var(--gold); color: var(--gold) !important; padding: 0.5rem 1.3rem; }
-
-    /* HERO */
-    .about-hero { padding: 14rem 2rem 8rem; text-align: center; background: var(--black); color: white; }
-    .section-label { font-size: 0.7rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 1.5rem; display: block; }
-    .about-hero h1 { font-family: var(--font-display); font-size: clamp(3rem, 7vw, 6rem); font-weight: 300; line-height: 1.1; max-width: 900px; margin: 0 auto; }
-    .about-hero h1 em { font-style: italic; color: var(--gold); }
-
-    /* PHILOSOPHY SECTION */
-    .philosophy { display: grid; grid-template-columns: 1fr 1fr; max-width: 1200px; margin: 8rem auto; padding: 0 2rem; gap: 6rem; align-items: center; }
-    .philosophy-text h2 { font-family: var(--font-display); font-size: 3rem; font-weight: 300; margin-bottom: 2rem; }
-    .philosophy-text p { font-size: 1.1rem; color: var(--gray); font-weight: 300; margin-bottom: 1.5rem; line-height: 1.8; }
     
-    .philosophy-img { position: relative; padding: 2rem; }
-    .philosophy-img img { width: 100%; height: auto; filter: grayscale(100%); transition: 0.5s; }
-    .philosophy-img:hover img { filter: grayscale(0%); }
-    .philosophy-img::before { content: ''; position: absolute; top: 0; left: 0; width: 60%; height: 60%; border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); z-index: -1; }
+    .nav-cta {
+      border: 1px solid var(--gold);
+      color: var(--gold) !important;
+      padding: 0.5rem 1.3rem !important;
+    }
+    .nav-cta:hover { background: var(--gold) !important; color: var(--black) !important; }
 
-    /* VALUES GRID */
-    .values-container { background: var(--off-white); padding: 8rem 2rem; }
-    .values-grid { max-width: 1100px; margin: 4rem auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4rem; }
-    .value-card h3 { font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 1rem; color: var(--black); }
-    .value-card p { font-size: 0.9rem; color: var(--gray); font-weight: 300; }
-    .value-num { font-family: var(--font-display); font-size: 1rem; color: var(--gold); margin-bottom: 0.5rem; display: block; }
+    /* ── ABOUT HERO ── */
+    .about-hero { 
+      padding: 12rem 2rem 6rem; 
+      background: var(--off-white); 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      max-width: 1200px; 
+      margin: 0 auto; 
+      gap: 4rem; 
+      align-items: center; 
+    }
 
-    /* CTA SECTION */
-    .about-cta { padding: 8rem 2rem; text-align: center; }
-    .about-cta h2 { font-family: var(--font-display); font-size: 3.5rem; font-weight: 300; margin-bottom: 2rem; }
-    .btn-spiffy { display: inline-block; padding: 1.2rem 3rem; background: var(--black); color: var(--gold); text-decoration: none; text-transform: uppercase; letter-spacing: 0.25em; font-weight: 600; font-size: 0.75rem; transition: 0.4s; }
-    .btn-spiffy:hover { background: var(--gold); color: var(--black); transform: translateY(-3px); }
+    .about-text h1 { 
+      font-family: var(--font-display); 
+      font-size: clamp(2.5rem, 5vw, 4rem); 
+      font-weight: 300; 
+      line-height: 1.1; 
+      margin-bottom: 2rem; 
+    }
 
-    @media (max-width: 900px) {
-      .philosophy { grid-template-columns: 1fr; gap: 3rem; }
-      .values-grid { grid-template-columns: 1fr; gap: 3rem; }
-      nav { padding: 1.4rem 2rem; }
+    .about-text em { font-style: italic; color: var(--gold); }
+
+    /* ── PROCESS SECTION ── */
+    .process-section { padding: 8rem 2rem; background: var(--white); }
+    
+    .section-label {
+      font-size: 0.68rem; letter-spacing: 0.35em;
+      text-transform: uppercase; color: var(--gold);
+      text-align: center; margin-bottom: 0.8rem;
+    }
+
+    .gold-divider {
+      width: 60px; height: 1px;
+      background: var(--gold);
+      margin: 0 auto 3rem;
+    }
+
+    .step-list { max-width: 800px; margin: 0 auto; }
+    
+    .step-item { 
+      display: flex; 
+      gap: 2.5rem; 
+      margin-bottom: 5rem; 
+      align-items: flex-start;
+    }
+
+    .step-num { 
+      font-family: var(--font-display); 
+      font-size: 3.5rem; 
+      color: var(--gold); 
+      opacity: 0.25; 
+      flex-shrink: 0; 
+      line-height: 1;
+    }
+
+    .step-content h3 { 
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 0.8rem; 
+    }
+
+    .step-content p { color: var(--gray); font-weight: 300; }
+
+    /* ── FOOTER (Matched to Index) ── */
+    footer {
+      background: var(--black);
+      padding: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 2rem;
+      border-top: 1px solid rgba(201,168,76,0.15);
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem; color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+    .footer-copy { font-size: 0.75rem; color: rgba(255,255,255,0.25); }
+
+    @media (max-width: 768px) {
+      nav { padding: 1.2rem 1.5rem; }
       .nav-links { display: none; }
+      .about-hero { grid-template-columns: 1fr; padding-top: 8rem; text-align: center; }
+      .step-item { flex-direction: column; gap: 1rem; text-align: center; align-items: center; }
+      footer { flex-direction: column; text-align: center; padding: 3rem 1.5rem; }
     }
   </style>
 </head>
@@ -66,8 +170,8 @@
 
   <nav>
     <a href="index.html" class="nav-logo">
-      <img src="logo.png" alt="Skippr" style="height:32px; width:auto;" />
-      <span class="nav-logo-text">Skippr</span>
+      <img src="logo1.png" alt="Skippr" style="height:38px; width:auto;" />
+      <span>Skippr</span>
     </a>
     <ul class="nav-links">
       <li><a href="about.html">How It Works</a></li>
@@ -76,55 +180,52 @@
     </ul>
   </nav>
 
-  <header class="about-hero">
-    <span class="section-label">Our Story</span>
-    <h1>We exist to level the <em>playing field.</em></h1>
-  </header>
-
-  <section class="philosophy">
-    <div class="philosophy-img">
-      <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt="Exotic Car">
+  <section class="about-hero">
+    <div class="about-text">
+      <h1>Your advocate in a <em>rigged</em> market.</h1>
+      <p style="color: var(--gray); font-size: 1.1rem; font-weight: 300;">
+        Skippr was founded on a simple premise: car buyers deserve the same expert representation that dealerships have on their side of the desk.
+      </p>
     </div>
-    <div class="philosophy-text">
-      <h2>Representation for the buyer.</h2>
-      <p>For decades, dealerships have held all the cards. They have the data, the psychological tactics, and the legal teams. Skippr was founded to change that power dynamic.</p>
-      <p>We are not brokers who take kickbacks from dealers. We are **pure advocates** for you. Our loyalty is bought by our clients, ensuring our only goal is the lowest price and the best terms for your next vehicle.</p>
+    <div class="about-image">
+      <img src="lifestyle-car.jpg" alt="Luxury Car" style="width: 100%; height: auto; border: 1px solid var(--gold); padding: 12px; background: var(--white);">
     </div>
   </section>
 
-  <section class="values-container">
-    <div style="max-width: 1100px; margin: 0 auto; text-align: center;">
-      <span class="section-label">The Skippr Standard</span>
-      <h2 style="font-family: var(--font-display); font-size: 3rem; font-weight: 300;">Built on <em>Integrity.</em></h2>
-    </div>
+  <section class="process-section">
+    <p class="section-label">The Process</p>
+    <div class="gold-divider"></div>
     
-    <div class="values-grid">
-      <div class="value-card">
-        <span class="value-num">01</span>
-        <h3>Zero Kickbacks</h3>
-        <p>We never accept "referral fees" from dealerships. Our advice is unbiased and focused solely on your bottom line.</p>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3>The Strategic Brief</h3>
+          <p>We identify the exact VIN or build spec required. We don't just find a car; we find *the* car.</p>
+        </div>
       </div>
-      <div class="value-card">
-        <span class="value-num">02</span>
-        <h3>Market Data</h3>
-        <p>We use proprietary tools to see what dealers actually paid for their inventory, giving us the upper hand in every negotiation.</p>
+
+      <div class="step-item">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>Market Aggression</h3>
+          <p>We contact dealers with a specific "buy order." We cut through the fluff and go straight to the floor manager.</p>
+        </div>
       </div>
-      <div class="value-card">
-        <span class="value-num">03</span>
-        <h3>Time Recovery</h3>
-        <p>The average luxury car purchase takes 12 hours of active labor. We reduce your involvement to just 15 minutes of signing.</p>
+
+      <div class="step-item">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>Paperwork & Logistics</h3>
+          <p>We review every line of the purchase order before you see it. No surprises at signing.</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="about-cta">
-    <h2>Ready to experience the <em>difference?</em></h2>
-    <a href="consult.html" class="btn-spiffy">Request a Consultation</a>
-  </section>
-
-  <footer style="background: var(--black); padding: 4rem 2rem; text-align: center; color: rgba(255,255,255,0.4);">
-    <p style="font-family: var(--font-display); color: var(--gold); font-size: 1.5rem; margin-bottom: 1rem;">Skippr</p>
-    <p style="font-size: 0.8rem; letter-spacing: 0.1em;">© 2026 SKIPPR CONCIERGE. ALL RIGHTS RESERVED.</p>
+  <footer>
+    <div class="footer-logo">Skippr</div>
+    <p class="footer-copy">© 2025 Skippr. All rights reserved.</p>
   </footer>
 
 </body>

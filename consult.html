@@ -9,23 +9,64 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --gold: #C9A84C; --black: #0A0A0A; --white: #FAFAFA; --off-white: #F3F0EA; --gray: #888;
-      --font-display: 'Cormorant Garamond', Georgia, serif; --font-body: 'Outfit', sans-serif;
+      --gold: #C9A84C; 
+      --gold-light: #E2C97E;
+      --black: #0A0A0A; 
+      --white: #FAFAFA; 
+      --off-white: #F3F0EA; 
+      --gray: #888;
+      --font-display: 'Cormorant Garamond', Georgia, serif; 
+      --font-body: 'Outfit', sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font-body); background: var(--off-white); color: var(--black); line-height: 1.6; min-height: 100vh; }
 
-    /* NAVIGATION */
-    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 4rem; background: rgba(10,10,10,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(201,168,76,0.2); }
-    .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .nav-logo-text { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
-    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
-    .nav-links a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; }
-    .nav-links a:hover { color: var(--gold); }
-    .nav-cta { border: 1px solid var(--gold); color: var(--gold) !important; padding: 0.5rem 1.3rem; }
+    /* ── NAV (Matched to Index) ── */
+    nav { 
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100; 
+      display: flex; align-items: center; justify-content: space-between; 
+      padding: 1.4rem 4rem; 
+      background: rgba(10,10,10,0.85); 
+      backdrop-filter: blur(12px); 
+      border-bottom: 1px solid rgba(201,168,76,0.2); 
+    }
+    
+    .nav-logo { 
+      display: flex; align-items: center; gap: 0.8rem; 
+      text-decoration: none; 
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+    
+    .nav-logo span {
+      text-transform: none; /* Keeps it 'Skippr' */
+      margin-top: 2px;
+    }
 
-    /* LAYOUT */
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
+    .nav-links a { 
+      color: rgba(255,255,255,0.75); 
+      text-decoration: none; 
+      font-size: 0.82rem; 
+      font-weight: 500;
+      letter-spacing: 0.12em; 
+      text-transform: uppercase; 
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    
+    .nav-cta { 
+      border: 1px solid var(--gold); 
+      color: var(--gold) !important; 
+      padding: 0.5rem 1.3rem !important; 
+    }
+    .nav-cta:hover { background: var(--gold) !important; color: var(--black) !important; }
+
+    /* ── LAYOUT ── */
     .consult-wrapper { display: grid; grid-template-columns: 1fr 1.2fr; min-height: 100vh; padding-top: 80px; }
 
     /* LEFT SIDE: BRANDING */
@@ -51,6 +92,7 @@
     input, select, textarea { 
       width: 100%; padding: 0.8rem 0; border: none; border-bottom: 1px solid #ddd; 
       background: transparent; font-family: var(--font-body); font-size: 1rem; outline: none; transition: 0.3s;
+      border-radius: 0; /* Fix for iOS styling */
     }
     input:focus, select:focus, textarea:focus { border-bottom-color: var(--gold); }
     
@@ -66,8 +108,9 @@
       .consult-sidebar { padding: 4rem 2rem; }
       .consult-form-area { padding: 4rem 2rem; }
       .form-card { padding: 2.5rem; }
-      nav { padding: 1.4rem 2rem; }
+      nav { padding: 1.2rem 2rem; }
       .nav-links { display: none; }
+      .form-row { grid-template-columns: 1fr; gap: 0; }
     }
   </style>
 </head>
@@ -75,8 +118,8 @@
 
   <nav>
     <a href="index.html" class="nav-logo">
-      <img src="logo.png" alt="Skippr" style="height:32px; width:auto;" />
-      <span class="nav-logo-text">Skippr</span>
+      <img src="logo1.png" alt="Skippr" style="height:38px; width:auto;" />
+      <span>Skippr</span>
     </a>
     <ul class="nav-links">
       <li><a href="about.html">How It Works</a></li>

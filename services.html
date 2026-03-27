@@ -9,51 +9,113 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --gold: #C9A84C; --black: #0A0A0A; --white: #FAFAFA; --off-white: #F3F0EA; --gray: #888;
-      --font-display: 'Cormorant Garamond', Georgia, serif; --font-body: 'Outfit', sans-serif;
+      --gold: #C9A84C; 
+      --gold-light: #E2C97E;
+      --black: #0A0A0A; 
+      --white: #FAFAFA; 
+      --off-white: #F3F0EA; 
+      --gray: #888;
+      --font-display: 'Cormorant Garamond', Georgia, serif; 
+      --font-body: 'Outfit', sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font-body); background: var(--white); color: var(--black); line-height: 1.6; }
 
-    /* NAVIGATION */
-    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 4rem; background: rgba(10,10,10,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(201,168,76,0.2); }
-    .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .nav-logo-text { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
-    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
-    .nav-links a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; }
-    .nav-links a:hover { color: var(--gold); }
-    .nav-cta { border: 1px solid var(--gold); color: var(--gold) !important; padding: 0.5rem 1.3rem; }
+    /* ── NAV (Matched to Index) ── */
+    nav { 
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100; 
+      display: flex; align-items: center; justify-content: space-between; 
+      padding: 1.4rem 4rem; 
+      background: rgba(10,10,10,0.85); 
+      backdrop-filter: blur(12px); 
+      border-bottom: 1px solid rgba(201,168,76,0.2); 
+    }
+    
+    .nav-logo { 
+      display: flex; align-items: center; gap: 0.8rem; 
+      text-decoration: none; 
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+    
+    .nav-logo span {
+      text-transform: none; /* Keeps it 'Skippr' */
+      margin-top: 2px;
+    }
 
-    /* HERO SECTION */
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
+    .nav-links a { 
+      color: rgba(255,255,255,0.75); 
+      text-decoration: none; 
+      font-size: 0.82rem; 
+      font-weight: 500;
+      letter-spacing: 0.12em; 
+      text-transform: uppercase; 
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    
+    .nav-cta { 
+      border: 1px solid var(--gold); 
+      color: var(--gold) !important; 
+      padding: 0.5rem 1.3rem !important; 
+    }
+    .nav-cta:hover { background: var(--gold) !important; color: var(--black) !important; }
+
+    /* ── HERO SECTION ── */
     .services-hero { background: var(--black); padding: 12rem 2rem 8rem; text-align: center; color: white; position: relative; }
     .section-label { font-size: 0.7rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.4em; margin-bottom: 1.5rem; display: block; }
     .services-hero h1 { font-family: var(--font-display); font-size: clamp(3rem, 6vw, 5rem); font-weight: 300; line-height: 1.1; }
     .services-hero h1 em { font-style: italic; color: var(--gold); }
 
-    /* SERVICE DETAIL SECTIONS */
+    /* ── SERVICE DETAIL SECTIONS ── */
     .service-row { max-width: 1100px; margin: 6rem auto; padding: 0 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
     .service-row:nth-child(even) { direction: rtl; }
     .service-row:nth-child(even) .service-content { direction: ltr; }
 
     .service-content h2 { font-family: var(--font-display); font-size: 2.5rem; font-weight: 300; margin-bottom: 1.5rem; border-bottom: 1px solid var(--gold); display: inline-block; padding-bottom: 0.5rem; }
-    .price-tag { font-family: var(--font-display); font-size: 3.5rem; color: var(--gold); margin: 1rem 0; display: block; }
+    .price-tag { font-family: var(--font-display); font-size: 3.5rem; color: var(--gold); margin: 1rem 0; display: block; line-height: 1; }
     .price-tag span { font-size: 1.2rem; vertical-align: super; }
     
     .feature-list { list-style: none; margin: 2rem 0; }
-    .feature-list li { margin-bottom: 1rem; color: var(--gray); font-weight: 300; position: relative; padding-left: 1.5rem; }
+    .feature-list li { margin-bottom: 1rem; color: var(--gray); font-weight: 300; position: relative; padding-left: 1.8rem; }
     .feature-list li::before { content: "✦"; position: absolute; left: 0; color: var(--gold); }
 
-    .service-image { background: var(--off-white); width: 100%; aspect-ratio: 4/5; overflow: hidden; border: 1px solid #eee; }
-    .service-image img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+    .service-image { background: var(--off-white); width: 100%; aspect-ratio: 4/5; overflow: hidden; border: 1px solid var(--off-white); padding: 10px; background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
+    .service-image img { width: 100%; height: 100%; object-fit: cover; }
 
     .btn-action { display: inline-block; padding: 1.2rem 2.5rem; background: var(--black); color: var(--gold); text-decoration: none; text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem; font-weight: 600; margin-top: 1rem; transition: 0.3s; }
-    .btn-action:hover { background: var(--gold); color: var(--black); }
+    .btn-action:hover { background: var(--gold); color: var(--black); transform: translateY(-2px); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--black);
+      padding: 4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      border-top: 1px solid rgba(201,168,76,0.15);
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.8rem; font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+    .footer-copy { font-size: 0.75rem; color: rgba(255,255,255,0.25); font-weight: 300; letter-spacing: 0.1em; }
 
     @media (max-width: 768px) {
-      .service-row { grid-template-columns: 1fr; gap: 2rem; margin: 4rem auto; }
-      nav { padding: 1rem 2rem; }
+      .service-row { grid-template-columns: 1fr; gap: 3rem; margin: 4rem auto; text-align: center; }
+      .service-row:nth-child(even) { direction: ltr; }
+      .feature-list li { text-align: left; }
+      nav { padding: 1.2rem 1.5rem; }
       .nav-links { display: none; }
+      .services-hero { padding-top: 10rem; }
     }
   </style>
 </head>
@@ -61,8 +123,8 @@
 
   <nav>
     <a href="index.html" class="nav-logo">
-      <img src="logo.png" alt="Skippr" style="height:32px; width:auto;" />
-      <span class="nav-logo-text">Skippr</span>
+      <img src="logo1.png" alt="Skippr" style="height:38px; width:auto;" />
+      <span>Skippr</span>
     </a>
     <ul class="nav-links">
       <li><a href="about.html">How It Works</a></li>
@@ -82,7 +144,7 @@
         <span class="section-label" style="text-align: left;">Package 01</span>
         <h2>Essential Acquisition</h2>
         <span class="price-tag"><span>$</span>750</span>
-        <p>Perfect for the buyer who has found their target vehicle locally but wants a professional to handle the "dealership theater." We strip the fluff and secure the win.</p>
+        <p style="font-weight: 300; color: var(--gray);">Perfect for the buyer who has found their target vehicle locally but wants a professional to handle the "dealership theater." We strip the fluff and secure the win.</p>
         <ul class="feature-list">
           <li>Direct Dealer Negotiation</li>
           <li>Removal of "Market Adjustments" & Add-ons</li>
@@ -92,7 +154,7 @@
         <a href="consult.html" class="btn-action">Select Essential</a>
       </div>
       <div class="service-image">
-        <img src="interior.jpg" alt="Luxury Interior">
+        <img src="ford.jpg" alt="Luxury Interior">
       </div>
     </section>
 
@@ -101,7 +163,7 @@
         <span class="section-label" style="text-align: left;">Package 02</span>
         <h2>White Glove Concierge</h2>
         <span class="price-tag"><span>$</span>2,000</span>
-        <p>Total market mastery. We handle the search, the negotiation, and the logistics across the entire country to find rare specs or the absolute lowest bottom-line price.</p>
+        <p style="font-weight: 300; color: var(--gray);">Total market mastery. We handle the search, the negotiation, and the logistics across the entire country to find rare specs or the absolute lowest bottom-line price.</p>
         <ul class="feature-list">
           <li>Nationwide Inventory Sourcing (Beyond Local Dealers)</li>
           <li>Allocation Procurement for High-Demand Models</li>
@@ -111,14 +173,14 @@
         <a href="consult.html" class="btn-action">Select White Glove</a>
       </div>
       <div class="service-image">
-        <img src="exterior.jpg" alt="Luxury Exterior">
+        <img src="lexus.jpg" alt="Luxury Exterior">
       </div>
     </section>
   </main>
 
-  <footer style="background: var(--black); padding: 4rem 2rem; text-align: center; color: rgba(255,255,255,0.4);">
-    <p style="font-family: var(--font-display); color: var(--gold); font-size: 1.5rem; margin-bottom: 1rem;">Skippr</p>
-    <p style="font-size: 0.8rem; letter-spacing: 0.1em;">© 2026 SKIPPR CONCIERGE. ALL RIGHTS RESERVED.</p>
+  <footer>
+    <div class="footer-logo">Skippr</div>
+    <p class="footer-copy">© 2026 SKIPPR. ALL RIGHTS RESERVED.</p>
   </footer>
 
 </body>
