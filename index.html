@@ -38,23 +38,21 @@
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 4rem;
-      background: rgba(10,10,10,0.8);
+      padding: 1.4rem 4rem;
+      background: rgba(10,10,10,0.7);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(201,168,76,0.2);
       transition: background 0.3s;
     }
     .nav-logo {
-      display: flex;
-      align-items: center;
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
       text-decoration: none;
     }
-    .nav-logo img {
-      height: 50px;
-      width: auto;
-      display: block;
-    }
-    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; }
     .nav-links a {
       color: rgba(255,255,255,0.75);
       text-decoration: none;
@@ -531,10 +529,12 @@
       gap: 1rem;
       border-top: 1px solid rgba(201,168,76,0.15);
     }
-    .footer-logo img {
-      height: 40px;
-      width: auto;
-      opacity: 0.9;
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
     }
     .footer-copy {
       font-size: 0.75rem;
@@ -554,7 +554,7 @@
 
     /* ── MOBILE ── */
     @media (max-width: 768px) {
-      nav { padding: 0.8rem 1.5rem; }
+      nav { padding: 1.2rem 1.5rem; }
       .nav-links { display: none; }
       .contact-grid { grid-template-columns: 1fr; gap: 2.5rem; }
       .form-row { grid-template-columns: 1fr; }
@@ -575,10 +575,9 @@
 </head>
 <body>
 
+<!-- NAV -->
 <nav>
-  <a href="#home" class="nav-logo">
-    <img src="logo.png" alt="Skippr Logo">
-  </a>
+  <a href="#home" class="nav-logo">Skippr</a>
   <ul class="nav-links">
     <li><a href="#about">How It Works</a></li>
     <li><a href="#services">Services</a></li>
@@ -586,6 +585,7 @@
   </ul>
 </nav>
 
+<!-- HERO -->
 <section id="home">
   <div class="hero-bg"></div>
   <div class="hero-line"></div>
@@ -602,6 +602,7 @@
   </div>
 </section>
 
+<!-- HOW IT WORKS -->
 <section id="about">
   <div class="section-inner">
     <p class="section-label">The Process</p>
@@ -645,6 +646,7 @@
   </div>
 </section>
 
+<!-- SERVICES -->
 <section id="services">
   <div class="section-inner">
     <p class="section-label">Packages</p>
@@ -653,6 +655,7 @@
     <p class="section-body" style="color:rgba(255,255,255,0.4);">Whether you want us to handle the deal or the entire experience, we have a package built for you.</p>
 
     <div class="tiers">
+      <!-- TIER 1 -->
       <div class="tier">
         <p class="tier-name">Tier 1 — Basic</p>
         <div class="tier-price"><sup>$</sup>750</div>
@@ -667,6 +670,7 @@
         </ul>
       </div>
 
+      <!-- TIER 2 -->
       <div class="tier featured">
         <div class="tier-badge">Most Popular</div>
         <p class="tier-name">Tier 2 — Full Service</p>
@@ -683,6 +687,7 @@
       </div>
     </div>
 
+    <!-- ADD ONS -->
     <p style="font-size:0.68rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; text-align:center;">Add-Ons</p>
     <div class="addons-row">
       <div class="addon">
@@ -701,12 +706,14 @@
   </div>
 </section>
 
+<!-- FREE CONSULT BANNER -->
 <div class="consult-banner">
   <h2>Free 15-Minute <em>Consultation.</em></h2>
   <p>We'll walk through your situation, your market, and what realistically makes sense — zero cash obligation, zero pressure.</p>
   <a href="#contact" class="btn-dark">Book Your Free Call</a>
 </div>
 
+<!-- CONTACT -->
 <section id="contact">
   <div class="contact-grid">
     <div class="contact-left">
@@ -731,28 +738,28 @@
     </div>
 
     <div>
-      <form class="contact-form" id="contactForm">
+      <form class="contact-form" id="contactForm" action="https://formspree.io/f/mpqoqabj" method="POST">
         <div class="form-row">
           <div class="form-group">
             <label>First Name</label>
-            <input type="text" placeholder="John" required />
+            <input type="text" name="first_name" placeholder="John" required />
           </div>
           <div class="form-group">
             <label>Last Name</label>
-            <input type="text" placeholder="Smith" required />
+            <input type="text" name="last_name" placeholder="Smith" required />
           </div>
         </div>
         <div class="form-group">
           <label>Email</label>
-          <input type="email" placeholder="john@example.com" required />
+          <input type="email" name="email" placeholder="john@example.com" required />
         </div>
         <div class="form-group">
           <label>Phone (optional)</label>
-          <input type="tel" placeholder="(555) 000-0000" />
+          <input type="tel" name="phone" placeholder="(555) 000-0000" />
         </div>
         <div class="form-group">
           <label>Package Interest</label>
-          <select>
+          <select name="package">
             <option value="">Select a package...</option>
             <option>Tier 1 — Basic ($750)</option>
             <option>Tier 2 — Full Service ($2,000)</option>
@@ -761,11 +768,11 @@
         </div>
         <div class="form-group">
           <label>Vehicle in Mind? (optional)</label>
-          <input type="text" placeholder="e.g. 2025 Toyota Tacoma TRD Pro, White" />
+          <input type="text" name="vehicle" placeholder="e.g. 2025 Toyota Tacoma TRD Pro, White" />
         </div>
         <div class="form-group">
           <label>Anything else?</label>
-          <textarea placeholder="Tell us about your situation, timeline, or any questions you have..."></textarea>
+          <textarea name="message" placeholder="Tell us about your situation, timeline, or any questions you have..."></textarea>
         </div>
         <p class="form-note">By submitting, you agree to be contacted by Skippr regarding your inquiry. No spam, ever.</p>
         <button type="submit" class="form-submit">Send Message →</button>
@@ -777,24 +784,42 @@
   </div>
 </section>
 
+<!-- FOOTER -->
 <footer>
-  <div class="footer-logo">
-    <img src="logo.png" alt="Skippr Logo">
-  </div>
+  <div class="footer-logo">Skippr</div>
   <div class="footer-links">
     <a href="#about">How It Works</a>
     <a href="#services">Services</a>
     <a href="#contact">Contact</a>
   </div>
-  <p class="footer-copy"></p>
+  <p class="footer-copy">© 2025 Skippr. All rights reserved.</p>
 </footer>
 
 <script>
-  // Form submit
-  document.getElementById('contactForm').addEventListener('submit', function(e) {
+  // Form submit via Formspree AJAX
+  document.getElementById('contactForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    document.getElementById('formSuccess').style.display = 'block';
-    this.querySelector('.form-submit').style.display = 'none';
+    const btn = this.querySelector('.form-submit');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+    try {
+      const res = await fetch(this.action, {
+        method: 'POST',
+        body: new FormData(this),
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        document.getElementById('formSuccess').style.display = 'block';
+        btn.style.display = 'none';
+        this.reset();
+      } else {
+        btn.textContent = 'Something went wrong — try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Network error — try again';
+      btn.disabled = false;
+    }
   });
 
   // Highlight nav link on scroll
