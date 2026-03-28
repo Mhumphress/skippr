@@ -27,7 +27,7 @@
     body { font-family: var(--font-body); background: var(--white); color: var(--black); overflow-x: hidden; }
 
     /* ── NAV ── */
-    nav {
+   nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 1.4rem 4rem;
@@ -35,17 +35,28 @@
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(201,168,76,0.2);
       transition: background 0.3s;
-      animation: navSlideDown 0.8s 0.1s ease both;
-    }
-    @keyframes navSlideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to   { opacity: 1; transform: translateY(0); }
     }
     .nav-logo {
-      display: flex; align-items: center; gap: 0.8rem;
-      text-decoration: none;
-    }
-    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
+  display: flex;
+  align-items: center;
+  gap: 0.8rem; /* Space between logo and text */
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.nav-logo span {
+  /* This matches your existing "Skippr" footer style and Cormorant font */
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: none; /* Keeps it as 'Skippr' rather than 'SKIPPR' */
+  line-height: 1;
+  margin-top: 2px; /* Optical alignment fix */
+}
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; }
     .nav-links a {
       color: rgba(255,255,255,0.75);
       text-decoration: none;
@@ -57,9 +68,11 @@
     }
     .nav-links a:hover { color: var(--gold); }
     .nav-cta {
+      background: transparent;
       border: 1px solid var(--gold);
       color: var(--gold) !important;
       padding: 0.5rem 1.3rem !important;
+      letter-spacing: 0.1em !important;
       transition: background 0.2s, color 0.2s !important;
     }
     .nav-cta:hover { background: var(--gold) !important; color: var(--black) !important; }
@@ -370,12 +383,13 @@
 <nav>
   <a href="index.html" class="nav-logo">
     <img src="logo1.png" alt="Skippr" style="height:38px; width:auto; display:block;" />
+    <span>Skippr</span>
   </a>
   <ul class="nav-links">
-    <li><a href="about.html">How It Works</a></li>
-    <li><a href="services.html">Services</a></li>
-    <li><a href="contact.html" class="nav-cta">Book a Consult</a></li>
-  </ul>
+  <li><a href="about.html">How It Works</a></li>
+  <li><a href="services.html">Services</a></li>
+  <li><a href="consult.html" class="nav-cta">Book a Consult</a></li>
+</ul>
 </nav>
 
 <!-- HERO -->
@@ -439,27 +453,6 @@
   </section>
 
 </main>
-
-<!-- ADD-ONS -->
-<div class="addons-strip">
-  <div class="addons-inner">
-    <span class="section-label reveal">Enhancements</span>
-    <h2 class="addons-title reveal">Optional <em>add-ons.</em></h2>
-    <div class="addons-grid reveal">
-      <div class="addon">
-        <div class="addon-price">$100</div>
-        <div class="addon-name">Insight Package — Full proof of process: call recordings, quotes, dealer count & hours invested</div>
-      </div>
-      <div class="addon">
-        <div class="addon-price">$250</div>
-        <div class="addon-name">Rare / Luxury / High-Performance surcharge (White Glove only)</div>
-      </div>
-    </div>
-    <p class="discounts-note reveal">
-      Discounts available: <strong>15% Military & Veterans</strong> &nbsp;·&nbsp; <strong>15% First Responders</strong> (Fire, EMS, 911) &nbsp;·&nbsp; <strong>5% Students</strong>
-    </p>
-  </div>
-</div>
 
 <!-- FOOTER -->
 <footer>
