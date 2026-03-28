@@ -25,6 +25,7 @@
       --font-body: 'Outfit', sans-serif;
     }
 
+    html { scroll-behavior: smooth; }
     body {
       font-family: var(--font-body);
       background: var(--white);
@@ -33,31 +34,25 @@
       line-height: 1.6;
     }
 
-    /* ── NAV (Matched to Index) ── */
+    /* ── NAV ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 1.4rem 4rem;
-      background: rgba(10,10,10,0.85); /* Slightly more opaque for readability on light bg */
+      background: rgba(10,10,10,0.7);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(201,168,76,0.2);
+      animation: navSlideDown 0.8s 0.1s ease both;
     }
-
+    @keyframes navSlideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
     .nav-logo {
       display: flex; align-items: center; gap: 0.8rem;
-      font-family: var(--font-display);
-      font-size: 1.8rem; font-weight: 600;
-      color: var(--gold);
-      letter-spacing: 0.08em;
       text-decoration: none;
     }
-
-    .nav-logo span {
-      text-transform: none; /* Keeps it 'Skippr' */
-      margin-top: 2px;
-    }
-
-    .nav-links { display: flex; gap: 2.4rem; list-style: none; }
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
     .nav-links a {
       color: rgba(255,255,255,0.75);
       text-decoration: none;
@@ -67,166 +62,491 @@
       transition: color 0.2s;
     }
     .nav-links a:hover { color: var(--gold); }
-    
     .nav-cta {
       border: 1px solid var(--gold);
       color: var(--gold) !important;
       padding: 0.5rem 1.3rem !important;
+      transition: background 0.2s, color 0.2s !important;
     }
     .nav-cta:hover { background: var(--gold) !important; color: var(--black) !important; }
 
-    /* ── ABOUT HERO ── */
-    .about-hero { 
-      padding: 12rem 2rem 6rem; 
-      background: var(--off-white); 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      max-width: 1200px; 
-      margin: 0 auto; 
-      gap: 4rem; 
-      align-items: center; 
+    /* ── HERO ── */
+    .about-hero-wrap {
+      background: var(--black);
+      padding: 10rem 2rem 7rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 110%, rgba(201,168,76,0.1) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 20%, rgba(201,168,76,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-line {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 1px; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--gold));
+      animation: lineDown 1s 0.2s ease both;
+    }
+    @keyframes lineDown {
+      from { height: 0; opacity: 0; }
+      to   { height: 80px; opacity: 1; }
     }
 
-    .about-text h1 { 
-      font-family: var(--font-display); 
-      font-size: clamp(2.5rem, 5vw, 4rem); 
-      font-weight: 300; 
-      line-height: 1.1; 
-      margin-bottom: 2rem; 
+    .about-hero {
+      max-width: 1100px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+      position: relative; z-index: 1;
+    }
+    .section-eyebrow {
+      font-size: 0.68rem; letter-spacing: 0.35em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 1rem; display: block;
+      animation: fadeUp 0.8s 0.5s ease both;
+    }
+    .about-text h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.6rem, 5vw, 4.2rem);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 1.8rem;
+      animation: fadeUp 0.9s 0.65s ease both;
+    }
+    .about-text h1 em { font-style: italic; color: var(--gold); }
+    .about-text p {
+      color: rgba(255,255,255,0.5);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.8;
+      animation: fadeUp 0.9s 0.8s ease both;
+    }
+    .hero-cta {
+      margin-top: 2.5rem;
+      animation: fadeUp 0.9s 0.95s ease both;
+    }
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--black);
+      padding: 0.9rem 2.4rem;
+      font-family: var(--font-body);
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); }
+
+    /* Hero image */
+    .about-image-wrap {
+      position: relative;
+      animation: fadeUp 1s 0.7s ease both;
+    }
+    .about-image-wrap img {
+      width: 100%; height: auto;
+      display: block;
+      object-fit: cover;
+      aspect-ratio: 4/5;
+    }
+    .about-image-wrap::before {
+      content: '';
+      position: absolute;
+      top: 14px; left: 14px; right: -14px; bottom: -14px;
+      border: 1px solid rgba(201,168,76,0.3);
+      z-index: -1;
+      transition: all 0.3s ease;
+    }
+    .about-image-wrap:hover::before {
+      top: 8px; left: 8px; right: -8px; bottom: -8px;
+    }
+    .about-image-wrap img {
+      transition: transform 0.6s ease;
+    }
+    .about-image-wrap:hover img { transform: scale(1.02); }
+    .about-image-inner {
+      overflow: hidden;
+      position: relative;
+    }
+    .about-image-inner::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.08) 0%, transparent 60%);
+      pointer-events: none;
     }
 
-    .about-text em { font-style: italic; color: var(--gold); }
+    /* ── STAT STRIP ── */
+    .stat-strip {
+      background: var(--gold);
+      padding: 3rem 2rem;
+    }
+    .stat-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 3rem; font-weight: 300;
+      color: var(--black);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .stat-label {
+      font-size: 0.75rem; font-weight: 500;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(0,0,0,0.6);
+    }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .reveal-left {
+      opacity: 0; transform: translateX(-32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal-left.visible { opacity: 1; transform: translateX(0); }
+
+    .reveal-right {
+      opacity: 0; transform: translateX(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
 
     /* ── PROCESS SECTION ── */
-    .process-section { padding: 8rem 2rem; background: var(--white); }
-    
+    .process-section {
+      padding: 8rem 2rem;
+      background: var(--off-white);
+    }
     .section-label {
       font-size: 0.68rem; letter-spacing: 0.35em;
       text-transform: uppercase; color: var(--gold);
       text-align: center; margin-bottom: 0.8rem;
+      display: block;
     }
-
-    .gold-divider {
-      width: 60px; height: 1px;
-      background: var(--gold);
-      margin: 0 auto 3rem;
-    }
-
-    .step-list { max-width: 800px; margin: 0 auto; }
-    
-    .step-item { 
-      display: flex; 
-      gap: 2.5rem; 
-      margin-bottom: 5rem; 
-      align-items: flex-start;
-    }
-
-    .step-num { 
-      font-family: var(--font-display); 
-      font-size: 3.5rem; 
-      color: var(--gold); 
-      opacity: 0.25; 
-      flex-shrink: 0; 
-      line-height: 1;
-    }
-
-    .step-content h3 { 
+    .section-title {
       font-family: var(--font-display);
-      font-size: 1.6rem;
-      font-weight: 600;
-      margin-bottom: 0.8rem; 
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      font-weight: 300;
+      text-align: center;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .section-title em { font-style: italic; color: var(--gold); }
+    .gold-divider {
+      width: 50px; height: 1px;
+      background: var(--gold);
+      margin: 0 auto 4rem;
     }
 
-    .step-content p { color: var(--gray); font-weight: 300; }
+    .step-list { max-width: 780px; margin: 0 auto; }
+    .step-item {
+      display: flex;
+      gap: 2.5rem;
+      margin-bottom: 0;
+      align-items: flex-start;
+      position: relative;
+    }
+    /* Connecting line between steps */
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 1.5rem;
+      top: 4.5rem;
+      bottom: -3rem;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(201,168,76,0.4), transparent);
+    }
+    .step-item-inner {
+      display: flex;
+      gap: 2.5rem;
+      align-items: flex-start;
+      padding-bottom: 4rem;
+      width: 100%;
+    }
+    .step-num {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      color: var(--gold);
+      opacity: 0.3;
+      flex-shrink: 0;
+      line-height: 1;
+      width: 3rem;
+      text-align: center;
+      transition: opacity 0.3s;
+    }
+    .step-item:hover .step-num { opacity: 0.8; }
+    .step-content {
+      padding-top: 0.3rem;
+      flex: 1;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      padding-bottom: 3rem;
+    }
+    .step-item:last-child .step-content { border-bottom: none; }
+    .step-content h3 {
+      font-family: var(--font-display);
+      font-size: 1.7rem; font-weight: 600;
+      margin-bottom: 0.6rem;
+      transition: color 0.2s;
+    }
+    .step-item:hover .step-content h3 { color: var(--gold); }
+    .step-content p {
+      color: var(--gray);
+      font-weight: 300;
+      font-size: 0.93rem;
+      line-height: 1.8;
+    }
+    .step-tag {
+      display: inline-block;
+      margin-top: 0.8rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.3);
+      padding: 0.25rem 0.7rem;
+    }
 
-    /* ── FOOTER (Matched to Index) ── */
+    /* ── MISSION STRIP ── */
+    .mission-strip {
+      background: var(--black);
+      padding: 7rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .mission-strip::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(201,168,76,0.07) 0%, transparent 70%);
+    }
+    .mission-quote {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 300;
+      color: var(--white);
+      max-width: 780px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.4;
+      position: relative; z-index: 1;
+    }
+    .mission-quote em { font-style: italic; color: var(--gold); }
+    .mission-attr {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      position: relative; z-index: 1;
+    }
+
+    /* ── FOOTER ── */
     footer {
       background: var(--black);
-      padding: 4rem;
+      padding: 3rem 4rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 2rem;
+      gap: 1rem;
       border-top: 1px solid rgba(201,168,76,0.15);
     }
     .footer-logo {
       font-family: var(--font-display);
-      font-size: 1.5rem; color: var(--gold);
-      letter-spacing: 0.08em;
+      font-size: 1.5rem; font-weight: 600;
+      color: var(--gold); letter-spacing: 0.08em;
     }
-    .footer-copy { font-size: 0.75rem; color: rgba(255,255,255,0.25); }
+    .footer-copy { font-size: 0.75rem; color: rgba(255,255,255,0.25); font-weight: 300; }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a {
+      font-size: 0.72rem; letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--gold); }
 
+    /* ── MOBILE ── */
     @media (max-width: 768px) {
       nav { padding: 1.2rem 1.5rem; }
       .nav-links { display: none; }
-      .about-hero { grid-template-columns: 1fr; padding-top: 8rem; text-align: center; }
-      .step-item { flex-direction: column; gap: 1rem; text-align: center; align-items: center; }
-      footer { flex-direction: column; text-align: center; padding: 3rem 1.5rem; }
+      .about-hero { grid-template-columns: 1fr; gap: 3rem; }
+      .about-image-wrap { display: none; }
+      .stat-inner { grid-template-columns: 1fr; gap: 1.5rem; }
+      .step-item::after { display: none; }
+      footer { flex-direction: column; align-items: flex-start; padding: 2rem 1.5rem; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a href="index.html" class="nav-logo">
-      <img src="logo1.png" alt="Skippr" style="height:38px; width:auto;" />
-      <span>Skippr</span>
-    </a>
-    <ul class="nav-links">
-      <li><a href="about.html">How It Works</a></li>
-      <li><a href="services.html">Services</a></li>
-      <li><a href="consult.html" class="nav-cta">Book a Consult</a></li>
-    </ul>
-  </nav>
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <img src="logo1.png" alt="Skippr" style="height:38px; width:auto; display:block;" />
+  </a>
+  <ul class="nav-links">
+    <li><a href="about.html" style="color:var(--gold);">How It Works</a></li>
+    <li><a href="services.html">Services</a></li>
+    <li><a href="index.html#contact" class="nav-cta">Book a Consult</a></li>
+  </ul>
+</nav>
 
-  <section class="about-hero">
+<!-- HERO -->
+<div class="about-hero-wrap">
+  <div class="hero-bg"></div>
+  <div class="hero-line"></div>
+  <div class="about-hero">
     <div class="about-text">
+      <span class="section-eyebrow">Our Mission</span>
       <h1>Your advocate in a <em>rigged</em> market.</h1>
-      <p style="color: var(--gray); font-size: 1.1rem; font-weight: 300;">
-        Skippr was founded on a simple premise: car buyers deserve the same expert representation that dealerships have on their side of the desk.
-      </p>
+      <p>Skippr was founded on a simple premise: car buyers deserve the same expert representation that dealerships have on their side of the desk. We level the playing field.</p>
+      <div class="hero-cta">
+        <a href="index.html#contact" class="btn-primary">Book a Free Consultation</a>
+      </div>
     </div>
-    <div class="about-image">
-      <img src="lifestyle-car.jpg" alt="Luxury Car" style="width: 100%; height: auto; border: 1px solid var(--gold); padding: 12px; background: var(--white);">
+    <div class="about-image-wrap">
+      <div class="about-image-inner">
+        <img src="lifestyle-car.jpg" alt="Luxury Car" />
+      </div>
     </div>
-  </section>
+  </div>
+</div>
 
-  <section class="process-section">
-    <p class="section-label">The Process</p>
-    <div class="gold-divider"></div>
-    
-    <div class="step-list">
-      <div class="step-item">
+<!-- STAT STRIP -->
+<div class="stat-strip">
+  <div class="stat-inner">
+    <div class="reveal">
+      <div class="stat-num">100mi</div>
+      <div class="stat-label">Initial Search Radius</div>
+    </div>
+    <div class="reveal delay-1">
+      <div class="stat-num">$1,000+</div>
+      <div class="stat-label">Minimum Savings Target</div>
+    </div>
+    <div class="reveal delay-2">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Negotiated on Your Behalf</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS -->
+<section class="process-section">
+  <div>
+    <p class="section-label reveal">The Process</p>
+    <h2 class="section-title reveal">How we <em>go to work</em> for you.</h2>
+    <div class="gold-divider reveal"></div>
+  </div>
+
+  <div class="step-list">
+
+    <div class="step-item reveal">
+      <div class="step-item-inner">
         <div class="step-num">01</div>
         <div class="step-content">
           <h3>The Strategic Brief</h3>
-          <p>We identify the exact VIN or build spec required. We don't just find a car; we find *the* car.</p>
-        </div>
-      </div>
-
-      <div class="step-item">
-        <div class="step-num">02</div>
-        <div class="step-content">
-          <h3>Market Aggression</h3>
-          <p>We contact dealers with a specific "buy order." We cut through the fluff and go straight to the floor manager.</p>
-        </div>
-      </div>
-
-      <div class="step-item">
-        <div class="step-num">03</div>
-        <div class="step-content">
-          <h3>Paperwork & Logistics</h3>
-          <p>We get a written offer from the dealer, guaranteed* discounts. Every. Single. Time. .</p>
+          <p>We onboard you and lock in every detail — make, model, trim, and color inside and out. We don't just find a car; we find <em>the</em> car. No vague requests, no compromises.</p>
+          <span class="step-tag">Vehicle Selection</span>
         </div>
       </div>
     </div>
-  </section>
 
-  <footer>
-    <div class="footer-logo">Skippr</div>
-    <p class="footer-copy">© 2026 Skippr. All rights reserved.</p>
-  </footer>
+    <div class="step-item reveal delay-1">
+      <div class="step-item-inner">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>Market Aggression</h3>
+          <p>We research inventory within 100 miles of you first, then expand outward. We contact dealers with a direct buy order — cutting through the fluff to go straight to the decision makers. Out-of-state is never an obstacle.</p>
+          <span class="step-tag">Nationwide Search</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-item reveal delay-2">
+      <div class="step-item-inner">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>We Negotiate Everything</h3>
+          <p>Doc fees, dealer add-ons, shipping, titling — we push on all of it. Cash or finance, trade-in or not, the rate is the same. We don't stop until we have a deal worth taking.</p>
+          <span class="step-tag">Full Negotiation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-item reveal delay-3">
+      <div class="step-item-inner">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h3>You Approve the Deal</h3>
+          <p>We bring every offer to you before anything is signed. Once we hit our savings target and you give the green light — the deal is done. You drive away knowing you got the best possible price.</p>
+          <span class="step-tag">Your Final Sign-Off</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- MISSION QUOTE -->
+<div class="mission-strip">
+  <p class="mission-quote reveal">"The dealership has experts working against you. <em>Now you have one working for you.</em>"</p>
+  <p class="mission-attr reveal delay-1">— The Skippr Promise</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Skippr</div>
+  <div class="footer-links">
+    <a href="about.html">How It Works</a>
+    <a href="services.html">Services</a>
+    <a href="index.html#contact">Contact</a>
+  </div>
+  <p class="footer-copy">© 2026 Skippr. All rights reserved.</p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => {
+    observer.observe(el);
+  });
+
+  // Highlight active nav
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    if (a.getAttribute('href') === 'about.html') {
+      a.style.color = 'var(--gold)';
+    }
+  });
+</script>
 
 </body>
 </html>
