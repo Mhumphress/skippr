@@ -1587,7 +1587,7 @@ async function submitEditActivity() {
 }
 
 // ── START ─────────────────────────────────────────────────────
-if (window !== window.parent) {
+if (window !== window.parent || new URLSearchParams(window.location.search).has('embed')) {
   document.querySelector('.shell').classList.add('embedded');
 }
 initGreeting();

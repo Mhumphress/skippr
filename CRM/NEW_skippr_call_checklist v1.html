@@ -1340,7 +1340,7 @@ function saveRep() {
 
 initDropdowns();
 initRep();
-if (window !== window.parent) {
+if (window !== window.parent || new URLSearchParams(window.location.search).has('embed')) {
   document.body.classList.add('embedded');
 }
 </script>
