@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/png" href="logo1.png">
   <title>Consultation - Skippr</title>
+  <meta name="description" content="Book a free car buying consultation with Skippr. Get expert help with dealer negotiation and let our car concierge guide you to the best deal.">
+  <!-- Open Graph -->
+  <meta property="og:title" content="Consultation - Skippr">
+  <meta property="og:description" content="Book a free car buying consultation with Skippr. Get expert help with dealer negotiation and let our car concierge guide you to the best deal.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://skippr.us/consult.html">
+  <meta property="og:image" content="https://skippr.us/logo1.png">
+  <meta property="og:site_name" content="Skippr">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@skipprUS">
+  <meta name="twitter:title" content="Consultation - Skippr">
+  <meta name="twitter:description" content="Book a free car buying consultation with Skippr. Get expert help with dealer negotiation and let our car concierge guide you to the best deal.">
+  <meta name="twitter:image" content="https://skippr.us/logo1.png">
+  <!-- Canonical -->
+  <link rel="canonical" href="https://skippr.us/consult.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -104,6 +120,56 @@
     }
     .submit-btn:hover { background: var(--gold); color: var(--black); transform: translateY(-3px); }
 
+    /* ── HAMBURGER ── */
+    .hamburger {
+      display: none !important; background: none; border: none; cursor: pointer;
+      width: 32px; height: 24px; position: relative; z-index: 201;
+    }
+    .hamburger span {
+      display: block; position: absolute; left: 0; right: 0;
+      height: 2px; background: var(--gold); transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger span:nth-child(1) { top: 0; }
+    .hamburger span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+    .hamburger span:nth-child(3) { bottom: 0; }
+    .hamburger.open span:nth-child(1) { top: 50%; transform: translateY(-50%) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { bottom: 50%; transform: translateY(50%) rotate(-45deg); }
+    .mobile-menu {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(10,10,10,0.95); backdrop-filter: blur(16px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .mobile-menu.open { opacity: 1; pointer-events: auto; }
+    .mobile-menu a {
+      color: rgba(255,255,255,0.75); text-decoration: none;
+      font-size: 1.1rem; font-weight: 500; letter-spacing: 0.15em;
+      text-transform: uppercase; transition: color 0.2s, transform 0.4s ease, opacity 0.4s ease;
+      opacity: 0; transform: translateY(20px);
+    }
+    .mobile-menu.open a {
+      opacity: 1; transform: translateY(0);
+    }
+    .mobile-menu a:nth-child(1) { transition-delay: 0.1s; }
+    .mobile-menu a:nth-child(2) { transition-delay: 0.2s; }
+    .mobile-menu a:nth-child(3) { transition-delay: 0.3s; }
+    .mobile-menu a:hover { color: var(--gold); }
+    .mobile-menu .nav-cta {
+      background: transparent; border: 1px solid var(--gold);
+      color: var(--gold); padding: 0.7rem 1.8rem; font-size: 0.9rem;
+    }
+    .mobile-menu .nav-cta:hover { background: var(--gold); color: var(--black); }
+    .mobile-menu-close {
+      position: absolute; top: 1.5rem; right: 1.5rem;
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.5); font-size: 2rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .mobile-menu-close:hover { color: var(--gold); }
+
     @media (max-width: 1024px) {
       .consult-wrapper { grid-template-columns: 1fr; }
       .consult-sidebar { padding: 4rem 2rem; }
@@ -111,6 +177,8 @@
       .form-card { padding: 2.5rem; }
       nav { padding: 1.2rem 2rem; }
       .nav-links { display: none; }
+      .hamburger { display: block !important; }
+      .mobile-menu { display: flex; }
       .form-row { grid-template-columns: 1fr; gap: 0; }
     }
   </style>
@@ -127,7 +195,16 @@
       <li><a href="services.html">Services</a></li>
       <li><a href="consult.html" class="nav-cta">Book a Consult</a></li>
     </ul>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">&times;</button>
+    <a href="about.html">How It Works</a>
+    <a href="services.html">Services</a>
+    <a href="consult.html" class="nav-cta">Book a Consult</a>
+  </div>
 
   <div class="consult-wrapper">
     <aside class="consult-sidebar">
@@ -159,8 +236,8 @@
           <div class="input-group">
             <label>Service Interest</label>
             <select name="service">
-              <option value="tier-1">Tier 1 — Essential Acquisition ($750)</option>
-              <option value="tier-2" selected>Tier 2 — White Glove Concierge ($2,000)</option>
+              <option value="tier-1">Tier 1 - Expert Advocate ($750)</option>
+              <option value="tier-2">Tier 2 - White Glove Concierge ($2,000)</option>
               <option value="custom">General Inquiry</option>
             </select>
           </div>
@@ -181,5 +258,22 @@
     </main>
   </div>
 
+<script>
+  // Hamburger menu
+  function toggleMenu() {
+    document.getElementById('hamburger').classList.toggle('open');
+    document.getElementById('mobileMenu').classList.toggle('open');
+    document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('open') ? 'hidden' : '';
+  }
+  document.getElementById('hamburger').addEventListener('click', toggleMenu);
+  document.getElementById('mobileMenuClose').addEventListener('click', toggleMenu);
+
+  const tier = new URLSearchParams(window.location.search).get('tier');
+  if (tier) {
+    const select = document.querySelector('select[name="service"]');
+    const option = select.querySelector('option[value="' + tier + '"]');
+    if (option) option.selected = true;
+  }
+</script>
 </body>
 </html>

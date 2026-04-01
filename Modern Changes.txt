@@ -1,0 +1,111 @@
+I have been thinking about changing the two tiers. Right now you can only choose options/packages by spending 2k. I think I want to make it so tier 1, you can only choose make, model, year, and trim. 
+
+Specifying the color both interior and exterior should be tier 2, options should be tier two as well. I think this because there are cases where a normal car like a kia or hyundai are difficult to find in a specific color, and i dont want to ever get held up doing a $750 deal for 12 weeks because of the color alone. 
+
+Based on that, I have edited the tier description so you can just copy and paste, this time for sure lmao
+
+Tier 1
+Comprehensive vehicle selection consultation (year, make, model, and trim)
+Full negotiation on vehicle price, dealer fees, dealer add-ons, and shipping costs
+Finance and lease office representation — we guide every decision before you sign
+Final document review before anything is executed
+Trade-in equity optimization if applicable
+
+Tier 2
+Priority service — your deal moves to the front of the line, every time
+Specify exact exterior and interior color
+Specific options and packages (sunroof, heated seats, lane keep assist, technology package, etc.)
+Out of state transport and logistics management
+Complete hands-off experience, from first consult to final signature (The ultimate car buying experience!)
+
+On the home page under the tiers, i want a small, italicized line saying something positive about each tier.
+
+Tier 1:
+The dealer has a team. Now, so do you.
+
+Tier 2:
+
+The car you've always wanted — handled exactly the way you deserve.
+
+Then theres the squares that are numbered 1-4 on the home page. I want them to say this instead:
+
+01
+
+Tell Us What You Want
+
+You talk, we listen. We'll walk through every detail — year, make, model, trim, and your personal situation. At the end, we know exactly what you're looking for, and can tailor the experience to you.
+
+ 
+
+02
+
+We Search the Market
+
+We start with local inventory within 100 miles, then expand outward until we find the right fit. Out-of-state dealers are no obstacle — we handle everything remotely on your behalf.
+
+ 
+
+ 
+
+03
+
+We Negotiate Everything
+
+We take on the dealers so you don't have to. Price, doc fees, add-ons, shipping — we push back on all of it. Then we represent you in the finance office to make sure the deal stays clean. 100% in your corner, start to finish.
+
+ 
+
+04
+
+You Approve the Deal
+
+We won't make a single move without your express permission. Once we've secured a deal worthy of your time, we bring it to you for final sign-off — and walk you through every detail before you sign.
+
+
+
+I am also pretty worried about the 15 minute free consultation thing. What exactly does that accomplish? How do we move people from a consult to a paid tier? I want to discuss that more. 
+
+
+
+Then the small tagline under the header:
+
+Choose your level
+of service.
+Whether you want us to handle the deal or the entire experience, we have a package built for you.
+
+Replace that long paragraph there, with this:
+
+No matter the car, no matter the circumstances, we have a package guaranteed to get you the car of your dreams, all while you sit back and relax. 
+
+
+
+
+
+Then theres 4 steps to the process on the how it works page. you can just copy/paste the 4 steps above and put them there as well, i think thats fine for now. 
+
+
+
+Fun little tid bit. Was talking to claude, and it had this to say:
+
+One thought before jumping to Tier 1 names: your website currently labels Tier 1 as "Basic," which is probably the weakest possible word for a $750 service. Whatever you choose will be an improvement there.  
+
+
+
+Legend. 
+
+
+
+I want to rename tier 1 to Expert Advocate, and keep tier 2 as White Glove Concierge. Rename them on both the service page and the home page. 
+
+
+
+I made a facebook:
+
+https://www.facebook.com/profile.php?id=61574742985598
+
+
+
+I made a X:
+
+@skipprUS
+

@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skippr — Dealer Call Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #E2C97E;
+      --gold-dim: rgba(201,168,76,0.15);
+      --gold-border: rgba(201,168,76,0.25);
+      --black: #0A0A0A;
+      --off-black: #111111;
+      --dark: #1A1A1A;
+      --dark2: #222222;
+      --white: #FAFAFA;
+      --off-white: #F3F0EA;
+      --gray: #888;
+      --border: rgba(255,255,255,0.1);
+      --border-light: rgba(201,168,76,0.2);
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'Outfit', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-body); background: var(--black); color: var(--white); font-size: 14px; min-height: 100vh; }
+
+    /* ── HEADER ── */
+    .site-header {
+      background: var(--off-black);
+      border-bottom: 1px solid var(--border-light);
+      padding: 1.2rem 2rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .site-header img { height: 36px; width: auto; }
+    .header-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem; font-weight: 600;
+      color: var(--gold); letter-spacing: 0.08em;
+    }
+    .header-sub {
+      font-size: 0.72rem; letter-spacing: 0.2em;
+      text-transform: uppercase; color: rgba(255,255,255,0.3);
+      margin-left: auto;
+    }
+
+    .app { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+    .page-title { font-family: var(--font-display); font-size: 2.2rem; font-weight: 300; color: var(--white); margin: 0 0 4px; }
+    .page-title em { font-style: italic; color: var(--gold); }
+    .sub { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin: 0 0 1.8rem; font-weight: 300; letter-spacing: 0.04em; }
+
+    /* ── PHASE TABS ── */
+    .phases { display: flex; margin-bottom: 1.8rem; border: 1px solid var(--border-light); overflow: hidden; }
+    .phase-tab { flex: 1; padding: 12px 10px; text-align: center; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.3); background: var(--off-black); border-right: 1px solid var(--border-light); transition: background 0.2s; }
+    .phase-tab:last-child { border-right: none; }
+    .phase-tab.active { background: var(--dark2); color: var(--white); }
+    .phase-tab .num { display: block; font-family: var(--font-display); font-size: 2rem; font-weight: 300; color: var(--gold); line-height: 1.1; }
+
+    .intake { display: block; } .checklist-view { display: none; }
+
+    /* ── CARDS ── */
+    .card { background: var(--off-black); border: 1px solid var(--border-light); padding: 18px; margin-bottom: 1rem; }
+    .card-title { font-size: 0.65rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3em; color: var(--gold); margin-bottom: 14px; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .field label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(255,255,255,0.4); display: block; margin-bottom: 4px; font-weight: 500; }
+    .field input, .field select {
+      width: 100%; font-size: 13px; padding: 8px 11px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--dark); color: var(--white);
+      font-family: var(--font-body);
+      outline: none; transition: border-color 0.2s;
+    }
+    .field input::placeholder { color: rgba(255,255,255,0.2); }
+    .field input:focus, .field select:focus { border-color: var(--gold); }
+    .field select option { background: var(--dark); color: var(--white); }
+    .field-full { grid-column: 1 / -1; }
+
+    /* ── TOGGLES ── */
+    .tog-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(255,255,255,0.4); margin-bottom: 7px; display: block; font-weight: 500; }
+    .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+    .tog { padding: 6px 14px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; background: transparent; color: rgba(255,255,255,0.5); transition: all 0.15s; user-select: none; letter-spacing: 0.04em; }
+    .tog:hover { border-color: var(--gold); color: var(--white); }
+    .tog.on { background: var(--gold); border-color: var(--gold); color: var(--black); font-weight: 600; }
+
+    /* ── GENERATE BUTTON ── */
+    .generate-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--black); border: none; font-family: var(--font-body); font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; transition: background 0.2s; }
+    .generate-btn:hover { background: var(--gold-light); }
+
+    /* ── PROGRESS ── */
+    .progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem; }
+    .bar-bg { flex: 1; height: 2px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; background: var(--gold); transition: width 0.3s; }
+    .pct { font-family: var(--font-display); font-size: 1.1rem; font-weight: 300; color: var(--gold); min-width: 44px; text-align: right; }
+
+    /* ── ACTIONS ── */
+    .cl-actions { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .cl-actions button { padding: 7px 16px; font-size: 0.72rem; font-family: var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; background: transparent; color: rgba(255,255,255,0.5); transition: all 0.2s; }
+    .cl-actions button:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── SECTIONS ── */
+    .section { border: 1px solid rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 1rem; background: var(--off-black); }
+    .section.conditional { border-color: var(--gold-border); }
+    .sec-head { padding: 12px 16px; background: var(--dark); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--white); border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; }
+    .cond-tag { font-size: 0.62rem; font-weight: 500; background: var(--gold-dim); color: var(--gold); padding: 2px 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 10px; }
+    .sec-badge { font-size: 0.68rem; font-weight: 500; color: rgba(255,255,255,0.35); background: transparent; border: 1px solid rgba(255,255,255,0.12); padding: 2px 10px; letter-spacing: 0.06em; }
+    .sec-badge.done { background: rgba(201,168,76,0.15); color: var(--gold); border-color: var(--gold-border); }
+
+    /* ── TACTIC ── */
+    .tactic { margin: 12px 16px 4px; background: rgba(201,168,76,0.06); border-left: 2px solid var(--gold); padding: 10px 14px; }
+    .tactic p { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin: 0; line-height: 1.7; font-weight: 300; }
+    .tactic strong { color: var(--gold); font-weight: 500; }
+
+    /* ── ITEMS ── */
+    .item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .item input[type=checkbox] { margin-top: 3px; flex-shrink: 0; cursor: pointer; width: 14px; height: 14px; accent-color: var(--gold); }
+    .item-body { flex: 1; }
+    .item-label { font-size: 0.87rem; color: rgba(255,255,255,0.85); line-height: 1.55; cursor: pointer; display: block; font-weight: 300; }
+    .item-label.struck { text-decoration: line-through; color: rgba(255,255,255,0.2); }
+    .say { font-size: 0.72rem; color: var(--gold); margin-top: 4px; line-height: 1.6; font-style: italic; opacity: 0.8; }
+
+    /* ── NOTES ── */
+    .note-row { padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .note-row span { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(255,255,255,0.3); display: block; margin-bottom: 5px; font-weight: 500; }
+    .note-row textarea { width: 100%; font-size: 0.8rem; min-height: 56px; resize: vertical; border: 1px solid rgba(255,255,255,0.1); background: var(--dark); color: var(--white); padding: 8px 10px; font-family: var(--font-body); font-weight: 300; outline: none; transition: border-color 0.2s; }
+    .note-row textarea::placeholder { color: rgba(255,255,255,0.2); }
+    .note-row textarea:focus { border-color: var(--gold); }
+
+    /* ── OUTCOME ── */
+    .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px; }
+    .outcome-grid .field-full { grid-column: 1 / -1; }
+    .outcome-grid input, .outcome-grid select { width: 100%; font-size: 13px; padding: 8px 11px; border: 1px solid rgba(255,255,255,0.12); background: var(--dark); color: var(--white); font-family: var(--font-body); outline: none; }
+    .outcome-grid input:focus, .outcome-grid select:focus { border-color: var(--gold); }
+    .outcome-grid select option { background: var(--dark); }
+    .outcome-grid textarea { width: 100%; font-size: 0.8rem; min-height: 80px; resize: vertical; border: 1px solid rgba(255,255,255,0.12); background: var(--dark); color: var(--white); padding: 8px 10px; font-family: var(--font-body); font-weight: 300; outline: none; }
+    .outcome-grid textarea:focus { border-color: var(--gold); }
+    .outcome-grid label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(255,255,255,0.4); display: block; margin-bottom: 4px; font-weight: 500; }
+
+    /* ── SUMMARY BAR ── */
+    .summary-bar { background: var(--dark); border: 1px solid var(--gold-border); padding: 12px 16px; margin-bottom: 1.2rem; font-size: 0.78rem; color: rgba(255,255,255,0.5); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .summary-bar strong { color: var(--white); font-weight: 500; }
+    .s-pill { background: transparent; border: 1px solid rgba(255,255,255,0.15); padding: 2px 10px; font-size: 0.68rem; color: rgba(255,255,255,0.45); letter-spacing: 0.06em; }
+    .s-pill.gold { background: var(--gold-dim); border-color: var(--gold-border); color: var(--gold); }
+
+    .back-btn { font-size: 0.72rem; color: rgba(255,255,255,0.4); background: none; border: 1px solid rgba(255,255,255,0.12); padding: 6px 14px; cursor: pointer; font-family: var(--font-body); letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.2s; }
+    .back-btn:hover { color: var(--gold); border-color: var(--gold-border); }
+
+    /* ── GOLD DIVIDER ── */
+    .gold-rule { width: 40px; height: 1px; background: var(--gold); margin: 0.5rem 0 1.5rem; }
+
+    /* ── PRINT ── */
+    @media print {
+      body { background: #fff; color: #000; }
+      .site-header, .cl-actions, .back-btn, .generate-btn, .phases { display: none !important; }
+      .section { break-inside: avoid; border-color: #ddd; background: #fff; }
+      .sec-head { background: #f5f5f5; color: #000; }
+      .item-label { color: #000; }
+      .say { color: #555; }
+      .note-row textarea, .outcome-grid input, .outcome-grid select, .outcome-grid textarea, .field input, .field select { background: #fff; color: #000; border-color: #ccc; }
+      .tactic { background: #fdf8ee; }
+      .tactic p { color: #555; }
+      .summary-bar { background: #fdf8ee; border-color: #C9A84C; color: #555; }
+      .summary-bar strong { color: #000; }
+    }
+
+    @media (max-width: 600px) {
+      .grid2, .grid3 { grid-template-columns: 1fr; }
+      .field-full { grid-column: 1; }
+      .outcome-grid { grid-template-columns: 1fr; }
+      .outcome-grid .field-full { grid-column: 1; }
+      .site-header { padding: 1rem 1.2rem; }
+      .header-sub { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="site-header">
+  <img src="logo.png" alt="Skippr" onerror="this.style.display='none'" />
+  <span class="header-title">Skippr</span>
+  <span class="header-sub">Internal — Dealer Call Tool</span>
+</div>
+
+<style>
+.wf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem;}
+.wf-card{background:var(--off-black);border:1px solid rgba(255,255,255,0.1);padding:1.5rem 1.2rem;cursor:pointer;text-align:center;transition:all 0.2s;user-select:none;}
+.wf-card:hover{border-color:var(--gold);transform:translateY(-2px);}
+.wf-card.selected{border-color:var(--gold);background:rgba(201,168,76,0.08);}
+.wf-icon{font-size:1.8rem;margin-bottom:0.6rem;}
+.wf-title{font-size:0.95rem;font-weight:500;color:var(--white);margin-bottom:0.3rem;}
+.wf-code{font-size:0.7rem;color:var(--gold);letter-spacing:0.15em;font-family:monospace;margin-bottom:0.5rem;}
+.wf-desc{font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:300;line-height:1.5;}
+.id-display{background:var(--dark);border:1px solid var(--gold-border);padding:1.2rem 1.5rem;text-align:center;margin-bottom:1rem;}
+.id-label{font-size:0.62rem;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:0.3rem;}
+.id-value{font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:var(--gold);letter-spacing:0.12em;}
+.id-type{font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-top:0.2rem;}
+.status-badge{display:inline-block;padding:3px 12px;font-size:0.7rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);color:var(--gold);margin-left:0.8rem;}
+.cb-section{background:var(--off-black);border:1px solid rgba(201,168,76,0.3);padding:16px;margin-top:1rem;}
+.cb-title{font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;font-weight:500;}
+.cb-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.cb-full{grid-column:1/-1;}
+@media(max-width:600px){.wf-grid{grid-template-columns:1fr;}.cb-row{grid-template-columns:1fr;}.cb-full{grid-column:1;}}
+</style>
+
+<div class="app">
+  <h1 class="page-title">Dealer Call <em>Checklist</em></h1>
+  <div class="gold-rule"></div>
+
+  <div class="phases">
+    <div class="phase-tab active" id="tab0"><span class="num">0</span>Workflow</div>
+    <div class="phase-tab" id="tab1"><span class="num">1</span>Customer profile</div>
+    <div class="phase-tab" id="tab2"><span class="num">2</span>Call checklist</div>
+  </div>
+
+  <!-- PHASE 0: WORKFLOW SELECTION -->
+  <div id="phase0">
+    <p class="sub" style="margin-bottom:1.5rem;">Select a workflow to begin. A customer ID will be generated before the checklist loads.</p>
+
+    <div class="wf-grid">
+      <div class="wf-card" id="wf-consultation" onclick="selectWorkflow('consultation')">
+        <div class="wf-icon">📋</div>
+        <div class="wf-title">New Consultation</div>
+        <div class="wf-code">SKC-T?-XXXX</div>
+        <div class="wf-desc">First contact. No purchase commitment yet.</div>
+      </div>
+      <div class="wf-card" id="wf-purchase" onclick="selectWorkflow('purchase')">
+        <div class="wf-icon">🤝</div>
+        <div class="wf-title">Purchase Order</div>
+        <div class="wf-code">SKP-T?-XXXX</div>
+        <div class="wf-desc">Customer is ready to buy. Full concierge.</div>
+      </div>
+      <div class="wf-card" id="wf-convert" onclick="selectWorkflow('convert')">
+        <div class="wf-icon">🔄</div>
+        <div class="wf-title">Convert to Purchase</div>
+        <div class="wf-code">SKC → SKP</div>
+        <div class="wf-desc">Consultation customer moving forward. Keeps same ID number.</div>
+      </div>
+    </div>
+
+    <!-- Tier selector (consultation / purchase) -->
+    <div class="card" id="wf-tier-section" style="display:none;">
+      <div class="card-title">Select tier</div>
+      <div class="toggle-group" id="wf-tier-tog" style="margin-bottom:1rem;">
+        <div class="tog on" data-val="T1">Tier 1 — Essential ($750)</div>
+        <div class="tog" data-val="T2">Tier 2 — White Glove ($2,000)</div>
+      </div>
+      <button class="generate-btn" onclick="generateId()" id="wf-gen-btn">Generate ID &amp; Start →</button>
+      <div id="wf-gen-status" style="display:none;margin-top:0.8rem;font-size:0.82rem;padding:8px 12px;color:var(--gold);background:rgba(201,168,76,0.08);border:1px solid var(--gold-border);">Generating ID...</div>
+    </div>
+
+    <!-- Convert: search for existing SKC customer -->
+    <div class="card" id="wf-convert-section" style="display:none;">
+      <div class="card-title">Convert Consultation to Purchase</div>
+      <p style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:1rem;font-weight:300;">The SKC- number is kept. A new SKP- record is created. The consultation is marked Converted.</p>
+
+      <div class="field" style="margin-bottom:1rem;">
+        <label>Select consultation</label>
+        <select id="wf-convert-select" onchange="previewConvert()">
+          <option value="">Loading active consultations...</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom:1rem;">
+        <label>Or enter SKC- ID manually</label>
+        <input type="text" id="manual-skc-id" placeholder="e.g. SKC-T1-0500"
+          oninput="previewConvertManual()"
+          style="width:100%;font-size:13px;padding:8px 11px;background:var(--dark);color:var(--white);border:1px solid rgba(255,255,255,0.12);font-family:var(--font-body);"/>
+      </div>
+
+      <!-- Confirmation preview — shown after selecting a customer -->
+      <div id="convert-preview" style="display:none;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.25);padding:1.2rem 1.4rem;margin-bottom:1rem;">
+        <div style="font-size:0.62rem;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:0.5rem;">Converting</div>
+        <div id="convert-preview-name" style="font-size:1.3rem;font-weight:600;color:var(--white);margin-bottom:0.2rem;"></div>
+        <div id="convert-preview-ids" style="font-family:monospace;font-size:0.85rem;color:var(--gold);margin-bottom:0.8rem;"></div>
+        <div id="convert-preview-details" style="font-size:0.8rem;color:rgba(255,255,255,0.5);"></div>
+
+        <div style="margin-top:1rem;">
+          <label class="tog-label">Select purchase tier</label>
+          <div class="toggle-group" id="convert-tier-tog" style="margin-top:6px;">
+            <div class="tog on" data-val="Tier 1">Tier 1 — Essential ($750)</div>
+            <div class="tog" data-val="Tier 2">Tier 2 — White Glove ($2,000)</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="wf-gen-status-convert" style="display:none;margin-bottom:0.8rem;font-size:0.78rem;padding:6px 10px;color:#e07070;background:rgba(220,70,70,0.08);border:1px solid rgba(220,70,70,0.2);"></div>
+
+      <button class="generate-btn" id="convert-submit-btn" onclick="submitConvert()" style="display:none;">
+        Confirm Conversion &amp; Create Purchase Record →
+      </button>
+    </div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="intake" id="intake" style="display:none;">
+
+    <!-- ID display -->
+    <div class="id-display" id="id-display-box">
+      <div class="id-label">Customer ID</div>
+      <div class="id-value" id="id-display-value">—</div>
+      <div class="id-type" id="id-display-type"></div>
+    </div>
+
+    <div class="card" style="border-color:rgba(201,168,76,0.4);">
+      <div class="card-title" style="color:var(--gold);">Who are you? — saved in your browser</div>
+      <div class="grid2">
+        <div class="field field-full">
+          <label>Your name (rep)</label>
+          <select id="i-rep" onchange="saveRep()">
+            <option value="">Select your name...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Customer status</div>
+      <div class="field">
+        <label>Current status for this customer</label>
+        <select id="i-status">
+          <option value="Searching">Searching — actively looking for their vehicle</option>
+          <option value="Deal Found">Deal Found — a qualifying deal is in hand</option>
+          <option value="Pending">Pending — awaiting customer approval</option>
+          <option value="On Hold">On Hold — paused by customer request</option>
+          <option value="Closed">Closed — deal completed</option>
+          <option value="Lost">Lost — customer did not proceed</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Customer info</div>
+      <div class="grid2">
+        <div class="field field-full"><label>Customer name</label><input type="text" id="i-name" placeholder="e.g. John Smith"/></div>
+        <div class="field"><label>Customer phone</label><input type="tel" id="i-phone" placeholder="e.g. (317) 555-0192"/></div>
+        <div class="field"><label>Customer email</label><input type="email" id="i-email" placeholder="e.g. john@email.com"/></div>
+        <div class="field"><label>Customer state</label><select id="i-cstate" onchange="fillCities('i-cstate','i-ccity')"><option value="">Select state...</option></select></div>
+        <div class="field"><label>Customer city</label><select id="i-ccity"><option value="">Select state first</option></select></div>
+        <div class="field"><label>Zip code</label><input type="text" id="i-zip" placeholder="e.g. 47201" maxlength="10"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Target vehicle</div>
+      <div class="grid2">
+        <div class="field"><label>Year</label><select id="i-year"><option value="">Year</option></select></div>
+        <div class="field"><label>Make</label><select id="i-make" onchange="fillModels()"><option value="">Make</option></select></div>
+        <div class="field"><label>Model</label><select id="i-model" onchange="fillTrims()"><option value="">Select make first</option></select></div>
+        <div class="field"><label>Trim</label><select id="i-trim"><option value="">Select model first</option></select></div>
+        <div class="field field-full"><label>Color / exterior / interior notes (optional)</label><input type="text" id="i-color" placeholder="e.g. White Exterior / Black Interior"/></div>
+      </div>
+    </div>
+
+    <div class="card" id="card-dealer">
+      <div class="card-title">Dealer being called</div>
+      <div class="grid2">
+        <div class="field"><label>Dealer name</label><input type="text" id="i-dealer" placeholder="e.g. AutoNation Toyota"/></div>
+        <div class="field"><label>Dealer state</label><select id="i-dstate" onchange="fillCities('i-dstate','i-dcity')"><option value="">Select state...</option></select></div>
+        <div class="field field-full"><label>Dealer city</label><select id="i-dcity"><option value="">Select state first</option></select></div>
+      </div>
+    </div>
+
+    <div class="card" id="card-purchase-conditions">
+      <div class="card-title">Purchase conditions — select all that apply</div>
+      <span class="tog-label" style="margin-top:4px;">Service tier</span>
+      <div class="field" style="margin-bottom:14px;">
+        <select id="i-tier">
+          <option value="">Select tier...</option>
+          <option value="Tier 1">Tier 1 — Essential ($750) · Deal negotiation &amp; close</option>
+          <option value="Tier 2">Tier 2 — White Glove ($2,000) · Full concierge experience</option>
+        </select>
+      </div>
+      <span class="tog-label">Has the customer test driven this vehicle?</span>
+      <div class="toggle-group" id="tg-testdrive"><div class="tog on" data-val="no">Not yet</div><div class="tog" data-val="yes">Yes — test driven</div><div class="tog" data-val="ordered">Ordering without test drive</div></div>
+      <span class="tog-label" style="margin-top:14px;">Does the customer qualify for any manufacturer rebates?</span>
+      <div class="toggle-group" id="tg-rebate"><div class="tog on" data-val="unknown">Unknown — needs research</div><div class="tog" data-val="yes">Yes — qualifies</div><div class="tog" data-val="no">No rebates available</div></div>
+      <span class="tog-label" style="margin-top:14px;">Is the customer putting money down?</span>
+      <div class="toggle-group" id="tg-downpayment"><div class="tog on" data-val="no">No down payment</div><div class="tog" data-val="yes">Yes — has down payment</div></div>
+      <div id="tg-downpayment-amt" style="display:none;margin-top:10px;">
+        <div class="field"><label>Down payment amount</label><input type="text" id="i-downpayment" placeholder="e.g. $5,000"/></div>
+      </div>
+      <span class="tog-label" style="margin-top:14px;">Is the customer local or out of state from this dealer?</span>
+      <div class="toggle-group" id="tg-location"><div class="tog on" data-val="local">Local (same state)</div><div class="tog" data-val="outofstate">Out of state</div></div>
+      <span class="tog-label" style="margin-top:14px;">How is the customer paying?</span>
+      <div class="toggle-group" id="tg-payment"><div class="tog on" data-val="finance">Financing</div><div class="tog" data-val="cash">Cash</div><div class="tog" data-val="lease">Lease</div></div>
+      <span class="tog-label" style="margin-top:14px;">Does the customer have a trade-in?</span>
+      <div class="toggle-group" id="tg-trade"><div class="tog on" data-val="no">No trade-in</div><div class="tog" data-val="yes">Yes — has a trade-in</div></div>
+      <span class="tog-label" style="margin-top:14px;">How specific is the customer on the vehicle?</span>
+      <div class="toggle-group" id="tg-spec"><div class="tog on" data-val="exact">Exact spec</div><div class="tog" data-val="flexible">Flexible (open to alternatives)</div></div>
+      <span class="tog-label" style="margin-top:14px;">Is this a rare, high-demand, or luxury vehicle?</span>
+      <div class="toggle-group" id="tg-rare"><div class="tog on" data-val="no">Standard / common</div><div class="tog" data-val="yes">Rare / high-demand / luxury</div></div>
+      <span class="tog-label" style="margin-top:14px;">Does the customer need shipping / transport?</span>
+      <div class="toggle-group" id="tg-ship"><div class="tog on" data-val="no">Customer will pick up</div><div class="tog" data-val="yes">Needs shipping arranged</div></div>
+      <span class="tog-label" style="margin-top:14px;">Applicable discount?</span>
+      <div class="toggle-group" id="tg-discount"><div class="tog on" data-val="none">None</div><div class="tog" data-val="military">Military / Veteran</div><div class="tog" data-val="firstresponder">First Responder</div><div class="tog" data-val="student">Student</div></div>
+    </div>
+
+    <!-- Consultation-only: notes + save -->
+    <div id="card-consult-save" style="display:none;">
+      <div class="card">
+        <div class="card-title">Consultation notes</div>
+        <div class="field">
+          <label>Notes from this call</label>
+          <textarea id="i-consult-notes" placeholder="What did the customer share? Budget, timeline, preferences, concerns..." style="min-height:90px;width:100%;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div id="consult-crm-status" style="display:none;padding:10px 14px;margin-bottom:1rem;font-size:0.82rem;font-weight:500;letter-spacing:0.06em;"></div>
+      <button class="generate-btn" onclick="saveConsultation()" id="consult-save-btn">Save Consultation to CRM ↑</button>
+    </div>
+
+    <button class="generate-btn" id="checklist-btn" onclick="generate()" style="display:none;">Build call checklist →</button>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="checklist-view" id="clview" style="display:none;">
+    <div class="summary-bar" id="summary"></div>
+    <div class="progress-row"><div class="bar-bg"><div class="bar-fill" id="bar"></div></div><span class="pct" id="pct">0%</span></div>
+    <div class="cl-actions">
+      <button class="back-btn" onclick="goBack()">← Edit profile</button>
+      <button onclick="window.print()">🖨 Print / Save PDF</button>
+      <button onclick="resetChecks()">Reset checks</button>
+      <button id="crm-btn" onclick="saveToCRM()" style="background:#C9A84C;color:#0A0A0A;border:1px solid #C9A84C;font-weight:600;letter-spacing:0.1em;">Save to CRM ↑</button>
+    </div>
+    <div id="crm-status" style="display:none;padding:10px 14px;margin-bottom:1rem;font-size:0.82rem;font-weight:500;letter-spacing:0.06em;"></div>
+    <div id="cl-body"></div>
+
+    <!-- CALLBACK REMINDER -->
+    <div class="cb-section" id="callback-section">
+      <div class="cb-title">Schedule a Callback Reminder</div>
+      <div class="cb-row">
+        <div class="field cb-full">
+          <label>Customer</label>
+          <select id="cb-customer" onchange="fillCallbackCustomer()">
+            <option value="">Select active customer or use current...</option>
+          </select>
+        </div>
+      </div>
+      <div class="cb-row">
+        <div class="field"><label>Customer ID</label><input type="text" id="cb-id" readonly placeholder="Auto-filled" style="opacity:0.6;"/></div>
+        <div class="field"><label>Vehicle</label><input type="text" id="cb-vehicle" readonly placeholder="Auto-filled" style="opacity:0.6;"/></div>
+        <div class="field"><label>Rep</label><input type="text" id="cb-rep" readonly placeholder="Auto-filled" style="opacity:0.6;"/></div>
+        <div class="field"><label>Tier</label><input type="text" id="cb-tier" readonly placeholder="Auto-filled" style="opacity:0.6;"/></div>
+      </div>
+      <div class="cb-row">
+        <div class="field"><label>Callback date &amp; time</label><input type="datetime-local" id="cb-date"/></div>
+        <div class="field"><label>Priority</label>
+          <select id="cb-priority">
+            <option value="High">High — must call</option>
+            <option value="Medium" selected>Medium — follow up</option>
+            <option value="Low">Low — when available</option>
+          </select>
+        </div>
+        <div class="field cb-full"><label>Notes for this callback</label><textarea id="cb-notes" placeholder="What needs to happen on this call? Any updates from the customer?" style="min-height:60px;width:100%;resize:vertical;"></textarea></div>
+      </div>
+      <button onclick="saveCallback()" style="background:transparent;border:1px solid var(--gold);color:var(--gold);padding:0.7rem 2rem;font-family:var(--font-body);font-size:0.78rem;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='var(--gold)';this.style.color='var(--black)'" onmouseout="this.style.background='transparent';this.style.color='var(--gold)'">Save Callback Reminder →</button>
+      <div id="cb-status" style="display:none;margin-top:0.7rem;font-size:0.82rem;padding:8px 12px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATES=[{a:'AL',n:'Alabama'},{a:'AK',n:'Alaska'},{a:'AZ',n:'Arizona'},{a:'AR',n:'Arkansas'},{a:'CA',n:'California'},{a:'CO',n:'Colorado'},{a:'CT',n:'Connecticut'},{a:'DE',n:'Delaware'},{a:'DC',n:'Washington D.C.'},{a:'FL',n:'Florida'},{a:'GA',n:'Georgia'},{a:'HI',n:'Hawaii'},{a:'ID',n:'Idaho'},{a:'IL',n:'Illinois'},{a:'IN',n:'Indiana'},{a:'IA',n:'Iowa'},{a:'KS',n:'Kansas'},{a:'KY',n:'Kentucky'},{a:'LA',n:'Louisiana'},{a:'ME',n:'Maine'},{a:'MD',n:'Maryland'},{a:'MA',n:'Massachusetts'},{a:'MI',n:'Michigan'},{a:'MN',n:'Minnesota'},{a:'MS',n:'Mississippi'},{a:'MO',n:'Missouri'},{a:'MT',n:'Montana'},{a:'NE',n:'Nebraska'},{a:'NV',n:'Nevada'},{a:'NH',n:'New Hampshire'},{a:'NJ',n:'New Jersey'},{a:'NM',n:'New Mexico'},{a:'NY',n:'New York'},{a:'NC',n:'North Carolina'},{a:'ND',n:'North Dakota'},{a:'OH',n:'Ohio'},{a:'OK',n:'Oklahoma'},{a:'OR',n:'Oregon'},{a:'PA',n:'Pennsylvania'},{a:'RI',n:'Rhode Island'},{a:'SC',n:'South Carolina'},{a:'SD',n:'South Dakota'},{a:'TN',n:'Tennessee'},{a:'TX',n:'Texas'},{a:'UT',n:'Utah'},{a:'VT',n:'Vermont'},{a:'VA',n:'Virginia'},{a:'WA',n:'Washington'},{a:'WV',n:'West Virginia'},{a:'WI',n:'Wisconsin'},{a:'WY',n:'Wyoming'}];
+const CITIES={AL:['Auburn','Birmingham','Decatur','Dothan','Florence','Gadsden','Hoover','Huntsville','Madison','Mobile','Montgomery','Tuscaloosa'],AK:['Anchorage','Bethel','Fairbanks','Juneau','Kenai','Ketchikan','Kodiak','Palmer','Sitka','Wasilla'],AZ:['Avondale','Chandler','Flagstaff','Gilbert','Glendale','Mesa','Peoria','Phoenix','Scottsdale','Surprise','Tempe','Tucson','Yuma'],AR:['Bentonville','Conway','Fayetteville','Fort Smith','Jonesboro','Little Rock','North Little Rock','Pine Bluff','Rogers','Springdale'],CA:['Anaheim','Bakersfield','Chula Vista','Fresno','Irvine','Long Beach','Los Angeles','Modesto','Oakland','Riverside','Sacramento','San Bernardino','San Diego','San Francisco','San Jose','Santa Ana','Stockton'],CO:['Arvada','Aurora','Boulder','Colorado Springs','Denver','Fort Collins','Highlands Ranch','Lakewood','Pueblo','Thornton','Westminster'],CT:['Bridgeport','Bristol','Danbury','Greenwich','Hartford','New Britain','New Haven','Norwalk','Stamford','Waterbury'],DE:['Dover','Middletown','Milford','Newark','New Castle','Seaford','Smyrna','Wilmington'],DC:['Washington'],FL:['Cape Coral','Clearwater','Coral Springs','Fort Lauderdale','Gainesville','Hialeah','Hollywood','Jacksonville','Lakeland','Miami','Miramar','Orlando','Palm Bay','Pembroke Pines','Pompano Beach','Port St. Lucie','St. Petersburg','Tallahassee','Tampa','West Palm Beach'],GA:['Albany','Alpharetta','Athens','Atlanta','Augusta','Columbus','Macon','Roswell','Sandy Springs','Savannah','South Fulton','Valdosta'],HI:['Ewa Beach','Hilo','Kahului','Kailua','Kaneohe','Kihei','Mililani','Honolulu','Pearl City','Waipahu'],ID:['Boise','Caldwell',"Coeur d'Alene",'Idaho Falls','Lewiston','Meridian','Nampa','Pocatello','Post Falls','Twin Falls'],IL:['Aurora','Bloomington','Champaign','Chicago','Cicero','Elgin','Joliet','Naperville','Peoria','Rockford','Springfield','Waukegan'],IN:['Bloomington','Carmel','Columbus','Evansville','Fishers','Fort Wayne','Gary','Hammond','Indianapolis','Lafayette','Muncie','South Bend','Terre Haute'],IA:['Ames','Cedar Rapids','Council Bluffs','Davenport','Des Moines','Dubuque','Iowa City','Sioux City','Waterloo','West Des Moines'],KS:['Kansas City','Lawrence','Lenexa','Manhattan','Olathe','Overland Park','Salina','Shawnee','Topeka','Wichita'],KY:['Bowling Green','Covington','Elizabethtown','Florence','Georgetown','Hopkinsville','Lexington','Louisville','Owensboro','Richmond'],LA:['Alexandria','Baton Rouge','Bossier City','Kenner','Lafayette','Lake Charles','Metairie','Monroe','New Orleans','Shreveport'],ME:['Augusta','Auburn','Bangor','Biddeford','Lewiston','Portland','Saco','Sanford','South Portland','Westbrook'],MD:['Annapolis','Baltimore','Bowie','College Park','Frederick','Gaithersburg','Hagerstown','Laurel','Rockville','Salisbury'],MA:['Boston','Brockton','Cambridge','Fall River','Lowell','Lynn','New Bedford','Newton','Quincy','Somerville','Springfield','Worcester'],MI:['Ann Arbor','Clinton Township','Dearborn','Detroit','Flint','Grand Rapids','Kalamazoo','Lansing','Livonia','Sterling Heights','Troy','Warren','Westland'],MN:['Bloomington','Brooklyn Park','Duluth','Maple Grove','Minneapolis','Plymouth','Rochester','St. Cloud','St. Paul','Woodbury'],MS:['Biloxi','Gulfport','Hattiesburg','Horn Lake','Jackson','Meridian','Olive Branch','Southaven','Tupelo','Greenville'],MO:['Blue Springs','Columbia','Independence','Kansas City',"Lee's Summit","O'Fallon",'Springfield','St. Charles','St. Joseph','St. Louis'],MT:['Billings','Bozeman','Butte','Great Falls','Havre','Helena','Kalispell','Miles City','Missoula'],NE:['Bellevue','Columbus','Fremont','Grand Island','Hastings','Kearney','Lincoln','Norfolk','Omaha','Papillion'],NV:['Boulder City','Carson City','Elko','Fernley','Henderson','Las Vegas','Mesquite','North Las Vegas','Reno','Sparks'],NH:['Concord','Derry','Dover','Hudson','Londonderry','Manchester','Merrimack','Nashua','Rochester','Salem'],NJ:['Brick','Camden','Clifton','Edison','Elizabeth','Hamilton','Jersey City','Lakewood','Newark','Paterson','Toms River','Trenton','Woodbridge'],NM:['Alamogordo','Albuquerque','Clovis','Farmington','Hobbs','Las Cruces','Rio Rancho','Roswell','Santa Fe','South Valley'],NY:['Albany','Buffalo','Hempstead','Mount Vernon','New Rochelle','New York City','Rochester','Schenectady','Syracuse','Troy','Utica','White Plains','Yonkers'],NC:['Asheville','Cary','Charlotte','Concord','Durham','Fayetteville','Gastonia','Greensboro','High Point','Raleigh','Wilmington','Winston-Salem'],ND:['Bismarck','Dickinson','Fargo','Grand Forks','Jamestown','Mandan','Minot','Wahpeton','West Fargo','Williston'],OH:['Akron','Canton','Cincinnati','Cleveland','Columbus','Dayton','Hamilton','Lorain','Parma','Springfield','Toledo','Youngstown'],OK:['Broken Arrow','Edmond','Enid','Lawton','Midwest City','Moore','Norman','Oklahoma City','Stillwater','Tulsa'],OR:['Beaverton','Bend','Corvallis','Eugene','Gresham','Hillsboro','Medford','Portland','Salem','Springfield'],PA:['Allentown','Altoona','Bethlehem','Erie','Harrisburg','Lancaster','Philadelphia','Pittsburgh','Reading','Scranton','Wilkes-Barre','York'],RI:['Coventry','Cranston','Cumberland','East Providence','North Providence','Pawtucket','Providence','Warwick','West Warwick','Woonsocket'],SC:['Charleston','Columbia','Goose Creek','Greenville','Hilton Head Island','Mount Pleasant','North Charleston','Rock Hill','Summerville','Sumter'],SD:['Aberdeen','Brookings','Huron','Mitchell','Pierre','Rapid City','Sioux Falls','Vermillion','Watertown','Yankton'],TN:['Bartlett','Chattanooga','Clarksville','Franklin','Hendersonville','Jackson','Johnson City','Kingsport','Knoxville','Memphis','Murfreesboro','Nashville'],TX:['Amarillo','Arlington','Austin','Brownsville','Corpus Christi','Dallas','El Paso','Fort Worth','Frisco','Garland','Grand Prairie','Houston','Irving','Killeen','Laredo','Lubbock','McKinney','Pasadena','Plano','San Antonio'],UT:['Layton','Ogden','Orem','Provo','Salt Lake City','Sandy','South Jordan','St. George','West Jordan','West Valley City'],VT:['Bennington','Brattleboro','Burlington','Colchester','Essex','Hartford','Montpelier','Rutland','South Burlington','Williston'],VA:['Alexandria','Chesapeake','Hampton','Harrisonburg','Lynchburg','Newport News','Norfolk','Portsmouth','Richmond','Roanoke','Suffolk','Virginia Beach'],WA:['Bellevue','Bellingham','Everett','Kent','Kennewick','Kirkland','Renton','Seattle','Spokane','Spokane Valley','Tacoma','Vancouver'],WV:['Beckley','Charleston','Clarksburg','Fairmont','Huntington','Martinsburg','Morgantown','Parkersburg','Weirton','Wheeling'],WI:['Appleton','Eau Claire','Green Bay','Janesville','Kenosha','La Crosse','Madison','Milwaukee','Oshkosh','Racine','Waukesha','West Allis'],WY:['Casper','Cheyenne','Evanston','Gillette','Green River','Jackson','Laramie','Riverton','Rock Springs','Sheridan']};
+const MAKES=['Acura','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler','Dodge','Ferrari','Ford','Genesis','GMC','Honda','Hyundai','Infiniti','Jaguar','Jeep','Kia','Lamborghini','Land Rover','Lexus','Lincoln','Maserati','Mazda','Mercedes-Benz','MINI','Mitsubishi','Nissan','Porsche','Ram','Rivian','Rolls-Royce','Subaru','Tesla','Toyota','Volkswagen','Volvo'];
+const MODELS={'Acura':['ILX','Integra','MDX','NSX','RDX','TLX','ZDX'],'Audi':['A3','A4','A5','A6','A7','A8','e-tron GT','Q3','Q4 e-tron','Q5','Q7','Q8','RS3','RS5','RS6','RS7','S3','S4','S5','TT'],'BMW':['2 Series','3 Series','4 Series','5 Series','7 Series','8 Series','i4','i7','iX','M2','M3','M4','M5','M8','X1','X2','X3','X4','X5','X6','X7','XM','Z4'],'Buick':['Enclave','Encore GX','Envision','Envista'],'Cadillac':['CT4','CT4-V Blackwing','CT5','CT5-V Blackwing','Escalade','Escalade ESV','Lyriq','XT4','XT5','XT6'],'Chevrolet':['Blazer','Blazer EV','Camaro','Colorado','Corvette','Equinox','Equinox EV','Malibu','Silverado 1500','Silverado 2500HD','Silverado 3500HD','Suburban','Tahoe','Trailblazer','Traverse','Trax'],'Chrysler':['300','Pacifica','Voyager'],'Dodge':['Challenger','Charger','Durango','Hornet'],'Ferrari':['296 GTB','296 GTS','812 Superfast','F8 Tributo','Portofino M','Purosangue','Roma','SF90 Stradale'],'Ford':['Bronco','Bronco Sport','Edge','Escape','Expedition','Explorer','F-150','F-250 Super Duty','F-350 Super Duty','Maverick','Mustang','Mustang Mach-E','Ranger','Transit','Transit Connect'],'Genesis':['G70','G80','G90','GV60','GV70','GV80'],'GMC':['Acadia','Canyon','Hummer EV','Hummer EV SUV','Sierra 1500','Sierra 2500HD','Sierra 3500HD','Terrain','Yukon','Yukon XL'],'Honda':['Accord','Civic','CR-V','CR-V Hybrid','HR-V','Odyssey','Passport','Pilot','Prologue','Ridgeline'],'Hyundai':['Elantra','Ioniq 5','Ioniq 6','Kona','Kona Electric','Palisade','Santa Cruz','Santa Fe','Sonata','Tucson','Tucson Hybrid'],'Infiniti':['Q50','Q60','QX50','QX55','QX60','QX80'],'Jaguar':['E-Pace','F-Pace','F-Type','I-Pace','XE','XF'],'Jeep':['Cherokee','Compass','Gladiator','Grand Cherokee','Grand Cherokee L','Grand Wagoneer','Renegade','Wagoneer','Wrangler'],'Kia':['Carnival','EV6','EV9','K5','Niro','Niro EV','Seltos','Sorento','Sportage','Stinger','Telluride'],'Lamborghini':['Huracan','Revuelto','Urus'],'Land Rover':['Defender','Discovery','Discovery Sport','Range Rover','Range Rover Evoque','Range Rover Sport','Range Rover Velar'],'Lexus':['ES','GX','IS','LC','LS','LX','NX','NX Hybrid','RC','RX','RX Hybrid','TX','UX'],'Lincoln':['Aviator','Corsair','Nautilus','Navigator','Navigator L'],'Maserati':['Ghibli','GranTurismo','Grecale','Levante','MC20','Quattroporte'],'Mazda':['CX-30','CX-5','CX-50','CX-70','CX-90','Mazda3','Mazda3 Sedan','MX-30','MX-5 Miata'],'Mercedes-Benz':['A-Class','AMG GT','C-Class','CLA','CLE','E-Class','EQB','EQE','EQS','G-Class','GLA','GLB','GLC','GLE','GLS','S-Class','SL'],'MINI':['Clubman','Convertible','Countryman','Hardtop 2 Door','Hardtop 4 Door'],'Mitsubishi':['Eclipse Cross','Outlander','Outlander PHEV','Outlander Sport'],'Nissan':['Altima','Ariya','Armada','Frontier','Kicks','Leaf','Maxima','Murano','Pathfinder','Rogue','Rogue Sport','Sentra','Titan','Titan XD','Versa','Z'],'Porsche':['718 Boxster','718 Cayman','911','Cayenne','Cayenne Coupe','Macan','Panamera','Taycan','Taycan Cross Turismo'],'Ram':['1500','1500 Classic','2500','3500','ProMaster','ProMaster City'],'Rivian':['R1S','R1T'],'Rolls-Royce':['Cullinan','Ghost','Phantom','Spectre','Wraith'],'Subaru':['Ascent','BRZ','Crosstrek','Forester','Impreza','Legacy','Outback','Solterra','WRX'],'Tesla':['Cybertruck','Model 3','Model S','Model X','Model Y'],'Toyota':['4Runner','bZ4X','Camry','Camry Hybrid','Corolla','Corolla Cross','Corolla Hybrid','Crown','GR86','GR Corolla','GR Supra','Highlander','Highlander Hybrid','Land Cruiser','Prius','Prius Prime','RAV4','RAV4 Hybrid','RAV4 Prime','Sequoia','Sienna','Tacoma','Tundra','Venza'],'Volkswagen':['Atlas','Atlas Cross Sport','Golf GTI','Golf R','ID.4','Jetta','Passat','Taos','Tiguan'],'Volvo':['C40 Recharge','EX30','EX40','EX90','S60','S90','V60','V90','XC40','XC40 Recharge','XC60','XC90']};
+const YEARS=Array.from({length:27},(_,i)=>2026-i);
+
+function initDropdowns(){
+  const y=document.getElementById('i-year');
+  YEARS.forEach(yr=>y.add(new Option(yr,yr)));
+  const m=document.getElementById('i-make');
+  MAKES.forEach(mk=>m.add(new Option(mk,mk)));
+  ['i-cstate','i-dstate'].forEach(id=>{
+    const s=document.getElementById(id);
+    STATES.forEach(st=>s.add(new Option(st.n,st.a)));
+  });
+}
+function fillCities(sid,cid){
+  const abbr=document.getElementById(sid).value;
+  const sel=document.getElementById(cid);
+  sel.innerHTML='';
+  if(!abbr||!CITIES[abbr]){sel.add(new Option('Select state first',''));return;}
+  sel.add(new Option('Select city...',''));
+  CITIES[abbr].forEach(c=>sel.add(new Option(c,c)));
+}
+function fillModels(){
+  const make=document.getElementById('i-make').value;
+  const sel=document.getElementById('i-model');
+  sel.innerHTML='';
+  if(!make||!MODELS[make]){sel.add(new Option('Select make first',''));document.getElementById('i-trim').innerHTML='<option value="">Select model first</option>';return;}
+  sel.add(new Option('Select model...',''));
+  MODELS[make].forEach(m=>sel.add(new Option(m,m)));
+  document.getElementById('i-trim').innerHTML='<option value="">Select model first</option>';
+}
+function fillTrims(){
+  const make=document.getElementById('i-make').value;
+  const model=document.getElementById('i-model').value;
+  const sel=document.getElementById('i-trim');
+  sel.innerHTML='';
+  if(!make||!model||!TRIMS[make]||!TRIMS[make][model]){sel.add(new Option('Select model first',''));return;}
+  sel.add(new Option('Select trim...',''));
+  TRIMS[make][model].forEach(t=>sel.add(new Option(t,t)));
+}
+const TRIMS={
+'Acura':{'ILX':['Premium','Technology','A-Spec Technology'],'Integra':['Standard','A-Spec','A-Spec Technology','Type S'],'MDX':['Standard','Technology','A-Spec','A-Spec SH-AWD','Advance','Advance SH-AWD','Type S','Type S Advance'],'NSX':['Standard','Type S'],'RDX':['Standard','Technology','A-Spec','A-Spec Technology','Advance','PMC Edition'],'TLX':['Standard','Technology','A-Spec','A-Spec Technology','Advance','Type S','Type S Advance','PMC Edition'],'ZDX':['Standard','A-Spec','Type S']},
+'Audi':{'A3':['Premium','Premium Plus','Prestige'],'A4':['Premium','Premium Plus','Prestige'],'A5':['Premium','Premium Plus','Prestige','Sportback Premium','Sportback Prestige'],'A6':['Premium','Premium Plus','Prestige'],'A7':['Premium','Premium Plus','Prestige'],'A8':['Standard','L','L 60 TFSI e'],'e-tron GT':['Standard','RS e-tron GT'],'Q3':['Premium','Premium Plus','Prestige'],'Q4 e-tron':['Premium','Premium Plus','Prestige'],'Q5':['Premium','Premium Plus','Prestige','S line','SQ5 Premium','SQ5 Premium Plus','SQ5 Prestige'],'Q7':['Premium','Premium Plus','Prestige','SQ7 Premium','SQ7 Premium Plus','SQ7 Prestige'],'Q8':['Premium','Premium Plus','Prestige','SQ8 Premium','SQ8 Premium Plus','SQ8 Prestige','RS Q8'],'RS3':['Standard'],'RS5':['Coupe','Sportback'],'RS6':['Avant'],'RS7':['Standard'],'S3':['Premium','Premium Plus','Prestige'],'S4':['Premium','Premium Plus','Prestige'],'S5':['Coupe Premium','Coupe Premium Plus','Coupe Prestige','Sportback Premium','Sportback Prestige'],'TT':['TTS Coupe','TTS Roadster']},
+'BMW':{'2 Series':['228i xDrive Gran Coupe','230i','230i xDrive','M235i xDrive Gran Coupe','M240i','M240i xDrive'],'3 Series':['330i','330i xDrive','330e','330e xDrive','M340i','M340i xDrive'],'4 Series':['430i','430i xDrive','430i Gran Coupe','430i xDrive Gran Coupe','M440i','M440i xDrive','M440i Gran Coupe','M440i xDrive Gran Coupe'],'5 Series':['530i','530i xDrive','540i','540i xDrive','550e xDrive','M550i xDrive','M550e xDrive'],'7 Series':['740i','740i xDrive','760i xDrive','Alpina B7 xDrive'],'8 Series':['840i','840i xDrive','840i Gran Coupe','840i xDrive Gran Coupe','M850i xDrive','M850i xDrive Gran Coupe','Alpina B8 Gran Coupe'],'i4':['eDrive35','eDrive40','M50'],'i7':['xDrive60','M70 xDrive'],'iX':['xDrive50','M60'],'M2':['Standard','Competition'],'M3':['Standard','Competition','Competition xDrive','CS','Touring'],'M4':['Standard','Competition','Competition xDrive','CSL'],'M5':['Standard','Competition','CS'],'M8':['Coupe','Convertible','Gran Coupe','Competition Coupe','Competition Convertible','Competition Gran Coupe'],'X1':['xDrive28i','sDrive28i'],'X2':['sDrive28i','xDrive28i','M35i'],'X3':['sDrive30i','xDrive30i','M40i','xDrive30e'],'X4':['xDrive30i','M40i'],'X5':['sDrive40i','xDrive40i','xDrive50e','M60i'],'X6':['sDrive40i','xDrive40i','M60i'],'X7':['xDrive40i','xDrive60i','Alpina XB7'],'XM':['Standard','Label Red'],'Z4':['sDrive20i','sDrive30i','M40i']},
+'Buick':{'Enclave':['Standard','Preferred','Essence','Avenir'],'Encore GX':['Standard','Preferred','Select','Essence','Avenir'],'Envision':['Standard','Preferred','Essence','Avenir'],'Envista':['Standard','Preferred','Essence','Avenir']},
+'Cadillac':{'CT4':['Luxury','Premium Luxury','Sport','V-Series'],'CT4-V Blackwing':['Standard'],'CT5':['Luxury','Premium Luxury','Sport','Platinum','V-Series'],'CT5-V Blackwing':['Standard'],'Escalade':['Luxury','Premium Luxury','Sport','Sport Platinum','Platinum'],'Escalade ESV':['Luxury','Premium Luxury','Sport','Sport Platinum','Platinum'],'Lyriq':['Luxury','Sport','Sport 3','Tech'],'XT4':['Luxury','Premium Luxury','Sport'],'XT5':['Luxury','Premium Luxury','Sport','Platinum'],'XT6':['Standard','Luxury','Premium Luxury','Sport','Platinum']},
+'Chevrolet':{'Blazer':['LT','RS','Premier'],'Blazer EV':['LT','RS','RS AWD'],'Camaro':['LS','LT','LT1','SS','ZL1','ZL1 1LE'],'Colorado':['WT','LT','Z71','Trail Boss','ZR2','ZR2 Bison'],'Corvette':['Stingray 1LT','Stingray 2LT','Stingray 3LT','E-Ray 2LZ','E-Ray 3LZ','Z06 1LZ','Z06 2LZ','Z06 3LZ','ZR1'],'Equinox':['LS','LT','RS','Premier'],'Equinox EV':['LT','RS','RS AWD'],'Malibu':['LS','RS','LT','Premier'],'Silverado 1500':['WT','Custom','Custom Trail Boss','LT','LT Trail Boss','RST','LTZ','High Country','ZR2'],'Silverado 2500HD':['WT','Custom','LT','LTZ','High Country'],'Silverado 3500HD':['WT','Custom','LT','LTZ','High Country'],'Suburban':['LS','LT','RST','Z71','Premier','High Country'],'Tahoe':['LS','LT','RST','Z71','Premier','High Country'],'Trailblazer':['LS','LT','ACTIV','RS'],'Traverse':['LS','LT','RS','Premier','High Country'],'Trax':['LS','LT','ACTIV','RS']},
+'Chrysler':{'300':['Touring','Touring L','S','300C'],'Pacifica':['Touring','Touring L','Touring L Plus','Limited','Pinnacle','Hybrid Touring','Hybrid Touring L','Hybrid Limited','Hybrid Pinnacle'],'Voyager':['Standard','LX']},
+'Dodge':{'Challenger':['SXT','GT','R/T','R/T Scat Pack','R/T Scat Pack Widebody','SRT Hellcat','SRT Hellcat Widebody','SRT Hellcat Redeye Widebody','SRT Super Stock','SRT Demon 170'],'Charger':['SXT','GT','R/T','Scat Pack','Scat Pack Widebody','SRT Hellcat','SRT Hellcat Widebody','SRT Hellcat Redeye Widebody','SRT Super Stock'],'Durango':['SXT','GT','Citadel','R/T','SRT 392','SRT Hellcat'],'Hornet':['GT','R/T','R/T Plus PHEV']},
+'Ferrari':{'296 GTB':['Standard','Assetto Fiorano'],'296 GTS':['Standard','Assetto Fiorano'],'812 Superfast':['Standard','GTS'],'F8 Tributo':['Standard','Spider'],'Portofino M':['Standard'],'Purosangue':['Standard'],'Roma':['Standard','Spider'],'SF90 Stradale':['Standard','Assetto Fiorano','Spider','Spider Assetto Fiorano']},
+'Ford':{'Bronco':['Base','Big Bend','Black Diamond','Outer Banks','Badlands','Wildtrak','Everglades','Raptor','Heritage Edition','Heritage Limited'],'Bronco Sport':['Base','Big Bend','Outer Banks','Badlands','Heritage Edition','Heritage Limited'],'Edge':['SE','SEL','Titanium','ST','ST-Line'],'Escape':['Base','Active','SE','SE Sport','SEL','Titanium','PHEV SE','PHEV SEL','PHEV Titanium'],'Expedition':['XL','XLT','Limited','Limited MAX','Platinum','Platinum MAX','Timberline','Timberline MAX','King Ranch','King Ranch MAX','Raptor'],'Explorer':['Base','XLT','ST-Line','Limited','Timberline','Platinum','King Ranch','ST'],'F-150':['XL Regular Cab','XL SuperCab','XL SuperCrew','XLT Regular Cab','XLT SuperCab','XLT SuperCrew','Lariat SuperCab','Lariat SuperCrew','King Ranch SuperCrew','Platinum SuperCrew','Limited SuperCrew','Raptor','Raptor R','Tremor'],'F-250 Super Duty':['XL','XLT','Lariat','King Ranch','Platinum','Limited','Tremor'],'F-350 Super Duty':['XL','XLT','Lariat','King Ranch','Platinum','Limited','Tremor'],'Maverick':['XL','XLT','Lariat','Tremor'],'Mustang':['EcoBoost','EcoBoost Premium','GT','GT Premium','Dark Horse','Dark Horse Premium','Mach 1','Mach 1 Premium','Shelby GT500','Shelby GT500 Carbon Fiber Track Pack'],'Mustang Mach-E':['Select','California Route 1','Premium','GT','GT Performance Edition'],'Ranger':['XL','XLT','Lariat','Tremor','Raptor'],'Transit':['Base','XL','XLT','Limited'],'Transit Connect':['XL','XLT','Titanium']},
+'Genesis':{'G70':['Standard','Advanced','Sport','Sport Prestige'],'G80':['Standard','Advanced','Sport','Sport Prestige','Electrified'],'G90':['Standard','Advanced','Prestige','Electrified'],'GV60':['Standard','Advanced','Performance','Magma'],'GV70':['Standard','Advanced','Sport','Sport Prestige','Electrified Standard','Electrified Advanced'],'GV80':['Standard','Advanced','Prestige','Sport','Sport Prestige']},
+'GMC':{'Acadia':['SL','SLE','SLT','Denali','AT4'],'Canyon':['Elevation','AT4','Denali','AT4X'],'Hummer EV':['EV2','EV2X','EV3X','Edition 1'],'Hummer EV SUV':['EV2','EV2X','EV3X','Edition 1'],'Sierra 1500':['Pro','SLE','Elevation','SLT','AT4','Denali','AT4X','Denali Ultimate'],'Sierra 2500HD':['Pro','SLE','SLT','AT4','Denali'],'Sierra 3500HD':['Pro','SLE','SLT','AT4','Denali'],'Terrain':['SL','SLE','SLT','Denali','AT4'],'Yukon':['SLE','SLT','AT4','Denali','Denali Ultimate'],'Yukon XL':['SLE','SLT','AT4','Denali','Denali Ultimate']},
+'Honda':{'Accord':['LX','Sport','Sport Hybrid','EX-L','EX-L Hybrid','Touring','Touring Hybrid'],'Civic':['LX','Sport','EX','Sport Touring','Hatchback Sport','Hatchback Sport Touring','Si','Type R'],'CR-V':['LX','EX','EX-L','Sport','Touring'],'CR-V Hybrid':['Sport','EX','EX-L','Sport Touring'],'HR-V':['LX','Sport','EX','EX-L'],'Odyssey':['LX','EX','EX-L','Touring','Elite'],'Passport':['Sport','EX-L','TrailSport','Touring','Elite'],'Pilot':['Sport','EX-L','TrailSport','Touring','Black Edition','Elite'],'Prologue':['EX','Touring','Elite'],'Ridgeline':['Sport','RTL','RTL-E','Black Edition','TrailSport']},
+'Hyundai':{'Elantra':['SE','SEL','N Line','Limited','N'],'Ioniq 5':['Standard Range RWD','Long Range RWD','Long Range AWD','N Line','N'],'Ioniq 6':['Standard Range RWD','Long Range RWD','Long Range AWD','N Line'],'Kona':['SE','SEL','N Line','Limited'],'Kona Electric':['SE','SEL','Limited'],'Palisade':['SE','SEL','XRT','Limited','Calligraphy'],'Santa Cruz':['SE','SEL','SEL Premium','XRT','Limited'],'Santa Fe':['SE','SEL','XRT','Limited','Calligraphy'],'Sonata':['SE','SEL','N Line','Limited'],'Tucson':['SE','SEL','N Line','XRT','Limited'],'Tucson Hybrid':['Blue','SEL','N Line','Limited','Plug-in Hybrid SE','Plug-in Hybrid SEL','Plug-in Hybrid Limited']},
+'Infiniti':{'Q50':['Pure','Luxe','Sport','Red Sport 400'],'Q60':['Pure','Luxe','Sport','Red Sport 400'],'QX50':['Pure','Luxe','Sensory','Autograph'],'QX55':['Pure','Luxe','Sensory','Autograph'],'QX60':['Pure','Luxe','Sensory','Autograph'],'QX80':['Luxe','Sensory','Autograph','Theater']},
+'Jaguar':{'E-Pace':['S','SE','HSE','R-Dynamic S','R-Dynamic SE','R-Dynamic HSE'],'F-Pace':['S','SE','HSE','R-Dynamic S','R-Dynamic SE','R-Dynamic HSE','SVR'],'F-Type':['Standard','R','R-Dynamic','75th Anniversary'],'I-Pace':['S','SE','HSE'],'XE':['S','SE','HSE'],'XF':['S','SE','HSE','R-Dynamic SE','R-Dynamic HSE']},
+'Jeep':{'Cherokee':['Latitude','Latitude Plus','Latitude LUX','Trailhawk','Limited','Overland'],'Compass':['Sport','Latitude','Latitude LUX','Trailhawk','Limited','High Altitude'],'Gladiator':['Sport','Sport S','Willys','Willys Sport','Overland','Rubicon','Mojave','High Altitude'],'Grand Cherokee':['Laredo','Altitude','Limited','Trailhawk','Overland','Summit','Summit Reserve','SRT','Trackhawk','4xe Trailhawk','4xe Overland','4xe Summit','4xe Summit Reserve'],'Grand Cherokee L':['Laredo','Altitude','Limited','Overland','Summit','Summit Reserve'],'Grand Wagoneer':['Series I','Series II','Series III','Obsidian'],'Renegade':['Sport','Latitude','Altitude','Limited','Trailhawk'],'Wagoneer':['Series I','Series II','Series III','Carbide','Obsidian'],'Wrangler':['Sport','Sport S','Willys Sport','Willys','Sahara','Altitude','High Altitude','Rubicon','Rubicon 392','4xe Sport','4xe Sahara','4xe Rubicon','Xtreme Recon']},
+'Kia':{'Carnival':['LX','EX','SX','SX Prestige'],'EV6':['Light Standard Range','Wind RWD','Wind AWD','GT-Line RWD','GT-Line AWD','GT'],'EV9':['Light','Wind','Land','GT-Line'],'K5':['LXS','GT-Line','EX','GT'],'Niro':['LX','EX','EX Premium','SX Touring'],'Niro EV':['Wind','Wave','EX Premium','SX Prestige'],'Seltos':['LX','S','EX','SX'],'Sorento':['LX','S','EX','SX','SX Prestige','X-Line SX','X-Line SX Prestige','PHEV EX','PHEV SX Prestige'],'Sportage':['LX','EX','X-Line','SX','X-Line SX','Hybrid EX','Hybrid SX Prestige','PHEV EX','PHEV SX Prestige'],'Stinger':['Standard','GT-Line','GT1','GT2'],'Telluride':['LX','S','EX','SX','SX X-Pro','SX Prestige','SX X-Pro Prestige']},
+'Lamborghini':{'Huracan':['EVO','EVO RWD','EVO Spyder','EVO RWD Spyder','Sterrato','Tecnica','STO'],'Revuelto':['Standard'],'Urus':['Standard','S','Performante']},
+'Land Rover':{'Defender':['90 S','90 SE','90 X-Dynamic SE','90 HSE','90 X-Dynamic HSE','90 X','110 S','110 SE','110 X-Dynamic SE','110 HSE','110 X-Dynamic HSE','110 X','130 SE','130 HSE','130 X'],'Discovery':['S','SE','HSE','R-Dynamic SE','R-Dynamic HSE'],'Discovery Sport':['S','SE','R-Dynamic SE','R-Dynamic HSE'],'Range Rover':['SE','HSE','Autobiography','SV','PHEV SE','PHEV HSE','PHEV Autobiography'],'Range Rover Evoque':['S','SE','R-Dynamic SE','R-Dynamic HSE'],'Range Rover Sport':['S','SE','Dynamic SE','HSE','Dynamic HSE','Autobiography','PHEV SE','PHEV HSE','PHEV Dynamic HSE'],'Range Rover Velar':['S','SE','R-Dynamic SE','R-Dynamic HSE']},
+'Lexus':{'ES':['ES 250 AWD','ES 300h','ES 350','ES 350 F Sport','ES 350 Ultra Luxury'],'GX':['Premium','Luxury','F Sport Performance 1','F Sport Performance 2','F Sport Performance 3','Overtrail','Overtrail+'],'IS':['IS 300','IS 300 AWD','IS 350','IS 350 AWD','IS 350 F Sport','IS 500 F Sport Performance'],'LC':['LC 500','LC 500 Convertible','LC 500h'],'LS':['LS 500','LS 500 AWD','LS 500h','LS 500h AWD','LS 500 F Sport'],'LX':['LX 600 Premium','LX 600 Luxury','LX 600 F Sport Performance','LX 600 Ultra Luxury'],'NX':['NX 250','NX 350','NX 350 F Sport'],'NX Hybrid':['NX 350h','NX 450h+ PHEV'],'RC':['RC 300','RC 300 AWD','RC 350 AWD','RC F'],'RX':['RX 350','RX 350 Premium','RX 350 F Sport Handling','RX 350 Luxury','RX 500h F Sport Performance'],'RX Hybrid':['RX 350h','RX 350h Premium','RX 350h Luxury','RX 450h+'],'TX':['TX 350','TX 350 Premium','TX 350 Luxury','TX 500h F Sport Performance'],'UX':['UX 200','UX 200 F Sport','UX 250h','UX 250h F Sport']},
+'Lincoln':{'Aviator':['Standard','Reserve','Black Label','Grand Touring','Grand Touring Reserve','Grand Touring Black Label'],'Corsair':['Standard','Reserve','Black Label','Grand Touring'],'Nautilus':['Standard','Reserve','Black Label'],'Navigator':['Standard','Reserve','Black Label'],'Navigator L':['Standard','Reserve','Black Label']},
+'Maserati':{'Ghibli':['GT','Modena','Trofeo'],'GranTurismo':['Modena','Trofeo','Folgore'],'Grecale':['GT','Modena','Trofeo','Folgore'],'Levante':['GT','Modena','Trofeo'],'MC20':['Standard','Cielo'],'Quattroporte':['GT','Modena','Trofeo']},
+'Mazda':{'CX-30':['2.5 S','2.5 S Select','2.5 S Preferred','2.5 S Carbon Edition','2.5 S Premium','Turbo Premium','Turbo Premium Plus'],'CX-5':['2.5 S','2.5 S Select','2.5 S Preferred','2.5 S Carbon Edition','2.5 S Premium','Turbo Premium','Turbo Premium Plus'],'CX-50':['2.5 S','2.5 S Select','2.5 S Preferred','2.5 S Premium','2.5 S Premium Plus','Turbo Premium','Turbo Premium Plus'],'CX-70':['PHEV Premium','PHEV Premium Plus','Turbo','Turbo Premium Plus'],'CX-90':['3.3 Turbo','3.3 Turbo Select','3.3 Turbo Preferred','3.3 Turbo Premium','3.3 Turbo Premium Plus','PHEV Premium','PHEV Premium Plus'],'Mazda3':['2.5 S','2.5 S Select','2.5 S Preferred','2.5 S Carbon Edition','2.5 S Premium','Turbo Premium','Turbo Premium Plus'],'Mazda3 Sedan':['2.5 S','2.5 S Select','2.5 S Preferred','2.5 S Carbon Edition','2.5 S Premium'],'MX-30':['Standard','R-EV Premium'],'MX-5 Miata':['Sport','Club','Grand Touring','RF Club','RF Grand Touring']},
+'Mercedes-Benz':{'A-Class':['A 220','A 220 4MATIC'],'AMG GT':['AMG GT 43','AMG GT 53','AMG GT 55','AMG GT 63','AMG GT 63 S','AMG GT 63 S E Performance'],'C-Class':['C 300','C 300 4MATIC','AMG C 43','AMG C 63 S E Performance'],'CLA':['CLA 250','CLA 250 4MATIC','AMG CLA 35','AMG CLA 45 S'],'CLE':['CLE 300','CLE 300 4MATIC','AMG CLE 53'],'E-Class':['E 350','E 350 4MATIC','E 450','E 450 4MATIC','AMG E 53','AMG E 63 S'],'EQB':['EQB 250+','EQB 300 4MATIC','EQB 350 4MATIC'],'EQE':['EQE 350+','EQE 350 4MATIC','EQE 500 4MATIC','AMG EQE 43','AMG EQE 53+'],'EQS':['EQS 450+','EQS 450 4MATIC','EQS 580 4MATIC','AMG EQS 53'],'G-Class':['G 550','AMG G 63'],'GLA':['GLA 250','GLA 250 4MATIC','AMG GLA 35','AMG GLA 45 S'],'GLB':['GLB 250','GLB 250 4MATIC','AMG GLB 35'],'GLC':['GLC 300','GLC 300 4MATIC','AMG GLC 43','AMG GLC 63 S E Performance'],'GLE':['GLE 350','GLE 350 4MATIC','GLE 450 4MATIC','GLE 580 4MATIC','AMG GLE 53','AMG GLE 63 S'],'GLS':['GLS 450 4MATIC','GLS 580 4MATIC','AMG GLS 63','Maybach GLS 600'],'S-Class':['S 500','S 580','S 580e','Maybach S 580','Maybach S 680','AMG S 63 E Performance'],'SL':['SL 43','SL 55','SL 63','AMG SL 55','AMG SL 63']},
+'MINI':{'Clubman':['Cooper','Cooper S','John Cooper Works'],'Convertible':['Cooper','Cooper S','John Cooper Works'],'Countryman':['Cooper','Cooper S','Cooper SE','John Cooper Works','John Cooper Works ALL4'],'Hardtop 2 Door':['Cooper','Cooper S','John Cooper Works'],'Hardtop 4 Door':['Cooper','Cooper S','John Cooper Works']},
+'Mitsubishi':{'Eclipse Cross':['ES','LE','SE','SEL'],'Outlander':['ES','LE','SE','SEL','SEL Black Edition'],'Outlander PHEV':['ES','SE','SEL'],'Outlander Sport':['ES','LE','BE','SE','SEL']},
+'Nissan':{'Altima':['S','SR','SV','SL','Platinum','SR AWD'],'Ariya':['Engage','Engage+','Venture+','Evolve+','Empower+','Platinum+'],'Armada':['S','SV','SL','Platinum'],'Frontier':['S','SV','Pro-4X','Pro-X','SL'],'Kicks':['S','SV','SR'],'Leaf':['S','SV','SV Plus','SL Plus'],'Maxima':['S','SV','SL','SR','Platinum'],'Murano':['S','SV','SL','Platinum'],'Pathfinder':['S','SV','SL','Platinum','Rock Creek'],'Rogue':['S','SV','SL','Platinum','Rock Creek'],'Rogue Sport':['S','SV','SL','Platinum'],'Sentra':['S','SV','SR'],'Titan':['S','SV','Pro-4X','SL','Platinum Reserve'],'Titan XD':['S','SV','Pro-4X','SL','Platinum Reserve'],'Versa':['S','SV','SR'],'Z':['Sport','Performance','Proto Spec']},
+'Porsche':{'718 Boxster':['Standard','S','GTS 4.0','Spyder','Spyder RS'],'718 Cayman':['Standard','S','GTS 4.0','GT4','GT4 RS'],'911':['Carrera','Carrera Cabriolet','Carrera 4','Carrera 4 Cabriolet','Carrera S','Carrera S Cabriolet','Carrera 4S','Carrera 4S Cabriolet','Targa 4','Targa 4S','Turbo','Turbo Cabriolet','Turbo S','Turbo S Cabriolet','GT3','GT3 Touring','GT3 RS','GT2 RS'],'Cayenne':['Standard','S','E-Hybrid','GTS','Turbo E-Hybrid','Turbo GT'],'Cayenne Coupe':['Standard','S','E-Hybrid','GTS','Turbo GT'],'Macan':['Standard','S','GTS','Turbo','Electric Standard','Electric S','Electric Turbo'],'Panamera':['Standard','4','4S','4S E-Hybrid','GTS','Turbo E-Hybrid','Turbo S E-Hybrid'],'Taycan':['Standard','4S','GTS','Turbo','Turbo S'],'Taycan Cross Turismo':['4S','GTS','Turbo','Turbo S']},
+'Ram':{'1500':['Tradesman','HFE','Big Horn','Lone Star','Laramie','Rebel','Laramie Longhorn','Limited','Limited Longhorn','TRX'],'1500 Classic':['Tradesman','SLT','Warlock','Express','Laramie'],'2500':['Tradesman','Big Horn','Lone Star','Laramie','Power Wagon','Laramie Longhorn','Limited','Limited Longhorn'],'3500':['Tradesman','Big Horn','Lone Star','Laramie','Laramie Longhorn','Limited','Limited Longhorn'],'ProMaster':['1500 Low Roof','1500 High Roof','2500 Low Roof','2500 High Roof','3500 High Roof'],'ProMaster City':['Tradesman','SLT']},
+'Rivian':{'R1S':['Adventure','Launch Edition','Explore'],'R1T':['Adventure','Launch Edition','Explore']},
+'Rolls-Royce':{'Cullinan':['Standard','Black Badge'],'Ghost':['Standard','Extended','Black Badge','Black Badge Extended'],'Phantom':['Standard','Extended'],'Spectre':['Standard'],'Wraith':['Standard','Black Badge']},
+'Subaru':{'Ascent':['Base','Premium','Limited','Touring'],'BRZ':['Premium','Limited','tS'],'Crosstrek':['Base','Premium','Sport','Limited','Wilderness'],'Forester':['Base','Premium','Sport','Limited','Touring','Wilderness'],'Impreza':['Base','Premium','Sport','Limited'],'Legacy':['Base','Premium','Sport','Limited','Touring XT'],'Outback':['Base','Premium','Onyx Edition','Onyx Edition XT','Limited','Limited XT','Touring','Touring XT','Wilderness'],'Solterra':['Premium','Limited','Touring'],'WRX':['Base','Premium','Limited','GT','TR']},
+'Tesla':{'Cybertruck':['Rear-Wheel Drive','All-Wheel Drive','Cyberbeast'],'Model 3':['Rear-Wheel Drive','Long Range AWD','Performance'],'Model S':['Standard','Plaid'],'Model X':['Standard','Plaid'],'Model Y':['Rear-Wheel Drive','Long Range AWD','Performance']},
+'Toyota':{'4Runner':['SR5','SR5 Premium','TRD Off-Road','TRD Off-Road Premium','TRD Sport','TRD Pro','Limited','40th Anniversary Special Edition','Trailhunter'],'bZ4X':['XLE','XLE AWD','Limited','Limited AWD'],'Camry':['LE','SE','SE Nightshade','XLE','XSE','TRD','XLE V6','XSE V6'],'Camry Hybrid':['LE','SE','SE Nightshade','XLE','XSE'],'Corolla':['L','LE','SE','XLE','XSE','Apex Edition'],'Corolla Cross':['L','LE','S','XLE'],'Corolla Hybrid':['LE','SE','XLE'],'Crown':['XLE','Limited','Platinum'],'GR86':['Standard','Premium'],'GR Corolla':['Core','Circuit Edition','Morizo Edition'],'GR Supra':['2.0','3.0','3.0 Premium','A91-CF Edition','45th Anniversary Edition'],'Highlander':['L','LE','XLE','XSE','Limited','Platinum'],'Highlander Hybrid':['LE','XLE','Limited','Platinum'],'Land Cruiser':['1958','Standard'],'Prius':['LE','XLE','Limited'],'Prius Prime':['SE','XSE','XSE Premium'],'RAV4':['LE','XLE','XLE Premium','TRD Off-Road','Adventure','Limited'],'RAV4 Hybrid':['LE','XLE','XLE Premium','SE','Limited'],'RAV4 Prime':['SE','XSE','XSE Premium'],'Sequoia':['SR5','SR5 Premium','TRD Off-Road','Limited','Platinum','TRD Pro','Capstone'],'Sienna':['LE','XLE','XSE','Limited','Platinum'],'Tacoma':['SR','SR5','TRD Sport','TRD Off-Road','Limited','TRD Pro','Trailhunter'],'Tundra':['SR','SR5','Limited','Platinum','1794 Edition','TRD Pro','Capstone'],'Venza':['LE','XLE','Limited']},
+'Volkswagen':{'Atlas':['S','SE','SE with Technology','SEL','SEL Premium','SEL R-Line'],'Atlas Cross Sport':['S','SE','SE with Technology','SEL','SEL Premium','SEL R-Line'],'Golf GTI':['S','SE','Autobahn'],'Golf R':['Standard','20th Anniversary'],'ID.4':['Standard','S','Pro','Pro S','Pro S Plus','AWD Pro','AWD Pro S','AWD Pro S Plus'],'Jetta':['S','Sport','SE','SEL','GLI S','GLI Autobahn'],'Passat':['S','SE','SEL'],'Taos':['S','SE','SEL'],'Tiguan':['S','SE','SE R-Line Black','SEL','SEL R-Line','SEL Premium']},
+'Volvo':{'C40 Recharge':['Core','Plus','Ultimate'],'EX30':['Core','Plus','Ultra'],'EX40':['Core','Plus','Ultra'],'EX90':['Core','Plus','Ultra'],'S60':['B5 Momentum','B5 R-Design','B6 AWD R-Design','T8 Recharge R-Design','T8 Recharge Polestar Engineered'],'S90':['B6 AWD Momentum','B6 AWD R-Design','T8 Recharge R-Design'],'V60':['B5 Momentum','B5 R-Design','B6 AWD R-Design','T8 Recharge R-Design','Cross Country B5'],'V90':['B6 AWD R-Design','Cross Country B6 AWD'],'XC40':['Core','Plus','Ultimate'],'XC40 Recharge':['Core','Plus','Ultimate'],'XC60':['B5 Momentum','B5 R-Design','B6 AWD R-Design','T8 Recharge R-Design','T8 Recharge Polestar Engineered'],'XC90':['Core','Plus','Ultimate','T8 Recharge Plus','T8 Recharge Ultimate']}
+};
+
+let selections={};
+document.querySelectorAll('.toggle-group').forEach(group=>{
+  const first=group.querySelector('.tog.on');
+  if(first) selections[group.id]=first.dataset.val;
+  group.querySelectorAll('.tog').forEach(tog=>{
+    tog.addEventListener('click',()=>{
+      group.querySelectorAll('.tog').forEach(t=>t.classList.toggle('on',t===tog));
+      selections[group.id]=tog.dataset.val;
+      // Show/hide down payment amount field
+      if(group.id==='tg-downpayment'){
+        const box=document.getElementById('tg-downpayment-amt');
+        if(box) box.style.display=tog.dataset.val==='yes'?'block':'none';
+      }
+    });
+  });
+});
+
+function mk(id,label,say){return{id,label,say};}
+
+function buildSections(){
+  const s=selections;
+  const isOOS=s['tg-location']==='outofstate';
+  const isFinance=s['tg-payment']==='finance';
+  const isLease=s['tg-payment']==='lease';
+  const hasTrade=s['tg-trade']==='yes';
+  const isFlexible=s['tg-spec']==='flexible';
+  const isRare=s['tg-rare']==='yes';
+  const needsShip=s['tg-ship']==='yes';
+  const discount=s['tg-discount'];
+  const secs=[];
+
+  secs.push({id:'vehicle',title:'1 — Vehicle confirmation',conditional:false,tactic:null,note:true,noteLabel:'VIN / sticker details / notes',items:[
+    mk('v1','Confirm they have the exact make, model, trim, and year in stock or in transit','"Do you currently have a [year/make/model/trim] in stock or incoming on a truck?"'),
+    mk('v2','Confirm exterior color and paint code','"What exterior color is on this unit? Can you give me the paint code?"'),
+    mk('v3','Confirm interior color and material','"What\'s the interior — color and material?"'),
+    mk('v4','Get the VIN number','"Can I grab the VIN so I can pull the window sticker on my end?"'),
+    mk('v5','Confirm all factory packages and options on this specific unit','"Can you read me the options off the window sticker? I want to make sure we\'re talking about the same vehicle."'),
+    mk('v6','Confirm mileage is near zero for a new vehicle','"What\'s the current odometer reading on that unit?"'),
+    ...(isRare?[mk('v7','Ask about allocation — how they received this unit and if more are coming','"How did this unit come in — allocation, dealer trade, or order? Are more expected?"')]:[]),
+  ]});
+
+  if(isFlexible) secs.push({id:'alt',title:'2 — Alternatives & flexibility',conditional:true,condLabel:'Flexible customer',tactic:'Since your customer is open to alternatives, use this to your advantage. Ask what else they have close — you may find a better deal on a slightly different spec.',note:true,noteLabel:'Alternative options noted',items:[
+    mk('a1','Ask what similar trims or packages they have in stock right now','"What other trims or packages do you have close to that one on the lot right now?"'),
+    mk('a2','Ask about incoming inventory that might match','"Do you have anything similar coming in the next 2–4 weeks?"'),
+    mk('a3','Note color alternatives and which have been sitting longest','"What colors do you have in that trim? Which ones have been on the lot the longest?"'),
+    mk('a4','Ask which units they are most motivated to move','"Which of these are you most motivated to move — anything that\'s been sitting a while?"'),
+  ]});
+
+  secs.push({id:'pricing',title:`${secs.length+1} — Pricing & MSRP`,conditional:false,tactic:'Lead with curiosity, not aggression. Say "I\'m trying to understand the market" — dealers lower their guard when they think you\'re gathering info, not negotiating yet.',note:true,noteLabel:'Pricing notes',items:[
+    mk('p1','Get their current asking / advertised price','"What is your current asking price on that unit?"'),
+    mk('p2','Confirm base MSRP and as-equipped MSRP from the window sticker','"What\'s the base MSRP and the as-equipped total with all options?"'),
+    mk('p3','Ask if there is a market adjustment or ADM above MSRP','"Is there any market adjustment or dealer markup added above sticker on this one?"'),
+    mk('p4','Ask what similar units have sold for recently at their store','"What have similar [model/trim] units been selling for lately at your location?"'),
+    mk('p5','Ask if there is flexibility below MSRP for a ready buyer','"Are you working at MSRP right now, or is there room below sticker for someone ready to move?"'),
+    ...(isRare?[mk('p6','Ask directly if they are charging over MSRP and why','"I see a lot of dealers charging above sticker on this model — where are you sitting on that?"')]:[]),
+  ]});
+
+  secs.push({id:'fees',title:`${secs.length+1} — Fees & dealer add-ons`,conditional:false,tactic:'This is where dealers recover margin. Go line by line — "we can\'t remove that" is almost never true. Always ask for full itemization in writing.',note:true,noteLabel:'Doc fee: $    Add-ons:    Title/reg:',items:[
+    mk('f1','Get their documentation (doc) fee amount','"What\'s your documentation fee on a deal like this?"'),
+    mk('f2','Ask for a full list of all dealer-installed add-ons','"Is there anything installed that isn\'t on the factory window sticker? Can you list those out?"'),
+    mk('f3','Ask which add-ons are optional vs. required on every deal','"Of those, which are removable and which are required on every deal you do?"'),
+    mk('f4','Confirm whether destination / freight is included in MSRP or added on top','"Is the destination charge already in the MSRP or is that added separately?"'),
+    mk('f5','Ask about nitrogen, paint sealant, or VIN etching charges','"Is there a nitrogen fill, paint protection, or vehicle etching charge on this unit?"'),
+    mk('f6','Break out state-mandated title/reg fees vs. dealer-added markup','"Can you separate what\'s state-required for title and registration from what\'s a dealer charge?"'),
+  ]});
+
+  if(discount!=='none'){
+    const dm={military:'Military / Veteran (15%)',firstresponder:'First Responder (15%)',student:'Student (5%)'};
+    secs.push({id:'disc',title:`${secs.length+1} — Discount eligibility`,conditional:true,condLabel:dm[discount],tactic:null,note:false,items:[
+      mk('d1',`Ask if they honor ${dm[discount]} pricing or OEM incentive programs`,`"Does your dealership participate in ${dm[discount].split('(')[0].trim()} pricing or manufacturer incentive programs?"`),
+      mk('d2','Ask what documentation they need to verify eligibility','"What does the customer need to provide to verify their eligibility for that discount?"'),
+      mk('d3','Confirm if the discount stacks with current manufacturer rebates','"Does that discount stack with any current OEM rebates, or is it one or the other?"'),
+    ]});
+  }
+
+  if(hasTrade) secs.push({id:'trade',title:`${secs.length+1} — Trade-in`,conditional:true,condLabel:'Customer has a trade',tactic:'Keep the trade-in completely separate from the new car price. Dealers love to bundle them — don\'t let them. Lock the new car price first, then introduce the trade.',note:true,noteLabel:'Trade-in notes',items:[
+    mk('t1','Confirm they accept trade-ins from out-of-state buyers','"Do you accept trade-ins from buyers who aren\'t local?"'),
+    mk('t2','Ask how their remote appraisal process works','"How do you handle an appraisal when the customer isn\'t local — photos, Carfax, virtual walk-around?"'),
+    mk('t3','Confirm trade value is kept completely separate from new vehicle price','"Just to be clear — the price of the new vehicle is separate from any trade value you offer, right?"'),
+    mk('t4','Ask what valuation tool they use (KBB, Manheim, etc.)','"What benchmark do you use to arrive at a trade-in offer?"'),
+    mk('t5','Ask if they can provide a written trade offer before the customer travels','"Can you put a trade offer in writing before my client makes the trip, contingent on physical inspection?"'),
+  ]});
+
+  if(isFinance) secs.push({id:'finance',title:`${secs.length+1} — Financing`,conditional:true,condLabel:'Customer is financing',tactic:'Dealers make money through F&I. Know their rate vs. what the customer\'s bank offers — sometimes it\'s competitive, often it isn\'t.',note:true,noteLabel:'Rate quoted, lender, incentives',items:[
+    mk('fi1','Ask what lenders they currently work with','"What lenders are you working with for new vehicle financing right now?"'),
+    mk('fi2','Ask what rate they are seeing for well-qualified buyers','"What APR are you seeing for a buyer with strong credit on this model?"'),
+    mk('fi3','Ask if financing through them affects the selling price','"Is there any difference in the deal if the customer finances through you vs. outside financing?"'),
+    mk('fi4','Ask about any manufacturer financing incentives on this model','"Are there any OEM financing deals or special APR programs running on this vehicle right now?"'),
+    mk('fi5','Ask if the quoted rate is the buy rate or includes a dealer markup','"Is the rate you\'re quoting the buy rate, or is there a dealer markup built into that?"'),
+  ]});
+
+  if(isLease) secs.push({id:'lease',title:`${secs.length+1} — Lease terms`,conditional:true,condLabel:'Customer is leasing',tactic:null,note:true,noteLabel:'MF, residual, fees noted',items:[
+    mk('l1','Get the money factor (lease equivalent of interest rate)','"What\'s the current money factor on this vehicle for a standard lease term?"'),
+    mk('l2','Get the residual value percentage for the intended term','"What\'s the residual on a 36-month / 10k-mile lease for this trim?"'),
+    mk('l3','Ask about acquisition fee and disposition fee at lease end','"What\'s the acquisition fee, and is there a disposition fee when the lease is up?"'),
+    mk('l4','Confirm mileage allowance and per-mile overage rate','"What mileage allowance are you quoting and what\'s the per-mile overage charge?"'),
+    mk('l5','Ask if any OEM lease support or subvented rates apply right now','"Is there any manufacturer lease support on this model — subvented money factor or residual bumps?"'),
+  ]});
+
+  if(isOOS) secs.push({id:'oos',title:`${secs.length+1} — Out-of-state considerations`,conditional:true,condLabel:'Out-of-state deal',tactic:'Dealers prefer local buyers for future service revenue. Acknowledge this upfront and position the customer as ready to close immediately.',note:false,items:[
+    mk('o1','Gauge their willingness to work with an out-of-state buyer','"I want to be upfront — my client is in [state]. Is out-of-state something your team works with regularly?"'),
+    mk('o2','Ask if out-of-state changes any fees or the paperwork process','"Does an out-of-state sale affect any fees or the title process on your end?"'),
+    mk('o3','Confirm they can handle out-of-state titling and provide a temp tag','"Can your finance team handle the out-of-state title and issue a temp tag, or is that on the buyer?"'),
+    mk('o4','Ask what they need from an out-of-state buyer to close cleanly','"What does your finance team need from an out-of-state buyer to get this done quickly and cleanly?"'),
+  ]});
+
+  if(needsShip) secs.push({id:'ship',title:`${secs.length+1} — Shipping & transport`,conditional:true,condLabel:'Customer needs shipping',tactic:null,note:true,noteLabel:'Shipping cost, carrier, transit time',items:[
+    mk('s1','Ask if they arrange shipping or if the buyer handles it independently','"Does your dealership arrange transport to the buyer, or is that something the buyer sets up on their own?"'),
+    mk('s2','Get an estimated shipping cost to the customer\'s location','"What\'s the ballpark cost to ship to [customer city, state]?"'),
+    mk('s3','Ask which carrier or transport company they use','"Who do you typically use for transport? Do you have a preferred carrier?"'),
+    mk('s4','Ask for estimated transit time to the customer\'s area','"How long does transport typically take from your lot to [customer state]?"'),
+    mk('s5','Ask who is responsible if damage occurs during shipping','"If there\'s any damage during transport, what\'s the process — who is responsible and how is it resolved?"'),
+  ]});
+
+  secs.push({id:'contact',title:`${secs.length+1} — Contact & follow-up`,conditional:false,tactic:'Always leave with a name, direct line, and a deadline. Calling back for the same person signals you\'re serious. A specific deadline creates urgency without being pushy.',note:false,items:[
+    mk('c1','Confirm full name and exact title of person you spoke with','"Just to confirm — your name is [name] and you\'re the [title]?"'),
+    mk('c2','Get their direct number or extension — not just the main switchboard','"What\'s the best number or extension to reach you directly, not just the main line?"'),
+    mk('c3','Get their email for a written quote and paper trail','"Can I grab your email? I\'d love to get a summary in writing so we can move quickly."'),
+    mk('c4','Set a specific follow-up time and confirm pricing holds until then','"I\'ll circle back with my client by [time]. Can I count on this pricing being available until then?"'),
+    mk('c5','Gauge urgency — ask if there is other serious interest on this unit','"Is there other active interest on this vehicle right now so I can set expectations with my client?"'),
+  ]});
+
+  return secs;
+}
+
+let allItems=0;
+function generate(){
+  const name=document.getElementById('i-name').value||'Customer';
+  const rep=document.getElementById('i-rep').value||'';
+  const phone=document.getElementById('i-phone').value||'';
+  const email=document.getElementById('i-email').value||'';
+  const zip=document.getElementById('i-zip').value||'';
+  const year=document.getElementById('i-year').value;
+  const make=document.getElementById('i-make').value;
+  const model=document.getElementById('i-model').value;
+  const trim=document.getElementById('i-trim').value;
+  const color=document.getElementById('i-color').value;
+  const ccity=document.getElementById('i-ccity').value;
+  const cstateEl=document.getElementById('i-cstate');
+  const cstate=cstateEl.options[cstateEl.selectedIndex]?.text||'';
+  const dealer=document.getElementById('i-dealer').value||'Dealer';
+  const dcity=document.getElementById('i-dcity').value;
+  const dstateEl=document.getElementById('i-dstate');
+  const dstate=dstateEl.options[dstateEl.selectedIndex]?.text||'';
+  const vehicleStr=[year,make,model,trim,color].filter(Boolean).join(' ')||'Target vehicle';
+  const custLoc=[ccity,cstate,zip].filter(Boolean).join(', ')||'Location TBD';
+  const dealerLoc=[dcity,dstate].filter(Boolean).join(', ');
+  const s=selections;
+  const tierVal=document.getElementById('i-tier')?.value||'';
+  const dpAmt=document.getElementById('i-downpayment')?.value||'';
+  const pills=[
+    ...(tierVal?[{label:tierVal,gold:true}]:[]),
+    {label:s['tg-testdrive']==='yes'?'Test driven':s['tg-testdrive']==='ordered'?'Ordering blind':'Not test driven',gold:s['tg-testdrive']==='yes'},
+    {label:s['tg-rebate']==='yes'?'Rebate qualified':s['tg-rebate']==='no'?'No rebates':'Rebate unknown',gold:s['tg-rebate']==='yes'},
+    {label:s['tg-downpayment']==='yes'?'Down: '+(dpAmt||'TBD'):'No down payment',gold:s['tg-downpayment']==='yes'},
+    {label:s['tg-location']==='outofstate'?'Out of state':'Local',gold:s['tg-location']==='outofstate'},
+    {label:s['tg-payment']==='finance'?'Financing':s['tg-payment']==='lease'?'Lease':'Cash',gold:false},
+    {label:s['tg-trade']==='yes'?'Trade-in':'No trade',gold:s['tg-trade']==='yes'},
+    {label:s['tg-spec']==='flexible'?'Flexible spec':'Exact spec',gold:s['tg-spec']==='flexible'},
+    {label:s['tg-rare']==='yes'?'Rare/luxury':'Standard',gold:s['tg-rare']==='yes'},
+    {label:s['tg-ship']==='yes'?'Needs shipping':'Pickup',gold:s['tg-ship']==='yes'},
+    ...(s['tg-discount']!=='none'?[{label:{military:'Military 15%',firstresponder:'First Responder 15%',student:'Student 5%'}[s['tg-discount']],gold:true}]:[]),
+  ];
+  document.getElementById('summary').innerHTML=
+    `<strong>${name}</strong>${phone?' · '+phone:''}${email?' · '+email:''} · <strong>${vehicleStr}</strong> · ${dealer}${dealerLoc?' ('+dealerLoc+')':''} · ${custLoc}${rep?' · Rep: <strong>'+rep+'</strong>':''} `+
+    pills.map(p=>`<span class="s-pill${p.gold?' gold':''}">${p.label}</span>`).join('');
+  const secs=buildSections();
+  allItems=secs.reduce((n,s)=>n+s.items.length,0);
+  let html='';
+  secs.forEach(sec=>{
+    const condAttr=sec.conditional?' conditional':'';
+    const condTag=sec.conditional?`<span class="cond-tag">${sec.condLabel}</span>`:'';
+    const tactic=sec.tactic?`<div class="tactic"><p><strong>Tactic:</strong> ${sec.tactic}</p></div>`:'';
+    const items=sec.items.map((item,ii)=>{
+      const uid=`cb-${sec.id}-${ii}`,lid=`lb-${sec.id}-${ii}`;
+      return `<div class="item"><input type="checkbox" id="${uid}" onchange="tick(this,'${lid}')">
+        <div class="item-body"><label class="item-label" id="${lid}" for="${uid}">${item.label}</label>
+        ${item.say?`<div class="say">${item.say}</div>`:''}</div></div>`;
+    }).join('');
+    const note=sec.note?`<div class="note-row"><span>${sec.noteLabel}</span><textarea placeholder="Notes..."></textarea></div>`:'';
+    html+=`<div class="section${condAttr}"><div class="sec-head"><span>${sec.title}${condTag}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="checkAll('${sec.id}')" style="font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.4);padding:2px 9px;cursor:pointer;font-family:var(--font-body);" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.4)'">Check all</button>
+        <span class="sec-badge" id="badge-${sec.id}">0 / ${sec.items.length}</span>
+      </div></div>
+      ${tactic}${items}${note}</div>`;
+  });
+  html+=`<div class="section"><div class="sec-head"><span>${secs.length+1} — Call outcome</span></div>
+    <div class="outcome-grid">
+      <div class="field"><label>Customer status</label><select id="out-status"><option value="">Select status...</option><option>New</option><option>Searching</option><option>Deal Found</option><option>Pending</option><option>On Hold</option><option>Closed</option><option>Lost</option></select></div>
+      <div class="field"><label>Call outcome</label><select id="out-outcome"><option value="">Select...</option><option>Strong lead — moving forward</option><option>Possible — needs follow-up</option><option>Not competitive — eliminated</option><option>Vehicle not available</option><option>Waiting on callback</option><option>Deal closed</option></select></div>
+      <div class="field"><label>Best OTD price quoted</label><input id="out-price" type="text" placeholder="e.g. $43,200"/></div>
+      <div class="field"><label>Total fees</label><input id="out-fees" type="text" placeholder="e.g. $1,100"/></div>
+      <div class="field"><label>Savings achieved ($)</label><input id="out-savings" type="text" placeholder="e.g. $2,400"/></div>
+      <div class="field"><label>Follow-up date</label><input id="out-followup" type="datetime-local"/></div>
+      <div class="field field-full"><label>Summary / notes for customer</label><textarea id="out-notes" placeholder="Green flags, red flags, next steps..."></textarea></div>
+    </div></div>`;
+  document.getElementById('cl-body').innerHTML=html;
+  document.getElementById('intake').style.display='none';
+  document.getElementById('clview').style.display='block';
+  document.getElementById('tab1').classList.remove('active');
+  document.getElementById('tab2').classList.add('active');
+  updateBar(); updateBadges();
+  fetchActiveCustomersForCallback();
+}
+function tick(cb,lid){
+  const l=document.getElementById(lid);
+  if(l) l.classList.toggle('struck',cb.checked);
+  updateBar(); updateBadges();
+}
+function updateBar(){
+  const checked=document.querySelectorAll('#cl-body input[type=checkbox]:checked').length;
+  const pct=allItems?Math.round(checked/allItems*100):0;
+  document.getElementById('bar').style.width=pct+'%';
+  document.getElementById('pct').textContent=pct+'%';
+}
+function updateBadges(){
+  document.querySelectorAll('#cl-body .section').forEach(sec=>{
+    const boxes=sec.querySelectorAll('input[type=checkbox]');
+    const done=sec.querySelectorAll('input[type=checkbox]:checked').length;
+    const badge=sec.querySelector('.sec-badge');
+    if(badge&&boxes.length){badge.textContent=`${done} / ${boxes.length}`;badge.className=done===boxes.length?'sec-badge done':'sec-badge';}
+  });
+}
+function resetChecks(){
+  if(!confirm('Reset all checkboxes?')) return;
+  document.querySelectorAll('#cl-body input[type=checkbox]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('#cl-body .item-label').forEach(l=>l.classList.remove('struck'));
+  updateBar(); updateBadges();
+}
+function goBack(){
+  document.getElementById('clview').style.display='none';
+  document.getElementById('intake').style.display='block';
+  document.getElementById('tab2').classList.remove('active');
+  document.getElementById('tab1').classList.add('active');
+}
+
+// ── CRM INTEGRATION ─────────────────────────────────────────
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNznNSKnT7fRaLk7o1ZbEdRVlFncFKe7vZ6emVQq6qzlN7Hq1jwedn4b29xJQINVON/exec';
+const PROXY_URL       = 'https://frosty-boat-6a06.xvzvf8rnsk.workers.dev';
+
+// Full two-way call through Cloudflare proxy (adds CORS headers)
+async function crmCall(params) {
+  const qs = Object.entries(params)
+    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v == null ? '' : v))
+    .join('&');
+  const url  = PROXY_URL + '?target=' + encodeURIComponent(APPS_SCRIPT_URL) + '&' + qs;
+  const resp = await fetch(url);
+  const text = await resp.text();
+  if (text.trim().startsWith('<')) throw new Error('Apps Script returned HTML — check deployment settings.');
+  return JSON.parse(text);
+}
+
+// Fire-and-forget fallback for saves
+function crmSend(params) {
+  return crmCall(params).catch(() => {
+    const qs  = Object.entries(params)
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v == null ? '' : v))
+      .join('&');
+    const url = APPS_SCRIPT_URL + '?' + qs;
+    const img = new Image(); img.src = url;
+    fetch(url, { mode: 'no-cors' }).catch(() => {});
+    return new Promise(r => setTimeout(r, 2000));
+  });
+}
+
+// ── WORKFLOW STATE ───────────────────────────────────────────
+let currentWorkflow    = '';
+let currentCustomerId  = '';
+let originalCustomerId = '';
+let activeCustomers    = [];
+
+// ── REP NAMES  (must match CONFIG in Skippr_CRM.gs exactly) ──
+// FIX: was 'T. Williams' — corrected to match GS CONFIG REP_2_NAME
+const REPS = ['M. Humphress', 'T. Williams'];
+
+document.querySelectorAll('#wf-tier-tog .tog').forEach(tog => {
+  tog.addEventListener('click', () => {
+    document.querySelectorAll('#wf-tier-tog .tog').forEach(t => t.classList.remove('on'));
+    tog.classList.add('on');
+  });
+});
+
+function selectWorkflow(type) {
+  currentWorkflow = type;
+  document.querySelectorAll('.wf-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('wf-' + type).classList.add('selected');
+  if (type === 'convert') {
+    document.getElementById('wf-tier-section').style.display    = 'none';
+    document.getElementById('wf-convert-section').style.display = 'block';
+    fetchConsultations();
+  } else {
+    document.getElementById('wf-tier-section').style.display    = 'block';
+    document.getElementById('wf-convert-section').style.display = 'none';
+  }
+}
+
+async function generateId() {
+  const tierTog  = document.querySelector('#wf-tier-tog .tog.on');
+  const tier     = tierTog ? tierTog.dataset.val : 'T1';
+  const prefix   = currentWorkflow === 'purchase' ? 'SKP' : 'SKC';
+  const statusEl = document.getElementById('wf-gen-status');
+  statusEl.style.display = 'block';
+  statusEl.style.color   = 'var(--gold)';
+  statusEl.textContent   = 'Generating ID from CRM...';
+
+  try {
+    const data = await crmCall({ action: 'generateID', idType: prefix, tier: tier });
+    if (data.success && data.id) {
+      currentCustomerId    = data.id;
+      statusEl.textContent = 'ID: ' + data.id;
+      setTimeout(() => proceedToPhase1(tier, prefix), 400);
+    } else {
+      statusEl.textContent = 'Error: ' + (data.message || 'Could not generate ID');
+      statusEl.style.color = '#e07070';
+    }
+  } catch(err) {
+    // Fallback to localStorage counter if proxy unreachable
+    let counter = 500;
+    try { const s = localStorage.getItem('skippr_id_counter'); if (s) counter = Math.max(500, parseInt(s)); } catch(e) {}
+    currentCustomerId = prefix + '-' + tier + '-' + String(counter).padStart(4, '0');
+    try { localStorage.setItem('skippr_id_counter', counter + 1); } catch(e) {}
+    statusEl.textContent = 'ID: ' + currentCustomerId + ' (local)';
+    statusEl.style.color = '#e8a838';
+    setTimeout(() => proceedToPhase1(tier, prefix), 400);
+  }
+}
+
+function proceedToPhase1(tier, prefix) {
+  document.getElementById('id-display-value').textContent = currentCustomerId;
+  document.getElementById('id-display-type').textContent  =
+    prefix === 'SKP' ? 'Purchase Order' : 'Consultation';
+  document.getElementById('id-display-box').style.display = 'block';
+  document.getElementById('i-tier').value = tier === 'T1' ? 'Tier 1' : 'Tier 2';
+  document.getElementById('phase0').style.display = 'none';
+  document.getElementById('intake').style.display = 'block';
+  document.getElementById('tab0').classList.remove('active');
+  document.getElementById('tab1').classList.add('active');
+
+  const isConsultation = prefix === 'SKC';
+  document.getElementById('card-dealer').style.display             = isConsultation ? 'none' : '';
+  document.getElementById('card-purchase-conditions').style.display = '';
+  document.getElementById('card-consult-save').style.display        = isConsultation ? 'block' : 'none';
+  document.getElementById('checklist-btn').style.display            = isConsultation ? 'none' : 'block';
+  document.getElementById('tab2').innerHTML = isConsultation
+    ? '<span class="num">2</span>Save'
+    : '<span class="num">2</span>Call Checklist';
+}
+
+async function fetchConsultations() {
+  const sel = document.getElementById('wf-convert-select');
+  sel.innerHTML = '<option value="">Loading from CRM...</option>';
+  try {
+    // FIX: action was 'getCustomers' and now correctly handled in GS doGet()
+    const data = await crmCall({ action: 'getCustomers', filterType: 'SKC' });
+    sel.innerHTML = '<option value="">Select a consultation...</option>';
+    if (data.customers && data.customers.length) {
+      activeCustomers = data.customers;
+      data.customers.forEach(c => sel.add(new Option(c.id + ' — ' + c.name + ' · ' + c.vehicle, c.id)));
+    } else {
+      sel.add(new Option('No active consultations — use manual entry below', ''));
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">CRM load failed — use manual entry below</option>';
+    const errEl = document.getElementById('wf-gen-status-convert');
+    if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Error: ' + e.message; }
+  }
+  document.querySelectorAll('#convert-tier-tog .tog').forEach(tog => {
+    tog.addEventListener('click', () => {
+      document.querySelectorAll('#convert-tier-tog .tog').forEach(t => t.classList.remove('on'));
+      tog.classList.add('on');
+    });
+  });
+}
+
+function previewConvert() {
+  const id = document.getElementById('wf-convert-select').value;
+  if (!id) { hideConvertPreview(); return; }
+  showConvertPreview(id, activeCustomers.find(c => c.id === id) || null);
+}
+
+function previewConvertManual() {
+  const val = document.getElementById('manual-skc-id').value.trim();
+  if (!val.startsWith('SKC-')) { hideConvertPreview(); return; }
+  showConvertPreview(val, activeCustomers.find(c => c.id === val) || null);
+}
+
+function showConvertPreview(skcId, customer) {
+  const parts   = skcId.split('-');
+  const num     = parts[2] || '0500';
+  const tierCode = parts[1] || 'T1';
+  const skpId   = 'SKP-' + tierCode + '-' + num;
+
+  document.getElementById('convert-preview-name').textContent =
+    customer ? customer.name : '(Customer name from CRM)';
+  document.getElementById('convert-preview-ids').textContent = skcId + '  →  ' + skpId;
+  document.getElementById('convert-preview-details').textContent = customer
+    ? [customer.vehicle, customer.tier, customer.phone, customer.email].filter(Boolean).join(' · ')
+    : 'Details will be pulled from CRM on submit';
+  document.getElementById('convert-preview').style.display    = 'block';
+  document.getElementById('convert-submit-btn').style.display = 'block';
+}
+
+function hideConvertPreview() {
+  document.getElementById('convert-preview').style.display    = 'none';
+  document.getElementById('convert-submit-btn').style.display = 'none';
+}
+
+async function submitConvert() {
+  const sel        = document.getElementById('wf-convert-select');
+  const manualInput = document.getElementById('manual-skc-id');
+  const skcId      = sel.value || (manualInput ? manualInput.value.trim() : '');
+  if (!skcId || !skcId.startsWith('SKC-')) {
+    alert('Please select or enter a valid SKC- ID.'); return;
+  }
+  const tierTog  = document.querySelector('#convert-tier-tog .tog.on');
+  const tier     = tierTog ? tierTog.dataset.val : 'Tier 1';
+  const tierCode = tier === 'Tier 2' ? 'T2' : 'T1';
+  const parts    = skcId.split('-');
+  const num      = parts[2] || '0500';
+  const skpId    = 'SKP-' + tierCode + '-' + num;
+  const customer = activeCustomers.find(c => c.id === skcId) || {};
+
+  const btn = document.getElementById('convert-submit-btn');
+  btn.textContent = 'Saving...';
+  btn.disabled    = true;
+
+  try {
+    const result = await crmCall({
+      action:        'convertCustomer',
+      originalId:    skcId,
+      customerId:    skpId,
+      tier:          tier,
+      customerName:  customer.name    || '',
+      customerPhone: customer.phone   || '',
+      customerEmail: customer.email   || '',
+      customerZip:   customer.zip     || '',
+      vehicle:       customer.vehicle || '',
+      rep:           customer.rep     || document.getElementById('i-rep')?.value || '',
+    });
+
+    if (result.success) {
+      currentCustomerId  = skpId;
+      currentWorkflow    = 'purchase';
+      originalCustomerId = skcId;
+
+      if (customer.name)  document.getElementById('i-name').value  = customer.name;
+      if (customer.phone) document.getElementById('i-phone').value = customer.phone;
+      if (customer.email) document.getElementById('i-email').value = customer.email;
+      if (customer.zip)   document.getElementById('i-zip').value   = customer.zip;
+      if (customer.vehicle) {
+        const vp = customer.vehicle.split(' ');
+        if (vp[0]) document.getElementById('i-year').value = vp[0];
+        if (vp[1]) { document.getElementById('i-make').value = vp[1]; fillModels(); }
+        setTimeout(() => {
+          if (vp[2]) { document.getElementById('i-model').value = vp.slice(2).join(' '); fillTrims(); }
+        }, 150);
+      }
+      document.getElementById('i-tier').value = tier;
+
+      document.getElementById('id-display-value').textContent = skpId;
+      document.getElementById('id-display-type').textContent  = 'Purchase Order — converted from ' + skcId;
+      document.getElementById('id-display-box').style.display = 'block';
+      document.getElementById('card-dealer').style.display              = '';
+      document.getElementById('card-purchase-conditions').style.display = '';
+      document.getElementById('card-consult-save').style.display        = 'none';
+      document.getElementById('checklist-btn').style.display            = 'block';
+
+      document.getElementById('phase0').style.display = 'none';
+      document.getElementById('intake').style.display = 'block';
+      document.getElementById('tab0').classList.remove('active');
+      document.getElementById('tab1').classList.add('active');
+
+      document.getElementById('id-display-box').style.borderColor = 'rgba(76,175,125,0.5)';
+      document.getElementById('id-display-type').style.color      = '#4caf7d';
+    } else {
+      throw new Error(result.message || 'Unknown error');
+    }
+  } catch(e) {
+    btn.textContent = 'Confirm Conversion & Create Purchase Record →';
+    btn.disabled    = false;
+    const errEl = document.getElementById('wf-gen-status-convert');
+    if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Error: ' + e.message; }
+  }
+}
+
+async function fetchActiveCustomersForCallback() {
+  try {
+    // FIX: action now correctly handled in GS doGet()
+    const data = await crmCall({ action: 'getCustomers' });
+    if (data.customers && data.customers.length) {
+      activeCustomers = [...activeCustomers, ...data.customers.filter(c => !activeCustomers.find(a => a.id === c.id))];
+      const sel = document.getElementById('cb-customer');
+      sel.innerHTML = '<option value="">Select...</option>';
+      sel.add(new Option('— Current customer on this checklist —', 'current'));
+      data.customers.forEach(c => sel.add(new Option(c.id + ' — ' + c.name + ' · ' + c.vehicle, c.id)));
+    }
+  } catch(e) {}
+}
+
+function fillCallbackCustomer() {
+  const sel = document.getElementById('cb-customer');
+  if (sel.value === 'current') {
+    document.getElementById('cb-id').value      = currentCustomerId || '';
+    document.getElementById('cb-vehicle').value = [
+      document.getElementById('i-year')?.value,
+      document.getElementById('i-make')?.value,
+      document.getElementById('i-model')?.value,
+      document.getElementById('i-trim')?.value
+    ].filter(Boolean).join(' ');
+    document.getElementById('cb-rep').value  = document.getElementById('i-rep')?.value || '';
+    document.getElementById('cb-tier').value = document.getElementById('i-tier')?.value || '';
+  }
+}
+
+async function saveCallback() {
+  const date = document.getElementById('cb-date').value;
+  if (!date) { showCbStatus('error', 'Please set a callback date and time.'); return; }
+
+  // FIX: was sending cb-id value as customerName — now sends actual customer name
+  const customerId   = document.getElementById('cb-id').value;
+  const customerName = document.getElementById('i-name')?.value || customerId;
+
+  await crmSend({
+    action:       'saveCallback',
+    customerId:   customerId,
+    customerName: customerName,
+    vehicle:      document.getElementById('cb-vehicle').value,
+    rep:          document.getElementById('cb-rep').value || document.getElementById('i-rep')?.value || '',
+    tier:         document.getElementById('cb-tier').value,
+    followUpDate: date,
+    priority:     document.getElementById('cb-priority').value,
+    notes:        document.getElementById('cb-notes').value,
+  });
+  showCbStatus('success', '✦ Callback reminder saved to Follow-Ups.');
+  document.getElementById('cb-date').value  = '';
+  document.getElementById('cb-notes').value = '';
+}
+
+function showCbStatus(type, msg) {
+  const el = document.getElementById('cb-status');
+  el.style.display    = 'block';
+  el.style.background = type === 'success' ? 'rgba(76,175,125,0.12)' : 'rgba(220,70,70,0.12)';
+  el.style.border     = type === 'success' ? '1px solid rgba(76,175,125,0.4)' : '1px solid rgba(220,70,70,0.4)';
+  el.style.color      = type === 'success' ? '#4caf7d' : '#e07070';
+  el.textContent      = msg;
+}
+
+async function saveConsultation() {
+  const btn = document.getElementById('consult-save-btn');
+
+  // FIX: validate required fields before saving
+  const nameVal = document.getElementById('i-name')?.value?.trim();
+  const repVal  = document.getElementById('i-rep')?.value?.trim();
+  if (!nameVal) {
+    const statusEl = document.getElementById('consult-crm-status');
+    statusEl.style.display    = 'block';
+    statusEl.style.background = 'rgba(220,70,70,0.12)';
+    statusEl.style.border     = '1px solid rgba(220,70,70,0.4)';
+    statusEl.style.color      = '#e07070';
+    statusEl.textContent      = 'Customer name is required before saving.';
+    return;
+  }
+
+  btn.textContent = 'Saving...';
+  btn.disabled    = true;
+
+  const getVal    = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const getSelText = id => { const el = document.getElementById(id); return el ? (el.options[el.selectedIndex]?.text || el.value || '') : ''; };
+
+  const params = {
+    action:         'save',
+    customerId:     currentCustomerId,
+    workflowType:   'consultation',
+    rep:            getVal('i-rep'),
+    customerName:   getVal('i-name'),
+    customerPhone:  getVal('i-phone'),
+    customerEmail:  getVal('i-email'),
+    customerCity:   getVal('i-ccity'),
+    customerState:  getSelText('i-cstate'),
+    customerZip:    getVal('i-zip'),
+    year:           getVal('i-year'),
+    make:           getVal('i-make'),
+    model:          getVal('i-model'),
+    trim:           getSelText('i-trim'),
+    extColor:       getVal('i-color'),
+    customerStatus: 'Searching',
+    // FIX: was hardcoded to '' — now reads the tier the rep selected
+    tier:           getTier(),
+    discount:       'None',
+    notes:          getVal('i-consult-notes'),
+    newCustomer:    'true',
+  };
+
+  try {
+    const record = {
+      id: currentCustomerId, name: params.customerName, phone: params.customerPhone,
+      email: params.customerEmail, zip: params.customerZip,
+      year: params.year, make: params.make, model: params.model, trim: params.trim,
+      color: params.extColor, tier: params.tier,
+      vehicle: [params.year, params.make, params.model, params.trim].filter(Boolean).join(' ')
+    };
+    const existing = JSON.parse(localStorage.getItem('skippr_customers') || '[]');
+    const idx = existing.findIndex(c => c.id === record.id);
+    if (idx >= 0) existing[idx] = record; else existing.push(record);
+    localStorage.setItem('skippr_customers', JSON.stringify(existing));
+  } catch(e) {}
+
+  try {
+    await crmCall(params);
+    const statusEl = document.getElementById('consult-crm-status');
+    statusEl.style.display    = 'block';
+    statusEl.style.background = 'rgba(76,175,125,0.12)';
+    statusEl.style.border     = '1px solid rgba(76,175,125,0.4)';
+    statusEl.style.color      = '#4caf7d';
+    statusEl.textContent      = '✦ Saved — ' + currentCustomerId + ' logged in CRM.';
+    btn.textContent           = '✓ Saved';
+    btn.style.background      = '#4caf7d';
+    btn.style.borderColor     = '#4caf7d';
+  } catch(err) {
+    const statusEl = document.getElementById('consult-crm-status');
+    statusEl.style.display    = 'block';
+    statusEl.style.background = 'rgba(220,70,70,0.12)';
+    statusEl.style.border     = '1px solid rgba(220,70,70,0.4)';
+    statusEl.style.color      = '#e07070';
+    statusEl.textContent      = 'Save failed — ' + err.message;
+    btn.textContent           = 'Save Consultation to CRM ↑';
+    btn.disabled              = false;
+  }
+}
+
+async function saveToCRM() {
+  const btn = document.getElementById('crm-btn');
+
+  // FIX: validate required fields before saving
+  const nameVal = document.getElementById('i-name')?.value?.trim();
+  if (!nameVal) {
+    showCRMStatus('error', 'Customer name is required before saving.');
+    return;
+  }
+
+  btn.textContent = 'Saving…';
+  btn.disabled    = true;
+
+  const getVal    = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const getSelText = id => { const el = document.getElementById(id); return el ? (el.options[el.selectedIndex]?.text || el.value || '') : ''; };
+
+  const checkedItems = [];
+  document.querySelectorAll('#cl-body .section').forEach(sec => {
+    const secTitle = sec.querySelector('.sec-head span')?.textContent?.trim() || '';
+    const items    = [];
+    sec.querySelectorAll('.item').forEach(item => {
+      const cb  = item.querySelector('input[type=checkbox]');
+      const lbl = item.querySelector('.item-label')?.textContent?.trim() || '';
+      if (lbl) items.push((cb?.checked ? '[x] ' : '[ ] ') + lbl);
+    });
+    const note = sec.querySelector('textarea')?.value || '';
+    if (items.length) {
+      checkedItems.push('=== ' + secTitle + ' ===');
+      items.forEach(i => checkedItems.push(i));
+      if (note) checkedItems.push('Notes: ' + note);
+    }
+  });
+
+  const params = {
+    action:          'save',
+    customerId:      currentCustomerId,
+    workflowType:    currentWorkflow,
+    originalId:      originalCustomerId,
+    rep:             getVal('i-rep'),
+    customerName:    getVal('i-name'),
+    customerPhone:   getVal('i-phone'),
+    customerEmail:   getVal('i-email'),
+    customerCity:    getVal('i-ccity'),
+    customerState:   getSelText('i-cstate'),
+    customerZip:     getVal('i-zip'),
+    year:            getVal('i-year'),
+    make:            getVal('i-make'),
+    model:           getVal('i-model'),
+    trim:            getSelText('i-trim'),
+    extColor:        getVal('i-color'),
+    dealerName:      getVal('i-dealer'),
+    dealerCity:      getVal('i-dcity'),
+    dealerState:     getSelText('i-dstate'),
+    tier:            getTier(),
+    discount:        getDiscountLabel(),
+    testDriven:      selections['tg-testdrive']   || 'no',
+    rebateQualified: selections['tg-rebate']      || 'unknown',
+    downPayment:     selections['tg-downpayment'] === 'yes' ? (getVal('i-downpayment') || 'yes') : 'no',
+    customerStatus:  getVal('out-status') || getVal('i-status'),
+    outcome:         getVal('out-outcome'),
+    bestPrice:       getVal('out-price'),
+    totalFees:       getVal('out-fees'),
+    savings:         getVal('out-savings'),
+    followUpDate:    getVal('out-followup'),
+    notes:           getVal('out-notes'),
+    checklistData:   checkedItems.join('\n').substring(0, 1500),
+    saveToDrive:     'true',
+    newCustomer:     'true',
+  };
+
+  try {
+    const record = {
+      id: currentCustomerId, name: params.customerName, phone: params.customerPhone,
+      email: params.customerEmail, city: params.customerCity, state: params.customerState,
+      zip: params.customerZip, year: params.year, make: params.make, model: params.model,
+      trim: params.trim, color: params.extColor, tier: params.tier, rep: params.rep,
+      vehicle: [params.year, params.make, params.model, params.trim].filter(Boolean).join(' '),
+    };
+    const existing = JSON.parse(localStorage.getItem('skippr_customers') || '[]');
+    const idx = existing.findIndex(c => c.id === record.id);
+    if (idx >= 0) existing[idx] = record; else existing.push(record);
+    localStorage.setItem('skippr_customers', JSON.stringify(existing));
+  } catch(e) {}
+
+  try {
+    await crmSend(params);
+    showCRMStatus('success', '✦ Saved — ' + currentCustomerId + ' logged in CRM and Drive.');
+    btn.textContent      = '✓ Saved to CRM';
+    btn.style.background = '#4caf7d';
+    btn.style.borderColor = '#4caf7d';
+    btn.disabled         = false;
+  } catch(err) {
+    showCRMStatus('error', 'Save failed — ' + err.message);
+    btn.textContent = 'Save to CRM ↑';
+    btn.disabled    = false;
+  }
+}
+
+function getTier() {
+  return document.getElementById('i-tier')?.value || '';
+}
+
+function getDiscountLabel() {
+  const d = selections['tg-discount'] || 'none';
+  return { none:'None', military:'Military 15%', firstresponder:'First Responder 15%', student:'Student 5%' }[d] || 'None';
+}
+
+function showCRMStatus(type, msg) {
+  const el = document.getElementById('crm-status');
+  el.style.display    = 'block';
+  el.style.background = type === 'success' ? 'rgba(76,175,125,0.12)' : 'rgba(220,70,70,0.12)';
+  el.style.border     = type === 'success' ? '1px solid rgba(76,175,125,0.4)' : '1px solid rgba(220,70,70,0.4)';
+  el.style.color      = type === 'success' ? '#4caf7d' : '#e07070';
+  el.textContent      = msg;
+}
+
+// ── CHECK ALL ────────────────────────────────────────────────
+function checkAll(secId) {
+  const section = document.querySelector(`#badge-${secId}`)?.closest('.section');
+  if (!section) return;
+  const boxes      = section.querySelectorAll('input[type=checkbox]');
+  const allChecked = [...boxes].every(cb => cb.checked);
+  boxes.forEach(cb => {
+    cb.checked = !allChecked;
+    const lbl  = document.getElementById(cb.id.replace('cb-', 'lb-'));
+    if (lbl) lbl.classList.toggle('struck', !allChecked);
+  });
+  updateBar(); updateBadges();
+}
+
+// ── REP PERSISTENCE ──────────────────────────────────────────
+function initRep() {
+  const sel = document.getElementById('i-rep');
+  REPS.forEach(r => sel.add(new Option(r, r)));
+  try {
+    const saved = localStorage.getItem('skippr_rep');
+    if (saved) sel.value = saved;
+  } catch(e) {}
+}
+
+function saveRep() {
+  try {
+    const val = document.getElementById('i-rep').value;
+    if (val) localStorage.setItem('skippr_rep', val);
+  } catch(e) {}
+}
+
+initDropdowns();
+initRep();
+</script>
+</body>
+</html>

@@ -5,9 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/png" href="logo1.png">
   <title>About - Skippr</title>
+  <meta name="description" content="Learn how Skippr's car concierge works in 4 simple steps. From consultation to dealer negotiation, we handle the entire car buying process for you.">
+  <!-- Open Graph -->
+  <meta property="og:title" content="About - Skippr">
+  <meta property="og:description" content="Learn how Skippr's car concierge works in 4 simple steps. From consultation to dealer negotiation, we handle the entire car buying process for you.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://skippr.us/about.html">
+  <meta property="og:image" content="https://skippr.us/logo1.png">
+  <meta property="og:site_name" content="Skippr">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@skipprUS">
+  <meta name="twitter:title" content="About - Skippr">
+  <meta name="twitter:description" content="Learn how Skippr's car concierge works in 4 simple steps. From consultation to dealer negotiation, we handle the entire car buying process for you.">
+  <meta name="twitter:image" content="https://skippr.us/logo1.png">
+  <!-- Canonical -->
+  <link rel="canonical" href="https://skippr.us/about.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -24,6 +40,7 @@
       --light-gray: #ddd;
       --font-display: 'Cormorant Garamond', Georgia, serif;
       --font-body: 'Outfit', sans-serif;
+      --font-number: 'Playfair Display', Georgia, serif;
     }
 
     html { scroll-behavior: smooth; }
@@ -209,7 +226,7 @@
       text-align: center;
     }
     .stat-num {
-      font-family: var(--font-display);
+      font-family: var(--font-number);
       font-size: 3rem; font-weight: 300;
       color: var(--black);
       line-height: 1;
@@ -272,73 +289,48 @@
       margin: 0 auto 4rem;
     }
 
-    .step-list { max-width: 780px; margin: 0 auto; }
-    .step-item {
-      display: flex;
-      gap: 2.5rem;
-      margin-bottom: 0;
-      align-items: flex-start;
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .step {
+      background: var(--white);
+      padding: 2.5rem 2rem;
       position: relative;
+      transition: transform 0.2s;
     }
-    /* Connecting line between steps */
-    .step-item:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      left: 1.5rem;
-      top: 4.5rem;
-      bottom: -3rem;
-      width: 1px;
-      background: linear-gradient(to bottom, rgba(201,168,76,0.4), transparent);
-    }
-    .step-item-inner {
-      display: flex;
-      gap: 2.5rem;
-      align-items: flex-start;
-      padding-bottom: 4rem;
-      width: 100%;
-    }
+    .step:hover { transform: translateY(-4px); }
     .step-num {
-      font-family: var(--font-display);
-      font-size: 3rem;
-      color: var(--gold);
-      opacity: 0.3;
-      flex-shrink: 0;
-      line-height: 1;
-      width: 3rem;
-      text-align: center;
-      transition: opacity 0.3s;
-    }
-    .step-item:hover .step-num { opacity: 0.8; }
-    .step-content {
-      padding-top: 0.3rem;
-      flex: 1;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
-      padding-bottom: 3rem;
-    }
-    .step-item:last-child .step-content { border-bottom: none; }
-    .step-content h3 {
-      font-family: var(--font-display);
-      font-size: 1.7rem; font-weight: 600;
-      margin-bottom: 0.6rem;
-      transition: color 0.2s;
-    }
-    .step-item:hover .step-content h3 { color: var(--gold); }
-    .step-content p {
-      color: var(--gray);
+      font-family: var(--font-number);
+      font-size: 3.5rem;
       font-weight: 300;
-      font-size: 0.93rem;
-      line-height: 1.8;
+      color: rgba(201,168,76,0.25);
+      line-height: 1;
+      margin-bottom: 0.8rem;
     }
-    .step-tag {
-      display: inline-block;
-      margin-top: 0.8rem;
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      border: 1px solid rgba(201,168,76,0.3);
-      padding: 0.25rem 0.7rem;
+    .step h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.7rem;
+      color: var(--black);
     }
+    .step p {
+      font-size: 0.87rem;
+      color: var(--gray);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+    .step-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--gold);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s;
+    }
+    .step:hover .step-bar { transform: scaleX(1); }
 
     /* ── MISSION STRIP ── */
     .mission-strip {
@@ -397,15 +389,77 @@
       text-decoration: none; transition: color 0.2s;
     }
     .footer-links a:hover { color: var(--gold); }
+    .footer-social { display: flex; gap: 1.2rem; align-items: center; }
+    .footer-social a {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50%;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .footer-social a:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+    .footer-social svg { width: 14px; height: 14px; fill: rgba(255,255,255,0.4); transition: fill 0.2s; }
+    .footer-social a:hover svg { fill: var(--gold); }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      display: none !important; background: none; border: none; cursor: pointer;
+      width: 32px; height: 24px; position: relative; z-index: 201;
+    }
+    .hamburger span {
+      display: block; position: absolute; left: 0; right: 0;
+      height: 2px; background: var(--gold); transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger span:nth-child(1) { top: 0; }
+    .hamburger span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+    .hamburger span:nth-child(3) { bottom: 0; }
+    .hamburger.open span:nth-child(1) { top: 50%; transform: translateY(-50%) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { bottom: 50%; transform: translateY(50%) rotate(-45deg); }
+    .mobile-menu {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(10,10,10,0.95); backdrop-filter: blur(16px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .mobile-menu.open { opacity: 1; pointer-events: auto; }
+    .mobile-menu a {
+      color: rgba(255,255,255,0.75); text-decoration: none;
+      font-size: 1.1rem; font-weight: 500; letter-spacing: 0.15em;
+      text-transform: uppercase; transition: color 0.2s, transform 0.4s ease, opacity 0.4s ease;
+      opacity: 0; transform: translateY(20px);
+    }
+    .mobile-menu.open a {
+      opacity: 1; transform: translateY(0);
+    }
+    .mobile-menu a:nth-child(1) { transition-delay: 0.1s; }
+    .mobile-menu a:nth-child(2) { transition-delay: 0.2s; }
+    .mobile-menu a:nth-child(3) { transition-delay: 0.3s; }
+    .mobile-menu a:hover { color: var(--gold); }
+    .mobile-menu .nav-cta {
+      background: transparent; border: 1px solid var(--gold);
+      color: var(--gold); padding: 0.7rem 1.8rem; font-size: 0.9rem;
+    }
+    .mobile-menu .nav-cta:hover { background: var(--gold); color: var(--black); }
+    .mobile-menu-close {
+      position: absolute; top: 1.5rem; right: 1.5rem;
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.5); font-size: 2rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .mobile-menu-close:hover { color: var(--gold); }
 
     /* ── MOBILE ── */
     @media (max-width: 768px) {
       nav { padding: 1.2rem 1.5rem; }
       .nav-links { display: none; }
+      .hamburger { display: block !important; }
+      .mobile-menu { display: flex; }
       .about-hero { grid-template-columns: 1fr; gap: 3rem; }
       .about-image-wrap { display: none; }
       .stat-inner { grid-template-columns: 1fr; gap: 1.5rem; }
-      .step-item::after { display: none; }
       footer { flex-direction: column; align-items: flex-start; padding: 2rem 1.5rem; }
     }
 
@@ -428,7 +482,16 @@
     <li><a href="services.html">Services</a></li>
     <li><a href="consult.html" class="nav-cta">Book a Consult</a></li>
   </ul>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">&times;</button>
+  <a href="about.html">How It Works</a>
+  <a href="services.html">Services</a>
+  <a href="consult.html" class="nav-cta">Book a Consult</a>
+</div>
 
 <!-- HERO -->
 <div class="about-hero-wrap">
@@ -477,59 +540,38 @@
     <div class="gold-divider reveal"></div>
   </div>
 
-  <div class="step-list">
-
-    <div class="step-item reveal">
-      <div class="step-item-inner">
-        <div class="step-num">01</div>
-        <div class="step-content">
-          <h3>The Strategic Brief</h3>
-          <p>We onboard you and lock in every detail — make, model, trim, and color inside and out. We don't just find a car; we find <em>the</em> car. No vague requests, no compromises.</p>
-          <span class="step-tag">Vehicle Selection</span>
-        </div>
-      </div>
+  <div class="steps-grid">
+    <div class="step reveal">
+      <div class="step-bar"></div>
+      <div class="step-num">01</div>
+      <h3>Tell Us What You Want</h3>
+      <p>You talk, we listen. We'll walk through every detail - year, make, model, trim, and your personal situation. At the end, we know exactly what you're looking for, and can tailor the experience to you.</p>
     </div>
-
-    <div class="step-item reveal delay-1">
-      <div class="step-item-inner">
-        <div class="step-num">02</div>
-        <div class="step-content">
-          <h3>Market Aggression</h3>
-          <p>We research inventory within 100 miles of you first, then expand outward. We contact dealers with a direct buy order — cutting through the fluff to go straight to the decision makers. Out-of-state is never an obstacle.</p>
-          <span class="step-tag">Nationwide Search</span>
-        </div>
-      </div>
+    <div class="step reveal delay-1">
+      <div class="step-bar"></div>
+      <div class="step-num">02</div>
+      <h3>We Search the Market</h3>
+      <p>We start with local inventory within 100 miles, then expand outward until we find the right fit. Out-of-state dealers are no obstacle - we handle everything remotely on your behalf.</p>
     </div>
-
-    <div class="step-item reveal delay-2">
-      <div class="step-item-inner">
-        <div class="step-num">03</div>
-        <div class="step-content">
-          <h3>We Negotiate Everything</h3>
-          <p>Doc fees, dealer add-ons, shipping, titling — we push on all of it. Cash or finance, trade-in or not, the rate is the same. We don't stop until we have a deal worth taking.</p>
-          <span class="step-tag">Full Negotiation</span>
-        </div>
-      </div>
+    <div class="step reveal delay-2">
+      <div class="step-bar"></div>
+      <div class="step-num">03</div>
+      <h3>We Negotiate Everything</h3>
+      <p>We take on the dealers so you don't have to. Price, doc fees, add-ons, shipping - we push back on all of it. Then we represent you in the finance office to make sure the deal stays clean. 100% in your corner, start to finish.</p>
     </div>
-
-    <div class="step-item reveal delay-3">
-      <div class="step-item-inner">
-        <div class="step-num">04</div>
-        <div class="step-content">
-          <h3>You Approve the Deal</h3>
-          <p>We bring every offer to you before anything is signed. Once we hit our savings target and you give the green light — the deal is done. You drive away knowing you got the best possible price.</p>
-          <span class="step-tag">Your Final Sign-Off</span>
-        </div>
-      </div>
+    <div class="step reveal delay-3">
+      <div class="step-bar"></div>
+      <div class="step-num">04</div>
+      <h3>You Approve the Deal</h3>
+      <p>We won't make a single move without your express permission. Once we've secured a deal worthy of your time, we bring it to you for final sign-off - and walk you through every detail before you sign.</p>
     </div>
-
   </div>
 </section>
 
 <!-- MISSION QUOTE -->
 <div class="mission-strip">
   <p class="mission-quote reveal">"The dealership has experts working against you. <em>Now you have one working for you.</em>"</p>
-  <p class="mission-attr reveal delay-1">— The Skippr Promise</p>
+  <p class="mission-attr reveal delay-1">- The Skippr Promise</p>
 </div>
 
 <!-- FOOTER -->
@@ -540,10 +582,27 @@
     <a href="services.html">Services</a>
     <a href="index.html#contact">Contact</a>
   </div>
+  <div class="footer-social">
+    <a href="https://www.facebook.com/profile.php?id=61574742985598" target="_blank" rel="noopener" aria-label="Facebook">
+      <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+    </a>
+    <a href="https://x.com/skipprUS" target="_blank" rel="noopener" aria-label="X">
+      <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    </a>
+  </div>
   <p class="footer-copy">© 2026 Skippr. All rights reserved.</p>
 </footer>
 
 <script>
+  // Hamburger menu
+  function toggleMenu() {
+    document.getElementById('hamburger').classList.toggle('open');
+    document.getElementById('mobileMenu').classList.toggle('open');
+    document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('open') ? 'hidden' : '';
+  }
+  document.getElementById('hamburger').addEventListener('click', toggleMenu);
+  document.getElementById('mobileMenuClose').addEventListener('click', toggleMenu);
+
   // Scroll reveal
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {

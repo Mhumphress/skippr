@@ -1,0 +1,1493 @@
+// ============================================================
+//  SKIPPR CRM — Google Apps Script  (v1.1 — bug-fixed)
+//  Paste this entire file into Apps Script and run setupCRM()
+// ============================================================
+
+// ── CONFIG — edit these before running ──────────────────────
+const CONFIG = {
+  REP_1_NAME:   "M. Humphress",
+  REP_1_EMAIL:  "mhumphress@skippr.us",
+  REP_2_NAME:   "T. Williams",        // ← must match REPS array in both HTML files
+  REP_2_EMAIL:  "twilliams@skippr.us",
+  REP_3_NAME:   "",                   // leave blank if only 2 reps
+  REP_3_EMAIL:  "",
+  NOTIFY_EMAIL: "hello@skippr.us",    // gets all reminder emails
+  TIMEZONE:     "America/Indianapolis",
+};
+
+// ── COLORS ──────────────────────────────────────────────────
+const C = {
+  BLACK:      "#0A0A0A",
+  OFFBLACK:   "#111111",
+  DARK:       "#1A1A1A",
+  GOLD:       "#C9A84C",
+  GOLD_LIGHT: "#E2C97E",
+  WHITE:      "#FAFAFA",
+  OFFWHITE:   "#F3F0EA",
+  GRAY:       "#888888",
+  GREEN:      "#4caf7d",
+  AMBER:      "#e8a838",
+  RED:        "#e07070",
+  BLUE:       "#85b7eb",
+  HEADER_BG:  "#111111",
+  HEADER_FG:  "#C9A84C",
+  ROW_ALT:    "#F8F6F1",
+};
+
+// ── MAIN SETUP ───────────────────────────────────────────────
+function setupCRM() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ss.setSpreadsheetTimeZone(CONFIG.TIMEZONE);
+
+  const originalSheets = ss.getSheets();
+
+  buildRegistry(ss);    SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildPipeline(ss);    SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildDealerLog(ss);   SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildFollowUps(ss);   SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildRepActivity(ss); SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildDealerDB(ss);    SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildSettings(ss);    SpreadsheetApp.flush(); Utilities.sleep(1000);
+  buildActiveView(ss);  SpreadsheetApp.flush(); Utilities.sleep(1000);
+  buildDashboard(ss);   SpreadsheetApp.flush(); Utilities.sleep(500);
+
+  originalSheets.forEach(sh => {
+    try {
+      if (sh.getName() === "Sheet1" && ss.getSheets().length > 1) ss.deleteSheet(sh);
+    } catch(e) {}
+  });
+
+  const dash = ss.getSheetByName("Dashboard");
+  if (dash) ss.setActiveSheet(dash);
+
+  installTrigger();
+
+  try {
+    SpreadsheetApp.getUi().alert(
+      "✦ Skippr CRM is ready!\n\n" +
+      "Sheets created:\n" +
+      "  Dashboard · Pipeline · Dealer Log · Follow-Ups\n" +
+      "  Rep Activity · Dealer Database · Registry · Settings\n\n" +
+      "A daily 8am reminder trigger has been installed."
+    );
+  } catch(e) {
+    Logger.log("Skippr CRM setup complete.");
+  }
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function buildDashboard(ss) {
+  let sh = ss.getSheetByName("Dashboard");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Dashboard");
+  ss.moveActiveSheet(1);
+  sh.setTabColor(C.GOLD);
+ 
+
+  sh.setColumnWidth(1, 20);
+  sh.setColumnWidth(2, 200);
+  sh.setColumnWidth(3, 160);
+  sh.setColumnWidth(4, 160);
+  sh.setColumnWidth(5, 160);
+  sh.setColumnWidth(6, 160);
+  sh.setColumnWidth(7, 20);
+  for (let r = 1; r <= 100; r++) sh.setRowHeight(r, 24);
+
+  function mergeSet(r1, c1, r2, c2, val, opts) {
+    const rng = sh.getRange(r1, c1, r2-r1+1, c2-c1+1);
+    rng.merge();
+    if (opts.bg)     rng.setBackground(opts.bg);
+    if (opts.fg)     rng.setFontColor(opts.fg);
+    if (opts.size)   rng.setFontSize(opts.size);
+    if (opts.bold)   rng.setFontWeight(opts.bold ? "bold" : "normal");
+    if (opts.align)  rng.setHorizontalAlignment(opts.align);
+    if (opts.valign) rng.setVerticalAlignment(opts.valign);
+    if (opts.font)   rng.setFontFamily(opts.font);
+    if (opts.italic) rng.setFontStyle("italic");
+    if (val !== null && val !== undefined) rng.setValue(val);
+    return rng;
+  }
+
+  function sectionHeader(row, label) {
+    sh.setRowHeight(row, 20);
+    mergeSet(row, 2, row, 6, "  " + label, {bg:C.DARK, fg:C.GOLD, size:7, bold:true, font:"Arial", align:"left", valign:"middle"});
+  }
+
+  sh.getRange(1, 1, 100, 7).setBackground(C.OFFBLACK);
+
+  sh.setRowHeight(2, 54);
+  sh.setRowHeight(3, 3);
+  mergeSet(2, 2, 2, 4, "SKIPPR", {bg:C.OFFBLACK, fg:C.GOLD, size:22, bold:true, font:"Courier New", align:"left", valign:"middle"});
+  mergeSet(2, 5, 2, 6, "CRM Dashboard", {bg:C.OFFBLACK, fg:"#555555", size:13, bold:false, font:"Courier New", align:"right", valign:"middle", italic:true});
+  sh.getRange(3, 2, 1, 5).setBackground(C.GOLD);
+
+  sh.setRowHeight(5, 12);
+  sh.setRowHeight(6, 16);
+  sh.setRowHeight(7, 40);
+  sh.setRowHeight(8, 18);
+  sh.setRowHeight(9, 6);
+
+  const stats = [
+    { label:"ACTIVE DEALS",
+      formula:'=COUNTIFS(Pipeline!F2:F5000,"<>Closed",Pipeline!F2:F5000,"<>Lost",Pipeline!F2:F5000,"<>")',
+      color:C.WHITE },
+    { label:"TIER 2 ACTIVE",
+      formula:'=COUNTIFS(Pipeline!D2:D5000,"Tier 2",Pipeline!F2:F5000,"<>Closed",Pipeline!F2:F5000,"<>Lost",Pipeline!F2:F5000,"<>")',
+      color:C.GOLD },
+    { label:"CLOSED THIS MONTH",
+      formula:'=COUNTIFS(Pipeline!F2:F5000,"Closed",Pipeline!N2:N5000,">="&EOMONTH(TODAY(),-1)+1)',
+      color:C.GREEN },
+    { label:"OVERDUE FOLLOW-UPS",
+      formula:"=COUNTIFS('Follow-Ups'!E2:E5000,\"<\"&TODAY(),'Follow-Ups'!F2:F5000,\"Open\")",
+      color:C.AMBER },
+    { label:"SAVINGS DELIVERED",
+      formula:'=IFERROR(TEXT(SUM(Pipeline!Q2:Q5000),"$#,##0"),"$0")',
+      color:C.GOLD },
+  ];
+
+  stats.forEach((s, i) => {
+    const c = i + 2;
+    sh.getRange(6, c).setValue(s.label).setFontSize(7).setFontColor(C.GRAY)
+      .setFontFamily("Arial").setBackground(C.OFFBLACK).setHorizontalAlignment("center").setVerticalAlignment("bottom");
+    sh.getRange(7, c).setFormula(s.formula).setFontSize(22).setFontWeight("bold")
+      .setFontColor(s.color).setBackground(C.DARK).setVerticalAlignment("middle").setHorizontalAlignment("center").setFontFamily("Arial");
+    sh.getRange(8, c).setBackground(C.DARK);
+  });
+  sh.getRange(7, 2, 2, 5).setBorder(null, true, true, true, null, null, C.GOLD, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+
+  sh.setRowHeight(11, 6);
+  sectionHeader(12, "PRIORITY QUEUE  ·  TIER 2 ACTIVE");
+  sh.setRowHeight(13, 20);
+  ["CUSTOMER","VEHICLE","STATUS","REP","FOLLOW-UP"].forEach((h, i) => {
+    sh.getRange(13, i+2).setValue(h).setFontSize(7).setFontColor(C.GRAY)
+      .setFontFamily("Arial").setFontWeight("bold").setBackground(C.DARK)
+      .setHorizontalAlignment(i===0?"left":"center");
+  });
+  sh.setRowHeight(14, 2);
+  for (let r = 15; r <= 24; r++) {
+    sh.setRowHeight(r, 22);
+    sh.getRange(r, 2, 1, 5)
+      .setBackground(r%2===0?C.DARK:"#1e1a0a")
+      .setFontColor(C.GOLD).setFontSize(10).setFontFamily("Arial");
+  }
+  SpreadsheetApp.flush();
+  sh.getRange("B15").setFormula(
+    '=IFERROR(QUERY(Pipeline!A2:Y5000,' +
+    '"SELECT B,H&\' \'&I,F,E,O ' +
+    'WHERE D=\'Tier 2\' AND F<>\'Closed\' AND F<>\'Lost\' AND F<>\'\' ' +
+    'ORDER BY O ASC LIMIT 5",0),"No active Tier 2 customers")'
+  );
+
+  sh.setRowHeight(26, 6);
+  sectionHeader(27, "PIPELINE  ·  STATUS BREAKDOWN");
+  sh.setRowHeight(28, 20);
+  ["STATUS","COUNT","","TIER","COUNT"].forEach((h, i) => {
+    sh.getRange(28, 2+i).setValue(h).setFontSize(7).setFontColor(C.GRAY)
+      .setFontFamily("Arial").setFontWeight("bold").setBackground(C.DARK)
+      .setHorizontalAlignment(i===1||i===4?"center":"left");
+  });
+
+  [{s:"Searching",  fg:C.BLUE,  bg:C.OFFBLACK},
+   {s:"Deal Found", fg:C.GREEN, bg:C.DARK},
+   {s:"Pending",    fg:C.AMBER, bg:C.OFFBLACK},
+   {s:"On Hold",    fg:C.GRAY,  bg:C.DARK},
+   {s:"New",        fg:"#85b7eb", bg:C.OFFBLACK},
+   {s:"Closed",     fg:"#555",  bg:C.DARK}].forEach((item, i) => {
+    const r = 29 + i;
+    sh.setRowHeight(r, 22);
+    sh.getRange(r, 2).setValue(item.s).setFontSize(10).setFontColor(item.fg).setBackground(item.bg).setVerticalAlignment("middle").setFontFamily("Arial");
+    sh.getRange(r, 3).setFormula('=COUNTIF(Pipeline!F2:F5000,"'+item.s+'")')
+      .setFontSize(13).setFontColor(C.GOLD).setFontWeight("bold")
+      .setBackground(item.bg).setVerticalAlignment("middle").setHorizontalAlignment("center").setFontFamily("Arial");
+    sh.getRange(r, 4).setBackground(item.bg);
+  });
+
+  [{t:"Tier 2",    f:'=COUNTIFS(Pipeline!D2:D5000,"Tier 2",Pipeline!F2:F5000,"<>Closed",Pipeline!F2:F5000,"<>Lost")', r:29, bg:C.OFFBLACK},
+   {t:"Tier 1",    f:'=COUNTIFS(Pipeline!D2:D5000,"Tier 1",Pipeline!F2:F5000,"<>Closed",Pipeline!F2:F5000,"<>Lost")', r:30, bg:C.DARK},
+   {t:"Purchases", f:'=COUNTIF(Pipeline!U2:U5000,"Purchase")', r:31, bg:C.OFFBLACK},
+   {t:"Consults",  f:'=COUNTIF(Pipeline!U2:U5000,"Consultation")', r:32, bg:C.DARK},
+   {t:"Converted", f:'=COUNTIF(Pipeline!U2:U5000,"Converted")', r:33, bg:C.OFFBLACK}].forEach(item => {
+    sh.getRange(item.r, 5).setValue(item.t).setFontSize(10).setFontColor(C.WHITE).setBackground(item.bg).setVerticalAlignment("middle").setFontFamily("Arial");
+    sh.getRange(item.r, 6).setFormula(item.f).setFontSize(13).setFontColor(C.GOLD).setFontWeight("bold")
+      .setBackground(item.bg).setVerticalAlignment("middle").setHorizontalAlignment("center").setFontFamily("Arial");
+  });
+
+  sh.setRowHeight(36, 6);
+  sectionHeader(37, "FOLLOW-UPS  ·  SUMMARY");
+  sh.setRowHeight(38, 20);
+  ["PRIORITY","COUNT","","STATUS","COUNT"].forEach((h, i) => {
+    sh.getRange(38, 2+i).setValue(h).setFontSize(7).setFontColor(C.GRAY)
+      .setFontFamily("Arial").setFontWeight("bold").setBackground(C.DARK)
+      .setHorizontalAlignment(i===1||i===4?"center":"left");
+  });
+
+  [{p:"High",r:39,c:C.RED},{p:"Medium",r:40,c:C.AMBER},{p:"Low",r:41,c:C.GRAY}].forEach(item => {
+    const bg = item.r%2===0?C.DARK:C.OFFBLACK;
+    sh.setRowHeight(item.r, 22);
+    sh.getRange(item.r, 2).setValue(item.p).setFontSize(10).setFontColor(C.WHITE).setBackground(bg).setFontFamily("Arial");
+    sh.getRange(item.r, 3).setFormula("=COUNTIFS('Follow-Ups'!G2:G5000,\""+item.p+"\",'Follow-Ups'!F2:F5000,\"Open\")")
+      .setFontSize(13).setFontColor(item.c).setFontWeight("bold").setBackground(bg).setHorizontalAlignment("center").setFontFamily("Arial");
+    sh.getRange(item.r, 4).setBackground(bg);
+  });
+
+  [{s:"Open",r:39,c:C.GREEN},{s:"Complete",r:40,c:C.GRAY},{s:"Overdue",r:41,c:C.RED}].forEach(item => {
+    const bg = item.r%2===0?C.DARK:C.OFFBLACK;
+    const f = item.s==="Overdue"
+      ? "=COUNTIFS('Follow-Ups'!E2:E5000,\"<\"&TODAY(),'Follow-Ups'!F2:F5000,\"Open\")"
+      : "=COUNTIF('Follow-Ups'!F2:F5000,\""+item.s+"\")";
+    sh.getRange(item.r, 5).setValue(item.s).setFontSize(10).setFontColor(C.WHITE).setBackground(bg).setFontFamily("Arial");
+    sh.getRange(item.r, 6).setFormula(f).setFontSize(13).setFontColor(item.c)
+      .setFontWeight("bold").setBackground(bg).setHorizontalAlignment("center").setFontFamily("Arial");
+  });
+
+  sh.setRowHeight(44, 6);
+  sectionHeader(45, "RECENT ACTIVITY  ·  LAST 10");
+  sh.setRowHeight(46, 20);
+  ["DATE","REP","CUSTOMER","ACTION","NOTES"].forEach((h, i) => {
+    sh.getRange(46, 2+i).setValue(h).setFontSize(7).setFontColor(C.GRAY)
+      .setFontFamily("Arial").setFontWeight("bold").setBackground(C.DARK)
+      .setHorizontalAlignment(i===0?"center":"left");
+  });
+  for (let r = 47; r <= 56; r++) {
+    sh.setRowHeight(r, 22);
+    sh.getRange(r, 2, 1, 5).setBackground(r%2===0?C.DARK:C.OFFBLACK).setFontColor(C.WHITE).setFontSize(10).setFontFamily("Arial");
+  }
+  SpreadsheetApp.flush();
+  sh.getRange("B47").setFormula(
+    '=IFERROR(QUERY(SORT(\'Rep Activity\'!A2:H5000,1,FALSE),"SELECT Col1,Col2,Col3,Col4,Col8 LIMIT 10",0),"")'
+  );
+  sh.getRange("B47").setNumberFormat("mm/dd/yy");
+  sh.setFrozenRows(0);
+  sh.setFrozenColumns(0);
+}
+
+// ── ACTIVE CUSTOMERS VIEW ─────────────────────────────────────
+function buildActiveView(ss) {
+  let sh = ss.getSheetByName("Active Customers");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Active Customers", 1);
+  sh.setTabColor(C.GREEN);
+
+  const colWidths = [20, 28, 120, 170, 75, 110, 200, 130, 110, 140, 200, 20];
+  colWidths.forEach((w, i) => sh.setColumnWidth(i+1, w));
+  for (let r = 1; r <= 600; r++) sh.setRowHeight(r, 24);
+  sh.getRange(1, 1, 600, 12).setBackground(C.OFFBLACK);
+
+  sh.setRowHeight(2, 50);
+  sh.getRange("B2:K2").merge()
+    .setValue("SKIPPR  ·  ACTIVE CUSTOMERS")
+    .setFontFamily("Courier New").setFontSize(14).setFontWeight("bold")
+    .setFontColor(C.GOLD).setBackground(C.OFFBLACK).setVerticalAlignment("middle");
+  sh.getRange("B3:K3").setBackground(C.GOLD);
+  sh.setRowHeight(3, 3);
+
+  sh.setRowHeight(4, 22);
+  ["","!","ID","NAME","TIER","STATUS","VEHICLE","REP","FOLLOW-UP","PHONE","EMAIL",""].forEach((h, i) => {
+    sh.getRange(4, i+1).setValue(h)
+      .setFontSize(7).setFontColor(C.GRAY).setFontFamily("Arial")
+      .setFontWeight("bold").setBackground(C.DARK)
+      .setHorizontalAlignment(i <= 1 ? "center" : "left");
+  });
+  sh.setRowHeight(5, 4);
+
+  SpreadsheetApp.flush();
+  sh.getRange("B6").setFormula(
+    '=IFERROR(QUERY(' +
+      '{IF(Pipeline!D2:D5000="Tier 2",1,2),' +
+      'Pipeline!A2:A5000,' +
+      'Pipeline!B2:B5000,' +
+      'Pipeline!D2:D5000,' +
+      'Pipeline!F2:F5000,' +
+      'Pipeline!H2:H5000&IF(Pipeline!I2:I5000<>">"," "&Pipeline!I2:I5000,""),' +
+      'Pipeline!E2:E5000,' +
+      'IF(Pipeline!O2:O5000="","9999-99-99",TEXT(Pipeline!O2:O5000,"yyyy-mm-dd")),' +
+      'Pipeline!X2:X5000,' +
+      'Pipeline!Y2:Y5000},' +
+      '"SELECT Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10 ' +
+      'WHERE Col5 <> \'Closed\' AND Col5 <> \'Lost\' AND Col5 <> \'\' ' +
+      'ORDER BY Col1 ASC, Col8 ASC",0),"")'
+  );
+
+  for (let r = 6; r <= 500; r++) {
+    sh.getRange(r, 2, 1, 10)
+      .setBackground(r % 2 === 0 ? C.DARK : C.OFFBLACK)
+      .setFontColor(C.WHITE).setFontSize(10).setFontFamily("Arial");
+  }
+
+  const dataRange = sh.getRange("B6:K500");
+  const t2Rule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$D6="Tier 2"')
+    .setBackground("#1e1a0a").setFontColor(C.GOLD).setBold(true)
+    .setRanges([dataRange]).build();
+  const overdueRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($I6<>"9999-99-99",$I6<TODAY())')
+    .setBackground("#3d1212").setFontColor(C.RED)
+    .setRanges([sh.getRange("I6:I500")]).build();
+  const todayRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$I6=TEXT(TODAY(),"yyyy-mm-dd")')
+    .setBackground("#2d2200").setFontColor(C.AMBER)
+    .setRanges([sh.getRange("I6:I500")]).build();
+  const statusCol = sh.getRange("F6:F500");
+  const s2 = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Deal Found").setBackground("#0d2b2e").setFontColor("#4caf7d").setRanges([statusCol]).build();
+  const s3 = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Pending").setBackground("#2d2000").setFontColor(C.AMBER).setRanges([statusCol]).build();
+  const s4 = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("On Hold").setBackground("#1e1e1e").setFontColor(C.GRAY).setRanges([statusCol]).build();
+  const s5 = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Searching").setBackground("#1a1a2e").setFontColor(C.BLUE).setRanges([statusCol]).build();
+  const s6 = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("New").setBackground("#0d1a2e").setFontColor("#85b7eb").setRanges([statusCol]).build();
+  const prioRange = sh.getRange("B6:B500");
+  const prioRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$D6="Tier 2"')
+    .setFontColor(C.GOLD).setBold(true)
+    .setRanges([prioRange]).build();
+
+  sh.setConditionalFormatRules([t2Rule, overdueRule, todayRule, s2, s3, s4, s5, s6, prioRule]);
+
+  SpreadsheetApp.flush();
+  sh.getRange("B6").setFormula('=IFERROR(IF(D6="Tier 2","★","·"),"")');
+
+  sh.setFrozenRows(4);
+  sh.setFrozenColumns(1);
+}
+
+// ── PIPELINE ─────────────────────────────────────────────────
+function buildPipeline(ss) {
+  let sh = ss.getSheetByName("Pipeline");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Pipeline", 1);
+  sh.setTabColor(C.GOLD);
+
+  const headers = [
+    "Customer ID","Customer Name","Location","Tier","Assigned Rep","Status",
+    "Year","Make","Model","Trim","Ext. Color","Int. Color",
+    "Date Added","Last Contact","Follow-Up Date",
+    "Final Price ($)","Savings ($)","Service Fee ($)","Discount Applied",
+    "Dealer","Workflow Type","Original ID","Drive File URL","Phone","Email","Zip","Notes"
+  ];
+  const widths = [120,160,140,80,130,110,60,100,140,140,110,110,100,100,110,120,100,110,130,180,120,120,220,130,180,80,260];
+
+  setupSheet(sh, headers, widths, C.GOLD);
+
+  setDropdown(sh, 2, 4,  1000, ["Tier 1","Tier 2"]);
+  setDropdown(sh, 2, 5,  1000, buildRepList());
+  setDropdown(sh, 2, 6,  1000, ["New","Searching","Deal Found","Pending","On Hold","Closed","Lost"]);
+  setDropdown(sh, 2, 19, 1000, ["None","Military 15%","First Responder 15%","Student 5%"]);
+  setDropdown(sh, 2, 21, 1000, ["Consultation","Purchase","Converted"]);
+
+  sh.getRange(2, 13, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 14, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 15, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 16, 999, 3).setNumberFormat("$#,##0");
+
+  const fullRowRange = sh.getRange("A2:AA5000");
+  const statusRange  = sh.getRange("F2:F5000");
+  const fuRange      = sh.getRange("O2:O5000");
+
+  const tier2Rule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($D2="Tier 2",$F2<>"Closed",$F2<>"Lost",$F2<>"")')
+    .setBackground("#1e1a0a").setFontColor(C.GOLD).setRanges([fullRowRange]).build();
+  const closedRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$F2="Closed"')
+    .setBackground("#0f0f0f").setFontColor("#3a3a3a").setRanges([fullRowRange]).build();
+  const lostRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$F2="Lost"')
+    .setBackground("#160909").setFontColor("#4a2a2a").setRanges([fullRowRange]).build();
+  const statusRules = [
+    {v:"Deal Found", bg:"#0d2b2e", fg:C.GREEN},
+    {v:"Pending",    bg:"#2d2000", fg:C.AMBER},
+    {v:"On Hold",    bg:"#1e1e1e", fg:C.GRAY},
+    {v:"Searching",  bg:"#0f1a2e", fg:C.BLUE},
+    {v:"New",        bg:"#0a1220", fg:"#85b7eb"},
+    {v:"Closed",     bg:"#0f1a0f", fg:"#3a6a3a"},
+    {v:"Lost",       bg:"#1a0a0a", fg:"#6a3a3a"},
+  ].map(s => SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo(s.v).setBackground(s.bg).setFontColor(s.fg)
+    .setRanges([statusRange]).build());
+  const overdueRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND(O2<TODAY(),O2<>"",F2<>"Closed",F2<>"Lost")')
+    .setBackground("#3d1212").setFontColor(C.RED).setRanges([fuRange]).build();
+  const todayFuRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND(O2=TODAY(),O2<>"")')
+    .setBackground("#2d2000").setFontColor(C.AMBER).setRanges([fuRange]).build();
+
+  sh.setConditionalFormatRules([tier2Rule, closedRule, lostRule, ...statusRules, overdueRule, todayFuRule]);
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(2);
+  sh.getRange("A1:AA1").createFilter();
+}
+
+// ── DEALER LOG ───────────────────────────────────────────────
+function buildDealerLog(ss) {
+  let sh = ss.getSheetByName("Dealer Log");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Dealer Log", 2);
+  sh.setTabColor(C.BLUE);
+
+  const headers = [
+    "Date","Rep","Customer","Dealer Name","Dealer City","Dealer State",
+    "Contact Name","Title","Direct Line","Email",
+    "Vehicle Searched","MSRP ($)","Asking Price ($)","Doc Fee ($)","Add-Ons ($)",
+    "Outcome","OTD Price ($)","Savings ($)","Follow-Up Date","Notes"
+  ];
+  const widths = [90,100,140,190,120,80,130,110,120,180,200,100,110,90,90,120,110,90,110,300];
+
+  setupSheet(sh, headers, widths, C.BLUE);
+  setDropdown(sh, 2, 2,  1000, buildRepList());
+  setDropdown(sh, 2, 16, 1000, ["Strong Lead","Possible","Not Competitive","Vehicle Not Available","Waiting on Callback","Deal Closed"]);
+
+  sh.getRange(2, 1,  999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 19, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 12, 999, 3).setNumberFormat("$#,##0");
+  sh.getRange(2, 17, 999, 2).setNumberFormat("$#,##0");
+
+  const outcomeRange = sh.getRange("P2:P1000");
+  const oColors = {
+    "Strong Lead":           {bg:"#d4edda", fg:"#155724"},
+    "Deal Closed":           {bg:"#c3e6cb", fg:"#155724"},
+    "Possible":              {bg:"#fef3cd", fg:"#856404"},
+    "Not Competitive":       {bg:"#f8d7da", fg:"#721c24"},
+    "Vehicle Not Available": {bg:"#e2e3e5", fg:"#383d41"},
+    "Waiting on Callback":   {bg:"#dbeafe", fg:"#1e40af"},
+  };
+  const oRules = Object.entries(oColors).map(([val, clr]) =>
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo(val).setBackground(clr.bg).setFontColor(clr.fg)
+      .setRanges([outcomeRange]).build()
+  );
+  sh.setConditionalFormatRules(oRules);
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(2);
+}
+
+// ── FOLLOW-UPS ───────────────────────────────────────────────
+function buildFollowUps(ss) {
+  let sh = ss.getSheetByName("Follow-Ups");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Follow-Ups", 3);
+  sh.setTabColor(C.AMBER);
+
+  const headers = ["Date Created","Rep","Customer","Vehicle","Follow-Up Date","Status","Priority","Notes","Linked Sheet Row"];
+  const widths  = [110,110,150,200,120,90,90,340,120];
+
+  setupSheet(sh, headers, widths, C.AMBER);
+  setDropdown(sh, 2, 2, 1000, buildRepList());
+  setDropdown(sh, 2, 6, 1000, ["Open","Completed","Cancelled"]);
+  setDropdown(sh, 2, 7, 1000, ["High","Medium","Low"]);
+
+  sh.getRange(2, 1, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 5, 999, 1).setNumberFormat("mm/dd/yyyy");
+
+  const statRange = sh.getRange("F2:F1000");
+  const sRules = [
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Open")
+      .setBackground("#fef3cd").setFontColor("#856404").setRanges([statRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Completed")
+      .setBackground("#d4edda").setFontColor("#155724").setRanges([statRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Cancelled")
+      .setBackground("#e2e3e5").setFontColor("#383d41").setRanges([statRange]).build(),
+  ];
+  const overdueRow = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($E2<TODAY(),$E2<>"",$F2="Open")')
+    .setBackground("#f8d7da")
+    .setRanges([sh.getRange("A2:I1000")]).build();
+  sh.setConditionalFormatRules([...sRules, overdueRow]);
+  sh.setFrozenRows(1);
+}
+
+// ── REP ACTIVITY ─────────────────────────────────────────────
+function buildRepActivity(ss) {
+  let sh = ss.getSheetByName("Rep Activity");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Rep Activity", 4);
+  sh.setTabColor(C.GREEN);
+
+  const headers = ["Date","Rep","Customer","Action Type","Outcome / Result","Tier","Savings ($)","Notes"];
+  const widths  = [100,120,160,160,200,80,100,340];
+
+  setupSheet(sh, headers, widths, C.GREEN);
+  setDropdown(sh, 2, 2, 1000, buildRepList());
+  setDropdown(sh, 2, 4, 1000, ["Customer Added","Dealer Called","Callback Scheduled","Follow-Up Sent","Deal Found","Deal Presented","Deal Closed","Deal Lost","Converted to Purchase","Note Added","Customer Update"]);
+  setDropdown(sh, 2, 5, 1000, ["Won","Strong Lead","Possible","Not Competitive","Pending Customer","On Hold","Lost","Info Only","Converted"]);
+  setDropdown(sh, 2, 6, 1000, ["Tier 1","Tier 2"]);
+
+  sh.getRange(2, 1, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.getRange(2, 7, 999, 1).setNumberFormat("$#,##0");
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(2);
+}
+
+// ── DEALER DATABASE ──────────────────────────────────────────
+function buildDealerDB(ss) {
+  let sh = ss.getSheetByName("Dealer Database");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Dealer Database", 5);
+  sh.setTabColor(C.GRAY);
+
+  const headers = ["Dealer Name","Make(s)","City","State","Contact Name","Title","Direct Line","Email","OOS Friendly?","Typical Doc Fee ($)","Works With Us","Last Called","Notes"];
+  const widths  = [200,140,120,80,140,120,130,200,100,120,110,100,320];
+
+  setupSheet(sh, headers, widths, C.GRAY);
+  setDropdown(sh, 2,  9, 1000, ["Yes","No","Unknown"]);
+  setDropdown(sh, 2, 11, 1000, ["Yes — Easy","Yes — Works","Mixed","Difficult","No"]);
+  sh.getRange(2, 10, 999, 1).setNumberFormat("$#,##0");
+  sh.getRange(2, 12, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(1);
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function buildSettings(ss) {
+  let sh = ss.getSheetByName("Settings");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Settings", 6);
+  sh.setTabColor(C.GRAY);
+  sh.setColumnWidth(1, 200);
+  sh.setColumnWidth(2, 280);
+  sh.setColumnWidth(3, 400);
+
+  const settingsData = [
+    ["SETTING","VALUE","NOTES"],
+    ["Rep 1 Name",  CONFIG.REP_1_NAME,  "Full name as it appears in dropdowns"],
+    ["Rep 1 Email", CONFIG.REP_1_EMAIL, "Used for follow-up reminder emails"],
+    ["Rep 2 Name",  CONFIG.REP_2_NAME,  ""],
+    ["Rep 2 Email", CONFIG.REP_2_EMAIL, ""],
+    ["Rep 3 Name",  CONFIG.REP_3_NAME,  "Leave blank if not applicable"],
+    ["Rep 3 Email", CONFIG.REP_3_EMAIL, ""],
+    ["Notify Email", CONFIG.NOTIFY_EMAIL, "Receives all automated reminder emails"],
+    ["Timezone", CONFIG.TIMEZONE, "e.g. America/Indianapolis"],
+    ["Next ID Counter", 500, "Auto-increments — do not edit manually"],
+    ["CRM Version", "1.1", "Do not edit"],
+    ["Last Setup", new Date().toLocaleDateString(), "Auto-filled"],
+  ];
+
+  settingsData.forEach((row, i) => {
+    const r = sh.getRange(i+1, 1, 1, 3);
+    r.setValues([row]);
+    if (i === 0) {
+      r.setBackground(C.OFFBLACK).setFontColor(C.GOLD).setFontWeight("bold").setFontSize(10);
+    } else {
+      r.setFontSize(11);
+      r.getCell(1,1).setFontWeight("bold").setFontColor("#333");
+      r.getCell(1,3).setFontColor(C.GRAY);
+    }
+    sh.setRowHeight(i+1, 28);
+  });
+}
+
+// ── REGISTRY ─────────────────────────────────────────────────
+function buildRegistry(ss) {
+  let sh = ss.getSheetByName("Registry");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Registry", 7);
+  sh.setTabColor("#4caf7d");
+
+  const headers = ["Customer ID","Type","Tier","Customer Name","Phone","Email","City","State","Zip","Vehicle","Assigned Rep","Date Created","Status","Converted From","Drive File URL"];
+  const widths  = [130,110,80,160,130,200,120,80,80,220,130,110,100,130,280];
+  setupSheet(sh, headers, widths, "#4caf7d");
+
+  setDropdown(sh, 2,  2, 1000, ["Consultation","Purchase","Converted"]);
+  setDropdown(sh, 2,  3, 1000, ["Tier 1","Tier 2"]);
+  setDropdown(sh, 2, 13, 1000, ["Active","Converted","Closed","Lost"]);
+  sh.getRange(2, 12, 999, 1).setNumberFormat("mm/dd/yyyy");
+
+  const fullRow   = sh.getRange("A2:O5000");
+  const typeRange = sh.getRange("B2:B5000");
+  const statRange = sh.getRange("M2:M5000");
+  const tierRange = sh.getRange("C2:C5000");
+
+  const closedRow    = SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$M2="Closed"').setBackground("#0f0f0f").setFontColor("#3a3a3a").setRanges([fullRow]).build();
+  const lostRow      = SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$M2="Lost"').setBackground("#160909").setFontColor("#4a2a2a").setRanges([fullRow]).build();
+  const convertedRow = SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$M2="Converted"').setBackground("#1a1500").setFontColor("#555").setRanges([fullRow]).build();
+  const t2Row        = SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND($C2="Tier 2",$M2="Active")').setBackground("#1e1a0a").setFontColor(C.GOLD).setRanges([fullRow]).build();
+  const typeRules = [
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Consultation").setBackground("#0d1a2e").setFontColor("#85b7eb").setRanges([typeRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Purchase").setBackground("#0d2b1a").setFontColor(C.GREEN).setRanges([typeRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Converted").setBackground("#2d2000").setFontColor(C.AMBER).setRanges([typeRange]).build(),
+  ];
+  const statRules = [
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Active").setBackground("#0d2b1a").setFontColor(C.GREEN).setRanges([statRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Converted").setBackground("#2d2000").setFontColor(C.AMBER).setRanges([statRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Closed").setBackground("#0f1a0f").setFontColor("#3a6a3a").setRanges([statRange]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Lost").setBackground("#1a0a0a").setFontColor("#6a3a3a").setRanges([statRange]).build(),
+  ];
+  const tierRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo("Tier 2").setBackground("#2d2200").setFontColor(C.GOLD).setBold(true)
+    .setRanges([tierRange]).build();
+
+  sh.setConditionalFormatRules([t2Row, closedRow, lostRow, convertedRow, ...typeRules, ...statRules, tierRule]);
+  sh.getRange("A2:O5000").createFilter();
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(1);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function setupSheet(sh, headers, widths, accentColor) {
+  sh.clearContents();
+  sh.clearFormats();
+
+  const needed = headers.length;
+  const existing = sh.getMaxColumns();
+  if (needed > existing) sh.insertColumnsAfter(existing, needed - existing);
+
+  headers.forEach((_, i) => sh.setColumnWidth(i+1, widths[i] || 120));
+  sh.setRowHeight(1, 34);
+
+  sh.getRange(1, 1, 1, headers.length)
+    .setValues([headers])
+    .setBackground(C.OFFBLACK)
+    .setFontColor(accentColor)
+    .setFontWeight("bold")
+    .setFontSize(10)
+    .setVerticalAlignment("middle")
+    .setHorizontalAlignment("left");
+
+  for (let r = 2; r <= 500; r++) {
+    sh.setRowHeight(r, 26);
+    sh.getRange(r, 1, 1, headers.length)
+      .setBackground(r % 2 === 0 ? "#FFFFFF" : C.OFFWHITE)
+      .setFontSize(11)
+      .setVerticalAlignment("middle");
+  }
+}
+
+function setDropdown(sh, startRow, col, count, values) {
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(values, true)
+    .setAllowInvalid(false)
+    .build();
+  sh.getRange(startRow, col, count, 1).setDataValidation(rule);
+}
+
+function buildRepList() {
+  const reps = [];
+  if (CONFIG.REP_1_NAME) reps.push(CONFIG.REP_1_NAME);
+  if (CONFIG.REP_2_NAME) reps.push(CONFIG.REP_2_NAME);
+  if (CONFIG.REP_3_NAME) reps.push(CONFIG.REP_3_NAME);
+  return reps.length > 0 ? reps : ["Rep 1","Rep 2","Rep 3"];
+}
+
+// ── CUSTOM MENU ──────────────────────────────────────────────
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("✦ Skippr CRM")
+    .addItem("Log a dealer call",          "logDealerCallSidebar")
+    .addItem("Add new customer",           "addCustomerSidebar")
+    .addSeparator()
+    .addItem("Add follow-up reminder",     "addFollowUp")
+    .addItem("Mark follow-up complete",    "markFollowUpComplete")
+    .addSeparator()
+    .addItem("Send follow-up reminders now", "checkFollowUps")
+    .addItem("Refresh dashboard",          "refreshDashboard")
+    .addSeparator()
+    .addItem("Re-run full setup",          "setupCRM")
+    .addToUi();
+}
+
+// ── FOLLOW-UP EMAIL TRIGGER ──────────────────────────────────
+function checkFollowUps() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const fuSheet = ss.getSheetByName("Follow-Ups");
+  if (!fuSheet) return;
+
+  const data  = fuSheet.getDataRange().getValues();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+
+  const overdueItems  = [];
+  const todayItems    = [];
+  const tomorrowItems = [];
+
+  data.forEach((row, i) => {
+    if (i === 0) return;
+    const fuDate = row[4];
+    const status = row[5];
+    if (!fuDate || status !== "Open") return;
+
+    const d = new Date(fuDate); d.setHours(0,0,0,0);
+    const item = {
+      rep:      row[1],
+      customer: row[2],
+      vehicle:  row[3],
+      date:     Utilities.formatDate(d, CONFIG.TIMEZONE, "MM/dd/yyyy"),
+      notes:    row[7],
+      row:      i + 1,
+    };
+
+    if (d < today)                              overdueItems.push(item);
+    else if (d.getTime() === today.getTime())    todayItems.push(item);
+    else if (d.getTime() === tomorrow.getTime()) tomorrowItems.push(item);
+  });
+
+  const total = overdueItems.length + todayItems.length + tomorrowItems.length;
+  if (total === 0) return;
+
+  let body = `<div style="font-family:Arial,sans-serif;max-width:600px;background:#0A0A0A;padding:24px;color:#FAFAFA;">`;
+  body += `<h2 style="color:#C9A84C;font-size:18px;margin:0 0 4px;">Skippr CRM — Follow-Up Reminders</h2>`;
+  body += `<p style="color:#888;font-size:12px;margin:0 0 20px;">${Utilities.formatDate(today, CONFIG.TIMEZONE, "MMMM dd, yyyy")}</p>`;
+  if (overdueItems.length)  body += buildEmailSection("OVERDUE",       overdueItems,  "#e07070");
+  if (todayItems.length)    body += buildEmailSection("DUE TODAY",     todayItems,    "#C9A84C");
+  if (tomorrowItems.length) body += buildEmailSection("DUE TOMORROW",  tomorrowItems, "#888");
+  body += `<p style="margin-top:20px;"><a href="${ss.getUrl()}" style="background:#C9A84C;color:#0A0A0A;padding:10px 20px;text-decoration:none;font-weight:bold;font-size:12px;">OPEN SKIPPR CRM →</a></p>`;
+  body += `</div>`;
+
+  const repEmailMap = {
+    [CONFIG.REP_1_NAME]: CONFIG.REP_1_EMAIL,
+    [CONFIG.REP_2_NAME]: CONFIG.REP_2_EMAIL,
+    [CONFIG.REP_3_NAME]: CONFIG.REP_3_EMAIL,
+  };
+
+  const repEmails = new Set();
+  if (CONFIG.NOTIFY_EMAIL) repEmails.add(CONFIG.NOTIFY_EMAIL);
+  [...overdueItems, ...todayItems, ...tomorrowItems].forEach(item => {
+    const email = repEmailMap[item.rep];
+    if (email) repEmails.add(email);
+  });
+
+  repEmails.forEach(email => {
+    if (!email) return;
+    GmailApp.sendEmail(email, `Skippr CRM — ${total} Follow-Up${total>1?'s':''} Need Attention`, "", {
+      htmlBody: body,
+      name: "Skippr CRM"
+    });
+  });
+}
+
+function buildEmailSection(label, items, color) {
+  let html = `<div style="margin-bottom:16px;">`;
+  html += `<div style="font-size:10px;letter-spacing:2px;color:${color};font-weight:bold;margin-bottom:8px;text-transform:uppercase;">${label}</div>`;
+  items.forEach(item => {
+    html += `<div style="background:#161616;border-left:3px solid ${color};padding:10px 14px;margin-bottom:6px;">`;
+    html += `<div style="font-weight:bold;font-size:14px;color:#FAFAFA;">${item.customer}</div>`;
+    html += `<div style="font-size:12px;color:#888;margin:2px 0;">${item.vehicle} · Rep: ${item.rep} · Due: ${item.date}</div>`;
+    if (item.notes) html += `<div style="font-size:12px;color:#aaa;margin-top:4px;">${item.notes}</div>`;
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ── QUICK ADD: FOLLOW-UP ─────────────────────────────────────
+function addFollowUp() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const customer = ui.prompt("Add Follow-Up", "Customer name:", ui.ButtonSet.OK_CANCEL);
+  if (customer.getSelectedButton() !== ui.Button.OK) return;
+  const vehicle  = ui.prompt("Add Follow-Up", "Vehicle:",       ui.ButtonSet.OK_CANCEL);
+  if (vehicle.getSelectedButton()  !== ui.Button.OK) return;
+  const dateResp = ui.prompt("Add Follow-Up", "Follow-up date (MM/DD/YYYY):", ui.ButtonSet.OK_CANCEL);
+  if (dateResp.getSelectedButton() !== ui.Button.OK) return;
+  const notes    = ui.prompt("Add Follow-Up", "Notes (optional):", ui.ButtonSet.OK_CANCEL);
+
+  const sh = ss.getSheetByName("Follow-Ups");
+  const lastRow = Math.max(sh.getLastRow(), 1) + 1;
+  sh.getRange(lastRow, 1, 1, 7).setValues([[
+    new Date(),
+    Session.getActiveUser().getEmail(),
+    customer.getResponseText(),
+    vehicle.getResponseText(),
+    new Date(dateResp.getResponseText()),
+    "Open",
+    "Medium",
+  ]]);
+  if (notes.getResponseText()) sh.getRange(lastRow, 8).setValue(notes.getResponseText());
+  ui.alert("Follow-up added!");
+}
+
+function markFollowUpComplete() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const row   = sheet.getActiveCell().getRow();
+  if (row <= 1) return;
+  if (sheet.getName() !== "Follow-Ups") {
+    SpreadsheetApp.getUi().alert("Please select a row in the Follow-Ups sheet first.");
+    return;
+  }
+  sheet.getRange(row, 6).setValue("Completed");
+  SpreadsheetApp.getUi().alert("Marked as complete!");
+}
+
+// ── TRIGGER ──────────────────────────────────────────────────
+function installTrigger() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === "checkFollowUps") ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger("checkFollowUps").timeBased().everyDays(1).atHour(8).create();
+}
+
+// ── REFRESH & MENU HELPERS ────────────────────────────────────
+function refreshDashboard() {
+  SpreadsheetApp.flush();
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Dashboard");
+  if (sh) SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(sh);
+  SpreadsheetApp.getUi().alert("Dashboard refreshed!");
+}
+
+function logDealerCallSidebar() {
+  SpreadsheetApp.getUi().alert(
+    "To log a dealer call:\n\n" +
+    "1. Go to the Dealer Log tab\n" +
+    "2. Scroll to the next empty row\n" +
+    "3. Fill in the columns — all dropdowns are pre-set\n" +
+    "4. The row will auto-color based on outcome\n\n" +
+    "Tip: You can paste data directly from your call checklist!"
+  );
+}
+
+function addCustomerSidebar() {
+  SpreadsheetApp.getUi().alert(
+    "To add a new customer:\n\n" +
+    "1. Go to the Pipeline tab\n" +
+    "2. Scroll to the next empty row\n" +
+    "3. Fill in the columns — all dropdowns are pre-set\n" +
+    "4. Status and Follow-Up Date columns will auto-color\n\n" +
+    "Tip: Set a Follow-Up Date and the CRM will email your team a reminder automatically!"
+  );
+}
+
+// ── WEB APP ──────────────────────────────────────────────────
+// Deploy as: Execute as Me · Who has access: Anyone
+
+function doGet(e) {
+  try {
+    const p  = e.parameter || {};
+    const cb = p.callback  || null;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // ── Status ping ────────────────────────────────────────
+    if (!p.action) {
+      return json({ status: 'Skippr CRM is live.' }, cb);
+    }
+
+    // ── Generate next customer ID ──────────────────────────
+    if (p.action === 'nextId' || p.action === 'generateID') {
+      const id = reserveNextId(ss, p.idType || p.type || 'SKC', p.tier || 'T1');
+      return json({ success: true, id: id }, cb);
+    }
+
+    // ── Get active customers ───────────────────────────────
+    // FIX: was orphaned outside any if-block in v1.0
+    if (p.action === 'getCustomers') {
+      const customers = getActiveCustomers(ss, p.filterType || p.filter || 'all');
+      return json({ success: true, customers: customers }, cb);
+    }
+
+    // ── Get follow-ups ─────────────────────────────────────
+    if (p.action === 'getFollowUps') {
+      const sh = ss.getSheetByName('Follow-Ups');
+      if (!sh) return json({ success: true, followUps: [] }, cb);
+      const rows      = sh.getDataRange().getValues();
+      const followUps = [];
+      rows.forEach((row, i) => {
+        if (i === 0 || !row[4]) return;
+        followUps.push({
+          id:       i,
+          date:     Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'),
+          rep:      String(row[1] || ''),
+          customer: String(row[2] || ''),
+          vehicle:  String(row[3] || ''),
+          status:   String(row[5] || 'Open'),
+          priority: String(row[6] || 'Medium'),
+          notes:    String(row[7] || ''),
+        });
+      });
+      followUps.sort((a, b) => new Date(a.date) - new Date(b.date));
+      return json({ success: true, followUps: followUps }, cb);
+    }
+
+    // ── Get activity log ───────────────────────────────────
+    if (p.action === 'getActivity') {
+      const sh = ss.getSheetByName('Rep Activity');
+      if (!sh) return json({ success: true, activity: [] }, cb);
+      const rows     = sh.getDataRange().getValues();
+      const activity = [];
+      rows.forEach((row, i) => {
+        if (i === 0 || !row[0]) return;
+        activity.push({
+          date:     Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'),
+          rep:      String(row[1] || ''),
+          customer: String(row[2] || ''),
+          action:   String(row[3] || ''),
+          outcome:  String(row[4] || ''),
+          tier:     String(row[5] || ''),
+          savings:  String(row[6] || ''),
+          notes:    String(row[7] || ''),
+        });
+      });
+      activity.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return json({ success: true, activity: activity }, cb);
+    }
+
+    // ── Update existing customer status ────────────────────
+    if (p.action === 'updateCustomer') {
+      const today    = new Date();
+      const pipeline = ss.getSheetByName('Pipeline');
+      const registry = ss.getSheetByName('Registry');
+
+      if (pipeline) {
+        const rows = pipeline.getDataRange().getValues();
+        rows.forEach((row, i) => {
+          if (i === 0) return;
+          if (String(row[0]).trim() === p.customerId ||
+              row[1].toString().toLowerCase() === (p.customerName || '').toLowerCase()) {
+            if (p.customerStatus) pipeline.getRange(i+1, 6).setValue(p.customerStatus);
+            pipeline.getRange(i+1, 14).setValue(today);
+            if (p.followUpDate) pipeline.getRange(i+1, 15).setValue(new Date(p.followUpDate));
+          }
+        });
+      }
+      if (registry) {
+        const rows = registry.getDataRange().getValues();
+        rows.forEach((row, i) => {
+          if (i === 0) return;
+          if (String(row[0]).trim() === p.customerId) {
+            const regStatus = ({Closed:'Closed', Lost:'Lost', Converted:'Converted'}[p.customerStatus]) || 'Active';
+            registry.getRange(i+1, 13).setValue(regStatus);
+          }
+        });
+      }
+      if (p.notes) {
+        const repActivity = ss.getSheetByName('Rep Activity');
+        if (repActivity) {
+          repActivity.appendRow([
+            today, p.rep || '',
+            (p.customerId ? '['+p.customerId+'] ' : '') + p.customerName,
+            'Customer Update', 'Info Only', p.tier || '', '',
+            'Status → '+(p.customerStatus||'')+(p.notes ? ' | '+p.notes : ''),
+          ]);
+        }
+      }
+      SpreadsheetApp.flush();
+      return json({ success: true }, cb);
+    }
+
+    // ── Convert consultation → purchase ────────────────────
+    if (p.action === 'convert' || p.action === 'convertCustomer') {
+      const today = new Date();
+      const skcId = p.originalId  || '';
+      const skpId = p.customerId  || '';
+      if (!skcId || !skpId) return json({ success: false, message: 'Missing originalId or customerId' }, cb);
+
+      const reg = ss.getSheetByName('Registry');
+      if (reg) {
+        reg.getDataRange().getValues().forEach((row, i) => {
+          if (i > 0 && String(row[0]).trim() === skcId) reg.getRange(i+1, 13).setValue('Converted');
+        });
+      }
+
+      const pipeline = ss.getSheetByName('Pipeline');
+      if (pipeline) {
+        pipeline.getDataRange().getValues().forEach((row, i) => {
+          if (i > 0 && String(row[0]).trim() === skcId) {
+            pipeline.getRange(i+1, 6).setValue('Closed');
+            pipeline.getRange(i+1, 21).setValue('Converted');
+          }
+        });
+      }
+
+      if (reg) {
+        reg.appendRow([
+          skpId, 'Purchase', p.tier || '', p.customerName || '',
+          p.customerPhone || '', p.customerEmail || '',
+          '', '', p.customerZip || '',
+          p.vehicle || '', p.rep || '',
+          today, 'Active', skcId, '',
+        ]);
+      }
+
+      if (pipeline) {
+        pipeline.appendRow([
+          skpId, p.customerName || '', '',
+          p.tier || '', p.rep || '', 'Searching',
+          '', '', '', '', '', '',
+          today, today, '',
+          '', '', '', 'None', '',
+          'Purchase', skcId, '',
+          p.customerPhone || '', p.customerEmail || '', p.customerZip || '',
+          'Converted from ' + skcId,
+        ]);
+      }
+
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '',
+          '['+skpId+'] ' + (p.customerName || ''),
+          'Converted to Purchase', 'Converted',
+          p.tier || '', '',
+          skcId + ' → ' + skpId,
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true, skpId: skpId, originalId: skcId }, cb);
+    }
+
+    // ── Save callback / follow-up reminder ─────────────────
+    if (p.action === 'saveCallback') {
+      const today    = new Date();
+      const followUps = ss.getSheetByName('Follow-Ups');
+      if (followUps) {
+        followUps.appendRow([
+          today,
+          p.rep          || '',
+          (p.customerId ? '['+p.customerId+'] ' : '') + (p.customerName || p.customerId || ''),
+          p.vehicle      || '',
+          p.followUpDate ? new Date(p.followUpDate) : '',
+          'Open',
+          p.priority     || 'Medium',
+          p.notes        || '',
+          'Callback reminder',
+        ]);
+        const repActivity = ss.getSheetByName('Rep Activity');
+        if (repActivity) {
+          repActivity.appendRow([
+            today, p.rep || '',
+            (p.customerId ? '['+p.customerId+'] ' : '') + (p.customerName || p.customerId || ''),
+            'Callback Scheduled', 'Info Only', '', '',
+            p.notes || '',
+          ]);
+        }
+        SpreadsheetApp.flush();
+      }
+      return json({ success: true }, cb);
+    }
+
+    // ── Save full checklist / call record ──────────────────
+    if (p.action === 'save') {
+      const today      = new Date();
+      const customerId = p.customerId || '';
+
+      // Validate required fields
+      if (!customerId || !p.customerName) {
+        return json({ success: false, message: 'Customer ID and name are required.' }, cb);
+      }
+
+      // Normalize status → exact dropdown value
+      const statusMap = {
+        'new': 'New', 'searching': 'Searching', 'deal found': 'Deal Found',
+        'pending': 'Pending', 'on hold': 'On Hold', 'closed': 'Closed', 'lost': 'Lost',
+      };
+      // FIX: removed redundant double-split
+      const statusClean    = (p.customerStatus || '').split(' — ')[0].trim();
+      const customerStatus = statusMap[statusClean.toLowerCase()] || statusClean || 'Searching';
+
+      const registryStatusMap = {
+        'New':'Active','Searching':'Active','Deal Found':'Active',
+        'Pending':'Active','On Hold':'Active',
+        'Closed':'Closed','Lost':'Lost','Converted':'Converted',
+      };
+      const registryStatus = registryStatusMap[customerStatus] || 'Active';
+
+      // Normalize outcome → exact dropdown value
+      const outcomeMap = {
+        'strong lead — moving forward': 'Strong Lead',
+        'strong lead':                  'Strong Lead',
+        'possible — needs follow-up':   'Possible',
+        'possible':                     'Possible',
+        'not competitive — eliminated': 'Not Competitive',
+        'not competitive':              'Not Competitive',
+        'vehicle not available':        'Info Only',
+        'waiting on callback':          'Pending Customer',
+        'deal closed':                  'Won',
+        'won':                          'Won',
+        'lost':                         'Lost',
+        'on hold':                      'On Hold',
+      };
+      const outcome = outcomeMap[(p.outcome || '').toLowerCase()] || 'Info Only';
+
+      const wl = p.workflowType === 'convert'  ? 'Converted'
+               : p.workflowType === 'purchase' ? 'Purchase'
+               : 'Consultation';
+
+      const driveLink = saveChecklistToDrive(p, today);
+
+      updateRegistry(ss, p, customerId, today, driveLink, registryStatus);
+
+      // Dealer Log (20 cols)
+      const dealerLog = ss.getSheetByName('Dealer Log');
+      if (dealerLog) {
+        dealerLog.appendRow([
+          today,
+          p.rep          || '',
+          (customerId ? customerId + ' — ' : '') + (p.customerName || ''),
+          p.dealerName   || '',
+          p.dealerCity   || '',
+          p.dealerState  || '',
+          '', '', '', '',
+          [p.year, p.make, p.model, p.trim].filter(Boolean).join(' '),
+          '',
+          p.bestPrice    || '',
+          '', '',
+          outcome,
+          p.bestPrice    || '',
+          p.savings      || '',
+          p.followUpDate ? new Date(p.followUpDate) : '',
+          p.notes        || '',
+        ]);
+      }
+
+      // Pipeline (27 cols)
+      const pipeline = ss.getSheetByName('Pipeline');
+      if (pipeline && p.customerName) {
+        const rows = pipeline.getDataRange().getValues();
+        let existingRow = -1;
+        rows.forEach((row, i) => {
+          if (i === 0) return;
+          if ((p.customerId && row[0] === p.customerId) ||
+              row[1].toString().toLowerCase() === (p.customerName || '').toLowerCase()) {
+            existingRow = i + 1;
+          }
+        });
+
+        if (existingRow > 0) {
+          pipeline.getRange(existingRow,  1).setValue(p.customerId  || '');
+          pipeline.getRange(existingRow,  6).setValue(customerStatus);
+          pipeline.getRange(existingRow, 14).setValue(today);
+          if (p.followUpDate) pipeline.getRange(existingRow, 15).setValue(new Date(p.followUpDate));
+          if (p.bestPrice)    pipeline.getRange(existingRow, 16).setValue(p.bestPrice);
+          if (p.savings)      pipeline.getRange(existingRow, 17).setValue(p.savings);
+          if (p.dealerName)   pipeline.getRange(existingRow, 20).setValue(p.dealerName);
+          pipeline.getRange(existingRow, 21).setValue(wl);
+          if (p.originalId)   pipeline.getRange(existingRow, 22).setValue(p.originalId);
+          if (driveLink)      pipeline.getRange(existingRow, 23).setValue(driveLink);
+        } else {
+          pipeline.appendRow([
+            p.customerId    || '',
+            p.customerName  || '',
+            [p.customerCity, p.customerState].filter(Boolean).join(', '),
+            p.tier          || '',
+            p.rep           || '',
+            customerStatus,
+            p.year          || '',
+            p.make          || '',
+            p.model         || '',
+            p.trim          || '',
+            p.extColor      || '',
+            '',
+            today, today,
+            p.followUpDate ? new Date(p.followUpDate) : '',
+            p.bestPrice     || '',
+            p.savings       || '',
+            '',
+            p.discount      || 'None',
+            p.dealerName    || '',
+            wl,
+            p.originalId    || '',
+            driveLink       || '',
+            p.customerPhone || '',
+            p.customerEmail || '',
+            p.customerZip   || '',
+            p.notes         || '',
+          ]);
+        }
+      }
+
+      // Rep Activity (8 cols)
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today,
+          p.rep          || '',
+          (customerId ? '['+customerId+'] ' : '') + (p.customerName || ''),
+          'Dealer Called',
+          outcome,
+          p.tier         || '',
+          p.savings      || '',
+          [p.dealerName, p.dealerCity, p.dealerState].filter(Boolean).join(', '),
+        ]);
+      }
+
+      // Follow-Ups (9 cols)
+      if (p.followUpDate) {
+        const followUps = ss.getSheetByName('Follow-Ups');
+        if (followUps) {
+          followUps.appendRow([
+            today,
+            p.rep          || '',
+            (customerId ? '['+customerId+'] ' : '') + (p.customerName || ''),
+            [p.year, p.make, p.model, p.trim].filter(Boolean).join(' '),
+            new Date(p.followUpDate),
+            'Open',
+            'Medium',
+            p.notes        || '',
+            'From checklist — ' + (p.dealerName || ''),
+          ]);
+        }
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true, customerId: customerId, driveLink: driveLink }, cb);
+    }
+
+    // ── Mark follow-up as complete ──────────────────────
+    if (p.action === 'markFollowUpDone') {
+      const fuSheet = ss.getSheetByName('Follow-Ups');
+      if (!fuSheet) return json({ success: false, message: 'Follow-Ups sheet not found' }, cb);
+
+      const rows = fuSheet.getDataRange().getValues();
+      let matched = false;
+      rows.forEach((row, i) => {
+        if (i === 0) return;
+        // Match by row index (id) or by customer name substring
+        if (String(i) === String(p.followUpId) ||
+            (p.customerName && String(row[2] || '').toLowerCase().includes((p.customerName || '').toLowerCase()) &&
+             String(row[5] || '').trim() === 'Open')) {
+          if (!matched) {
+            fuSheet.getRange(i + 1, 6).setValue('Completed');
+            matched = true;
+          }
+        }
+      });
+
+      if (matched) {
+        // Log to Rep Activity
+        const repActivity = ss.getSheetByName('Rep Activity');
+        if (repActivity) {
+          repActivity.appendRow([
+            new Date(), p.rep || '',
+            p.customerName || '',
+            'Follow-Up Sent', 'Info Only', '', '',
+            'Follow-up marked complete via CRM web view',
+          ]);
+        }
+        SpreadsheetApp.flush();
+      }
+
+      return json({ success: matched, message: matched ? 'Follow-up completed' : 'Follow-up not found' }, cb);
+    }
+
+    return json({ status: 'Unknown action.' }, cb);
+
+  } catch(err) {
+    const cb2 = (e.parameter || {}).callback || null;
+    return json({ success: false, message: err.toString() }, cb2);
+  }
+}
+
+function json(obj, callback) {
+  const str = JSON.stringify(obj);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + str + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(str).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doOptions(e) {
+  return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doPost(e) { return doGet(e); }
+
+// ── RESERVE NEXT ID ──────────────────────────────────────────
+function reserveNextId(ss, type, tierCode) {
+  const settings = ss.getSheetByName('Settings');
+  const data     = settings.getDataRange().getValues();
+  let counterRow = -1;
+  let currentNum = 500;
+
+  data.forEach((row, i) => {
+    if (String(row[0]).includes('Next ID Counter') || row[0] === 'ID Counter') {
+      counterRow = i + 1;
+      currentNum = parseInt(row[1]) || 500;
+    }
+  });
+
+  const padded  = String(currentNum).padStart(4, '0');
+  const prefix  = type === 'SKP' ? 'SKP' : 'SKC';
+  const newId   = prefix + '-' + tierCode + '-' + padded;
+
+  if (counterRow > 0) {
+    settings.getRange(counterRow, 2).setValue(currentNum + 1);
+  } else {
+    settings.appendRow(['ID Counter', currentNum + 1, 'Auto-incremented — do not edit']);
+  }
+
+  SpreadsheetApp.flush();
+  return newId;
+}
+
+// ── UPDATE REGISTRY ──────────────────────────────────────────
+function updateRegistry(ss, p, customerId, today, driveLink, registryStatus) {
+  const reg = ss.getSheetByName('Registry');
+  if (!reg || !customerId) return;
+
+  const rows = reg.getDataRange().getValues();
+  let existingRow = -1;
+  rows.forEach((row, i) => {
+    if (i > 0 && row[0] === customerId) existingRow = i + 1;
+  });
+
+  const type    = customerId.startsWith('SKP') ? 'Purchase' : 'Consultation';
+  const vehicle = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ');
+  const status  = registryStatus || 'Active';
+
+  if (existingRow > 0) {
+    reg.getRange(existingRow, 13).setValue(status);
+    if (driveLink) reg.getRange(existingRow, 15).setValue(driveLink);
+  } else {
+    reg.appendRow([
+      customerId,           // 1  Customer ID
+      type,                 // 2  Type
+      p.tier          || '',// 3  Tier
+      p.customerName  || '',// 4  Customer Name
+      p.customerPhone || '',// 5  Phone
+      p.customerEmail || '',// 6  Email
+      p.customerCity  || '',// 7  City
+      p.customerState || '',// 8  State
+      p.customerZip   || '',// 9  Zip
+      vehicle,              // 10 Vehicle
+      p.rep           || '',// 11 Assigned Rep
+      today,                // 12 Date Created
+      status,               // 13 Status
+      p.originalId    || '',// 14 Converted From
+      driveLink       || '',// 15 Drive File URL
+    ]);
+  }
+}
+
+// ── GET ACTIVE CUSTOMERS ─────────────────────────────────────
+function getActiveCustomers(ss, filter) {
+  const reg = ss.getSheetByName('Registry');
+  if (!reg) return [];
+
+  // Build Pipeline lookup
+  const pipelineLookup = {};
+  const pl = ss.getSheetByName('Pipeline');
+  if (pl) {
+    pl.getDataRange().getValues().forEach((row, i) => {
+      if (i === 0) return;
+      const id = String(row[0] || '').trim();
+      if (!id) return;
+      pipelineLookup[id] = {
+        status:      String(row[5]  || ''),
+        year:        String(row[6]  || ''),
+        make:        String(row[7]  || ''),
+        model:       String(row[8]  || ''),
+        trim:        String(row[9]  || ''),
+        extColor:    String(row[10] || ''),
+        dateAdded:   row[12] ? Utilities.formatDate(new Date(row[12]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        lastContact: row[13] ? Utilities.formatDate(new Date(row[13]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        followUp:    row[14] ? Utilities.formatDate(new Date(row[14]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        finalPrice:  String(row[15] || ''),
+        savings:     String(row[16] || ''),
+        serviceFee:  String(row[17] || ''),
+        discount:    String(row[18] || ''),
+        dealer:      String(row[19] || ''),
+        workflow:    String(row[20] || ''),
+        originalId:  String(row[21] || ''),
+        driveUrl:    String(row[22] || ''),
+        phone:       String(row[23] || ''),
+        email:       String(row[24] || ''),
+        notes:       String(row[26] || ''),
+      };
+    });
+  }
+
+  const customers = [];
+  reg.getDataRange().getValues().forEach((row, i) => {
+    if (i === 0) return;
+    const custId    = String(row[0]  || '').trim();
+    const type      = String(row[1]  || '').trim();
+    const tier      = String(row[2]  || '').trim();
+    const name      = String(row[3]  || '').trim();
+    const phone     = String(row[4]  || '').trim();
+    const email     = String(row[5]  || '').trim();
+    const city      = String(row[6]  || '').trim();
+    const state     = String(row[7]  || '').trim();
+    const zip       = String(row[8]  || '').trim();
+    const vehicle   = String(row[9]  || '').trim();
+    const rep       = String(row[10] || '').trim();
+    const regStatus = String(row[12] || '').trim();
+
+    if (!custId || !name) return;
+    if (['Converted','Closed','Lost'].includes(regStatus)) return;
+    if (filter === 'SKC'          && !custId.startsWith('SKC')) return;
+    if (filter === 'SKP'          && !custId.startsWith('SKP')) return;
+    if (filter === 'consultation' && !custId.startsWith('SKC')) return;
+    if (filter === 'purchase'     && !custId.startsWith('SKP')) return;
+
+    const pl      = pipelineLookup[custId] || {};
+    const vParts  = vehicle.split(' ');
+
+    customers.push({
+      id: custId, name, type, tier, rep,
+      phone:       pl.phone    || phone,
+      email:       pl.email    || email,
+      city, state, zip,
+      year:        pl.year     || vParts[0] || '',
+      make:        pl.make     || vParts[1] || '',
+      model:       pl.model    || vParts.slice(2).join(' ') || '',
+      trim:        pl.trim     || '',
+      extColor:    pl.extColor || '',
+      vehicle:     [pl.year||vParts[0], pl.make||vParts[1], pl.model||vParts.slice(2).join(' ')].filter(Boolean).join(' ') || vehicle,
+      status:      pl.status   || regStatus,
+      dealer:      pl.dealer   || '',
+      workflow:    pl.workflow  || type,
+      originalId:  pl.originalId || String(row[13] || ''),
+      driveUrl:    pl.driveUrl   || String(row[14] || ''),
+      dateAdded:   pl.dateAdded  || '',
+      lastContact: pl.lastContact || '',
+      followUp:    pl.followUp   || '',
+      finalPrice:  pl.finalPrice || '',
+      savings:     pl.savings    || '',
+      serviceFee:  pl.serviceFee || '',
+      discount:    pl.discount   || '',
+      notes:       pl.notes      || '',
+    });
+  });
+
+  return customers;
+}
+
+// ── SAVE TO GOOGLE DRIVE ─────────────────────────────────────
+function saveChecklistToDrive(p, today) {
+  try {
+    const folderName = 'Skippr CRM — Call Records';
+    const folders    = DriveApp.getFoldersByName(folderName);
+    const folder     = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+
+    const vehicle    = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ') || 'Vehicle TBD';
+    const customerId = p.customerId || 'NO-ID';
+    const dateStr    = Utilities.formatDate(today, Session.getScriptTimeZone(), 'MM/dd/yyyy hh:mm a');
+    const docTitle   = customerId + ' — ' + (p.customerName || 'Customer') + ' — ' + vehicle;
+
+    const doc  = DocumentApp.create(docTitle);
+    const body = doc.getBody();
+
+    body.appendParagraph('SKIPPR — CALL RECORD').setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph('Customer ID: ' + customerId).setBold(true);
+    body.appendParagraph('Workflow: ' + (p.workflowType || '') + '  |  Date: ' + dateStr);
+    body.appendParagraph('Rep: ' + (p.rep || '') + '  |  Status: ' + (p.customerStatus || ''));
+    body.appendHorizontalRule();
+    body.appendParagraph('CUSTOMER').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph('Name: '     + (p.customerName  || ''));
+    body.appendParagraph('Phone: '    + (p.customerPhone || ''));
+    body.appendParagraph('Email: '    + (p.customerEmail || ''));
+    body.appendParagraph('Location: ' + [p.customerCity, p.customerState, p.customerZip].filter(Boolean).join(', '));
+    body.appendParagraph('Tier: '     + (p.tier || '') + '  |  Discount: ' + (p.discount || 'None'));
+    body.appendHorizontalRule();
+    body.appendParagraph('VEHICLE').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph(vehicle + (p.extColor ? ' — ' + p.extColor : ''));
+    body.appendHorizontalRule();
+    body.appendParagraph('DEALER').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph('Dealer: '   + (p.dealerName || ''));
+    body.appendParagraph('Location: ' + [p.dealerCity, p.dealerState].filter(Boolean).join(', '));
+    body.appendHorizontalRule();
+    body.appendParagraph('OUTCOME').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    body.appendParagraph('Call outcome: ' + (p.outcome    || ''));
+    body.appendParagraph('Best OTD: '     + (p.bestPrice  || ''));
+    body.appendParagraph('Total fees: '   + (p.totalFees  || ''));
+    body.appendParagraph('Savings: '      + (p.savings    || ''));
+    body.appendParagraph('Follow-up: '    + (p.followUpDate || ''));
+    if (p.notes) body.appendParagraph('Notes: ' + p.notes);
+
+    doc.saveAndClose();
+
+    const file = DriveApp.getFileById(doc.getId());
+    file.moveTo(folder);
+    return doc.getUrl();
+
+  } catch(err) {
+    Logger.log('Drive save error: ' + err.toString());
+    return '';
+  }
+}
