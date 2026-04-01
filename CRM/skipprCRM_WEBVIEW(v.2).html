@@ -670,6 +670,58 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
   </div>
 </div>
 
+<!-- CONVERT TO PURCHASE MODAL -->
+<div class="modal-overlay" id="convert-modal">
+  <div class="modal" style="width:520px;">
+    <div class="modal-title">Convert to Purchase</div>
+    <div class="modal-sub" id="convert-modal-sub"></div>
+    <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15);border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+      <span style="font-size:0.82rem;color:var(--green);">This will close the consultation and create a new purchase record (SKP) for this customer.</span>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Customer Name</label>
+        <input id="conv-name" readonly style="opacity:0.7;"/>
+      </div>
+      <div class="form-field">
+        <label>Tier</label>
+        <select id="conv-tier">
+          <option>Tier 1</option>
+          <option>Tier 2</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Phone</label>
+        <input id="conv-phone"/>
+      </div>
+      <div class="form-field">
+        <label>Email</label>
+        <input id="conv-email"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Zip</label>
+        <input id="conv-zip"/>
+      </div>
+      <div class="form-field">
+        <label>Assigned Rep</label>
+        <select id="conv-rep"></select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Vehicle</label>
+      <input id="conv-vehicle" readonly style="opacity:0.7;"/>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('convert-modal')">Cancel</button>
+      <button class="modal-btn primary" style="border-color:var(--green);color:var(--green);background:rgba(52,211,153,0.08);" onclick="submitConvert()">Convert to Purchase</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1033,6 +1085,7 @@ function renderCustomerDetail(id) {
         <button class="action-btn" onclick="openEditModal('${esc(c.id)}')">✎ Edit Details</button>
         <button class="action-btn" onclick="openNoteModal('${esc(c.id)}','${esc(c.name)}')">✦ Add Note</button>
         <button class="action-btn primary" onclick="openInvoiceModal('${esc(c.id)}','${esc(c.name)}','${esc(c.tier)}','${esc(c.discount)}')">$ Create Invoice</button>
+        ${c.id.startsWith('SKC') && c.status !== 'Closed' && c.status !== 'Lost' ? `<button class="action-btn" onclick="openConvertModal('${esc(c.id)}','${esc(c.name)}','${esc(c.tier)}','${esc(c.phone)}','${esc(c.email)}','${esc(c.zip)}','${esc(c.vehicle)}','${esc(c.rep)}')" style="border-color:var(--green);color:var(--green);">↑ Convert to Purchase</button>` : ''}
       </div>
     </div>
 
@@ -1780,6 +1833,62 @@ async function submitRefund() {
     });
     toast('Refund processed ✓', 'success');
     await loadAll();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── CONVERT TO PURCHASE ──────────────────────────────────────
+let convertData = {};
+function openConvertModal(id, name, tier, phone, email, zip, vehicle, rep) {
+  convertData = { id, name, tier, phone, email, zip, vehicle, rep };
+  document.getElementById('convert-modal-sub').textContent = name + ' · ' + id + ' → New SKP record';
+  document.getElementById('conv-name').value = name;
+  document.getElementById('conv-tier').value = tier || 'Tier 1';
+  document.getElementById('conv-phone').value = phone || '';
+  document.getElementById('conv-email').value = email || '';
+  document.getElementById('conv-zip').value = zip || '';
+  document.getElementById('conv-vehicle').value = vehicle || '';
+  const repSelect = document.getElementById('conv-rep');
+  repSelect.innerHTML = '';
+  REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
+  repSelect.value = rep || localStorage.getItem('skippr_rep') || '';
+  document.getElementById('convert-modal').classList.add('open');
+}
+
+async function submitConvert() {
+  closeModal('convert-modal');
+  toast('Generating purchase ID...', 'success');
+  try {
+    // Step 1: Get new SKP ID
+    const tier = document.getElementById('conv-tier').value;
+    const tierCode = tier === 'Tier 2' ? 'T2' : 'T1';
+    const idResult = await crmCall({ action: 'nextId', type: 'SKP', tier: tierCode });
+    if (!idResult.success || !idResult.id) {
+      toast('Failed to generate ID', 'error');
+      return;
+    }
+    const skpId = idResult.id;
+    toast('Converting to ' + skpId + '...', 'success');
+
+    // Step 2: Convert
+    const rep = document.getElementById('conv-rep').value;
+    await crmSend({
+      action: 'convertCustomer',
+      originalId: convertData.id,
+      customerId: skpId,
+      customerName: convertData.name,
+      customerPhone: document.getElementById('conv-phone').value,
+      customerEmail: document.getElementById('conv-email').value,
+      customerZip: document.getElementById('conv-zip').value,
+      tier: tier,
+      rep: rep,
+      vehicle: convertData.vehicle,
+    });
+
+    toast('Converted! New ID: ' + skpId, 'success');
+    await loadAll();
+    openCustomer(skpId);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
   }
