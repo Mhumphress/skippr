@@ -566,6 +566,110 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
   </div>
 </div>
 
+<!-- CREATE INVOICE MODAL -->
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal" style="width:520px;">
+    <div class="modal-title">Create Invoice</div>
+    <div class="modal-sub" id="invoice-modal-sub"></div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Tier / Service Fee</label>
+        <select id="inv-tier" onchange="updateInvoiceCalc()">
+          <option value="750">Tier 1 — Expert Advocate ($750)</option>
+          <option value="2000">Tier 2 — White Glove Concierge ($2,000)</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Discount</label>
+        <select id="inv-discount" onchange="updateInvoiceCalc()">
+          <option value="None">None</option>
+          <option value="Military 15%">Military 15%</option>
+          <option value="First Responder 15%">First Responder 15%</option>
+          <option value="Student 5%">Student 5%</option>
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.75rem;color:var(--gray);">Service Fee</span>
+        <span style="font-size:0.9rem;color:var(--white);" id="inv-fee-display">$750</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;" id="inv-discount-row" hidden>
+        <span style="font-size:0.75rem;color:var(--amber);" id="inv-discount-label">Discount</span>
+        <span style="font-size:0.9rem;color:var(--amber);" id="inv-discount-display">-$0</span>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;">
+        <span style="font-size:0.78rem;color:var(--gold);font-weight:600;">Total Due</span>
+        <span style="font-size:1.2rem;color:var(--gold);font-weight:700;" id="inv-total-display">$750</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Payment Method</label>
+        <select id="inv-method">
+          <option value="">Not yet collected</option>
+          <option>Credit Card</option>
+          <option>ACH/Bank Transfer</option>
+          <option>Check</option>
+          <option>Cash</option>
+          <option>Zelle/Venmo</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Invoice Status</label>
+        <select id="inv-status">
+          <option>Pending</option>
+          <option>Paid</option>
+          <option>Partial</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Deposit Collected ($)</label>
+        <input id="inv-deposit" type="text" placeholder="0" value="0"/>
+      </div>
+      <div class="form-field">
+        <label>Processing Fees ($)</label>
+        <input id="inv-processing" type="text" placeholder="0" value="0"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('invoice-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="submitInvoice()">Create Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- REFUND MODAL -->
+<div class="modal-overlay" id="refund-modal">
+  <div class="modal">
+    <div class="modal-title">Process Refund</div>
+    <div class="modal-sub" id="refund-modal-sub"></div>
+    <div style="background:var(--red-dim);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+      <span style="font-size:0.82rem;color:var(--red);">This will mark the invoice as refunded and log the transaction.</span>
+    </div>
+    <div class="form-field">
+      <label>Refund Reason</label>
+      <select id="refund-reason">
+        <option>Customer requested cancellation</option>
+        <option>Service not completed</option>
+        <option>Deal fell through</option>
+        <option>Duplicate charge</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Additional Notes</label>
+      <textarea id="refund-notes" style="min-height:60px;" placeholder="Optional details..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('refund-modal')">Cancel</button>
+      <button class="modal-btn danger" onclick="submitRefund()">Confirm Refund</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -928,6 +1032,7 @@ function renderCustomerDetail(id) {
         ${c.driveUrl ? `<button class="action-btn" onclick="window.open('${esc(c.driveUrl)}','_blank')">↗ Drive File</button>` : ''}
         <button class="action-btn" onclick="openEditModal('${esc(c.id)}')">✎ Edit Details</button>
         <button class="action-btn" onclick="openNoteModal('${esc(c.id)}','${esc(c.name)}')">✦ Add Note</button>
+        <button class="action-btn primary" onclick="openInvoiceModal('${esc(c.id)}','${esc(c.name)}','${esc(c.tier)}','${esc(c.discount)}')">$ Create Invoice</button>
       </div>
     </div>
 
@@ -1363,7 +1468,7 @@ function renderFinancials() {
   wrap.innerHTML = `<table>
     <thead><tr>
       <th>Customer</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
-      <th>Expenses</th><th>Net Profit</th><th>Status</th><th>Method</th><th>Date</th>
+      <th>Expenses</th><th>Net Profit</th><th>Status</th><th>Method</th><th>Date</th><th></th>
     </tr></thead>
     <tbody>${records.map(r => {
       const expenses = (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0);
@@ -1377,6 +1482,7 @@ function renderFinancials() {
       <td><span style="color:${statusColor(r.invoiceStatus)}">${esc(r.invoiceStatus || '—')}</span></td>
       <td style="color:var(--gray);font-size:0.75rem">${esc(r.paymentMethod || '—')}</td>
       <td style="color:var(--gray);font-size:0.75rem">${formatDate(r.paymentDate)}</td>
+      <td>${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + esc(r.customerId) + '\',\'' + esc(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
     </tr>`;}).join('')}</tbody></table>`;
 }
 
@@ -1583,6 +1689,99 @@ async function submitEditActivity() {
     await loadAll();
   } catch(e) {
     toast('Error saving: ' + e.message, 'error');
+  }
+}
+
+// ── INVOICING ────────────────────────────────────────────────
+let invoiceCustomer = {};
+function openInvoiceModal(id, name, tier, discount) {
+  invoiceCustomer = { id, name, tier, discount };
+  document.getElementById('invoice-modal-sub').textContent = name + ' · ' + id;
+  document.getElementById('inv-tier').value = tier === 'Tier 2' ? '2000' : '750';
+  document.getElementById('inv-discount').value = discount && discount !== 'None' ? discount : 'None';
+  document.getElementById('inv-method').value = '';
+  document.getElementById('inv-status').value = 'Pending';
+  document.getElementById('inv-deposit').value = '0';
+  document.getElementById('inv-processing').value = '0';
+  updateInvoiceCalc();
+  document.getElementById('invoice-modal').classList.add('open');
+}
+
+function updateInvoiceCalc() {
+  const fee = parseFloat(document.getElementById('inv-tier').value) || 0;
+  const discountVal = document.getElementById('inv-discount').value;
+  const discountMap = { 'Military 15%': 0.15, 'First Responder 15%': 0.15, 'Student 5%': 0.05 };
+  const pct = discountMap[discountVal] || 0;
+  const discountAmt = Math.round(fee * pct);
+  const total = fee - discountAmt;
+
+  document.getElementById('inv-fee-display').textContent = '$' + fee.toLocaleString();
+  const discRow = document.getElementById('inv-discount-row');
+  if (pct > 0) {
+    discRow.hidden = false;
+    document.getElementById('inv-discount-label').textContent = discountVal;
+    document.getElementById('inv-discount-display').textContent = '-$' + discountAmt.toLocaleString();
+  } else {
+    discRow.hidden = true;
+  }
+  document.getElementById('inv-total-display').textContent = '$' + total.toLocaleString();
+}
+
+async function submitInvoice() {
+  closeModal('invoice-modal');
+  toast('Creating invoice...', 'success');
+  const fee = parseFloat(document.getElementById('inv-tier').value) || 0;
+  try {
+    await crmSend({
+      action: 'createInvoice',
+      customerId: invoiceCustomer.id,
+      customerName: invoiceCustomer.name,
+      tier: invoiceCustomer.tier,
+      serviceFee: fee,
+      discount: document.getElementById('inv-discount').value,
+      paymentMethod: document.getElementById('inv-method').value,
+      invoiceStatus: document.getElementById('inv-status').value,
+      deposit: document.getElementById('inv-deposit').value,
+      platformFees: document.getElementById('inv-processing').value,
+      rep: localStorage.getItem('skippr_rep') || '',
+    });
+    toast('Invoice created ✓', 'success');
+    await loadAll();
+    if (currentCustomerId) renderCustomerDetail(currentCustomerId);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── REFUNDS ──────────────────────────────────────────────────
+let refundTarget = {};
+function openRefundModal(rowIndex, customerId, customerName, amount) {
+  refundTarget = { rowIndex, customerId, customerName, amount };
+  document.getElementById('refund-modal-sub').textContent = customerName + ' · $' + amount.toLocaleString();
+  document.getElementById('refund-reason').selectedIndex = 0;
+  document.getElementById('refund-notes').value = '';
+  document.getElementById('refund-modal').classList.add('open');
+}
+
+async function submitRefund() {
+  closeModal('refund-modal');
+  toast('Processing refund...', 'success');
+  const reason = document.getElementById('refund-reason').value;
+  const notes = document.getElementById('refund-notes').value;
+  try {
+    await crmSend({
+      action: 'processRefund',
+      rowIndex: refundTarget.rowIndex,
+      customerId: refundTarget.customerId,
+      customerName: refundTarget.customerName,
+      originalAmount: refundTarget.amount,
+      reason: reason + (notes ? ' — ' + notes : ''),
+      rep: localStorage.getItem('skippr_rep') || '',
+    });
+    toast('Refund processed ✓', 'success');
+    await loadAll();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
   }
 }
 

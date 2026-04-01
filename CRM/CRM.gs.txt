@@ -1568,6 +1568,129 @@ function doGet(e) {
       return json({ success: true }, cb);
     }
 
+    if (p.action === 'createInvoice') {
+      const today = new Date();
+      const sh = ss.getSheetByName('Financials');
+      if (!sh) return json({ success: false, message: 'Financials sheet not found' }, cb);
+
+      const serviceFee = parseFloat(p.serviceFee) || 0;
+      const discountMap = {
+        'Military 15%': 0.85,
+        'First Responder 15%': 0.85,
+        'Student 5%': 0.95,
+        'None': 1
+      };
+      const discountMult = discountMap[p.discount] || 1;
+      const netFee = Math.round(serviceFee * discountMult * 100) / 100;
+
+      sh.appendRow([
+        p.customerId || '',
+        p.customerName || '',
+        serviceFee,
+        p.discount || 'None',
+        netFee,
+        parseFloat(p.deposit) || 0,
+        p.paymentMethod || '',
+        p.paymentDate ? new Date(p.paymentDate) : today,
+        p.invoiceStatus || 'Pending',
+        parseFloat(p.platformFees) || 0,
+        parseFloat(p.tax) || 0,
+        parseFloat(p.otherExpenses) || 0,
+        p.expenseNotes || '',
+        '', // Net Profit — formula will calculate
+      ]);
+
+      // Log to Rep Activity
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '',
+          (p.customerId ? '[' + p.customerId + '] ' : '') + (p.customerName || ''),
+          'Deal Closed', 'Won', p.tier || '', String(netFee),
+          'Invoice created: $' + serviceFee + (p.discount !== 'None' ? ' (' + p.discount + ' → $' + netFee + ')' : '') + ' via ' + (p.paymentMethod || 'TBD'),
+        ]);
+      }
+
+      // Log to Notes Log
+      const notesLog = ss.getSheetByName('Notes Log');
+      if (notesLog) {
+        notesLog.appendRow([
+          today, p.rep || '', p.customerId || '', 'Status Change',
+          'Invoice created — Service fee: $' + serviceFee + ', Discount: ' + (p.discount || 'None') + ', Net: $' + netFee + ', Method: ' + (p.paymentMethod || 'TBD') + ', Status: ' + (p.invoiceStatus || 'Pending'),
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true, netFee: netFee }, cb);
+    }
+
+    if (p.action === 'processRefund') {
+      const today = new Date();
+      const sh = ss.getSheetByName('Financials');
+      if (!sh) return json({ success: false, message: 'Financials sheet not found' }, cb);
+
+      const row = parseInt(p.rowIndex);
+      if (!row || row < 2) return json({ success: false, message: 'Invalid row' }, cb);
+
+      // Update invoice status to Refunded
+      sh.getRange(row, 9).setValue('Refunded');
+
+      // Log the refund in Rep Activity
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '',
+          (p.customerId ? '[' + p.customerId + '] ' : '') + (p.customerName || ''),
+          'Deal Lost', 'Lost', p.tier || '', '',
+          'REFUND processed — Reason: ' + (p.reason || 'Not specified') + ' | Original fee: $' + (p.originalAmount || '0'),
+        ]);
+      }
+
+      // Log to Notes Log
+      const notesLog = ss.getSheetByName('Notes Log');
+      if (notesLog) {
+        notesLog.appendRow([
+          today, p.rep || '', p.customerId || '', 'Status Change',
+          'REFUND — Reason: ' + (p.reason || 'Not specified') + ' | Amount: $' + (p.originalAmount || '0'),
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true }, cb);
+    }
+
+    if (p.action === 'updateInvoiceStatus') {
+      const today = new Date();
+      const sh = ss.getSheetByName('Financials');
+      if (!sh) return json({ success: false, message: 'Financials sheet not found' }, cb);
+
+      const row = parseInt(p.rowIndex);
+      if (!row || row < 2) return json({ success: false, message: 'Invalid row' }, cb);
+
+      if (p.invoiceStatus) sh.getRange(row, 9).setValue(p.invoiceStatus);
+      if (p.paymentMethod) sh.getRange(row, 7).setValue(p.paymentMethod);
+      if (p.paymentDate)   sh.getRange(row, 8).setValue(new Date(p.paymentDate));
+      if (p.deposit)       sh.getRange(row, 6).setValue(parseFloat(p.deposit));
+      if (p.platformFees)  sh.getRange(row, 10).setValue(parseFloat(p.platformFees));
+      if (p.tax)           sh.getRange(row, 11).setValue(parseFloat(p.tax));
+      if (p.otherExpenses) sh.getRange(row, 12).setValue(parseFloat(p.otherExpenses));
+      if (p.expenseNotes)  sh.getRange(row, 13).setValue(p.expenseNotes);
+
+      // Log
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '',
+          (p.customerId ? '[' + p.customerId + '] ' : '') + (p.customerName || ''),
+          'Customer Update', 'Info Only', '', '',
+          'Invoice updated — Status: ' + (p.invoiceStatus || '') + (p.paymentMethod ? ', Method: ' + p.paymentMethod : ''),
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true }, cb);
+    }
+
     return json({ status: 'Unknown action.' }, cb);
 
   } catch(err) {
