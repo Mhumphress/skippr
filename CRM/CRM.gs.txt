@@ -47,6 +47,8 @@ function setupCRM() {
   buildFollowUps(ss);   SpreadsheetApp.flush(); Utilities.sleep(1500);
   buildRepActivity(ss); SpreadsheetApp.flush(); Utilities.sleep(1500);
   buildDealerDB(ss);    SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildNotesLog(ss);    SpreadsheetApp.flush(); Utilities.sleep(1500);
+  buildFinancials(ss);  SpreadsheetApp.flush(); Utilities.sleep(1500);
   buildSettings(ss);    SpreadsheetApp.flush(); Utilities.sleep(1000);
   buildActiveView(ss);  SpreadsheetApp.flush(); Utilities.sleep(1000);
   buildDashboard(ss);   SpreadsheetApp.flush(); Utilities.sleep(500);
@@ -67,7 +69,8 @@ function setupCRM() {
       "✦ Skippr CRM is ready!\n\n" +
       "Sheets created:\n" +
       "  Dashboard · Pipeline · Dealer Log · Follow-Ups\n" +
-      "  Rep Activity · Dealer Database · Registry · Settings\n\n" +
+      "  Rep Activity · Dealer Database · Notes Log · Financials\n" +
+      "  Registry · Settings\n\n" +
       "A daily 8am reminder trigger has been installed."
     );
   } catch(e) {
@@ -360,9 +363,10 @@ function buildPipeline(ss) {
     "Year","Make","Model","Trim","Ext. Color","Int. Color",
     "Date Added","Last Contact","Follow-Up Date",
     "Final Price ($)","Savings ($)","Service Fee ($)","Discount Applied",
-    "Dealer","Workflow Type","Original ID","Drive File URL","Phone","Email","Zip","Notes"
+    "Dealer","Workflow Type","Original ID","Drive File URL","Phone","Email","Zip","Notes",
+    "Budget Range","Timeline","Financing Type","Lead Source","Communication Pref","Urgency Level"
   ];
-  const widths = [120,160,140,80,130,110,60,100,140,140,110,110,100,100,110,120,100,110,130,180,120,120,220,130,180,80,260];
+  const widths = [120,160,140,80,130,110,60,100,140,140,110,110,100,100,110,120,100,110,130,180,120,120,220,130,180,80,260,120,120,120,130,130,110];
 
   setupSheet(sh, headers, widths, C.GOLD);
 
@@ -371,6 +375,10 @@ function buildPipeline(ss) {
   setDropdown(sh, 2, 6,  1000, ["New","Searching","Deal Found","Pending","On Hold","Closed","Lost"]);
   setDropdown(sh, 2, 19, 1000, ["None","Military 15%","First Responder 15%","Student 5%"]);
   setDropdown(sh, 2, 21, 1000, ["Consultation","Purchase","Converted"]);
+  setDropdown(sh, 2, 30, 1000, ["Cash","Finance","Lease"]);
+  setDropdown(sh, 2, 31, 1000, ["Referral","Website","Social Media","Phone","Other"]);
+  setDropdown(sh, 2, 32, 1000, ["Phone","Text","Email"]);
+  setDropdown(sh, 2, 33, 1000, ["High","Medium","Low"]);
 
   sh.getRange(2, 13, 999, 1).setNumberFormat("mm/dd/yyyy");
   sh.getRange(2, 14, 999, 1).setNumberFormat("mm/dd/yyyy");
@@ -464,13 +472,14 @@ function buildFollowUps(ss) {
   sh = ss.insertSheet("Follow-Ups", 3);
   sh.setTabColor(C.AMBER);
 
-  const headers = ["Date Created","Rep","Customer","Vehicle","Follow-Up Date","Status","Priority","Notes","Linked Sheet Row"];
-  const widths  = [110,110,150,200,120,90,90,340,120];
+  const headers = ["Date Created","Rep","Customer","Vehicle","Follow-Up Date","Status","Priority","Notes","Linked Sheet Row","Category"];
+  const widths  = [110,110,150,200,120,90,90,340,120,110];
 
   setupSheet(sh, headers, widths, C.AMBER);
   setDropdown(sh, 2, 2, 1000, buildRepList());
   setDropdown(sh, 2, 6, 1000, ["Open","Completed","Cancelled"]);
   setDropdown(sh, 2, 7, 1000, ["High","Medium","Low"]);
+  setDropdown(sh, 2, 10, 1000, ["Callback","Document","Deposit","Delivery"]);
 
   sh.getRange(2, 1, 999, 1).setNumberFormat("mm/dd/yyyy");
   sh.getRange(2, 5, 999, 1).setNumberFormat("mm/dd/yyyy");
@@ -521,12 +530,14 @@ function buildDealerDB(ss) {
   sh = ss.insertSheet("Dealer Database", 5);
   sh.setTabColor(C.GRAY);
 
-  const headers = ["Dealer Name","Make(s)","City","State","Contact Name","Title","Direct Line","Email","OOS Friendly?","Typical Doc Fee ($)","Works With Us","Last Called","Notes"];
-  const widths  = [200,140,120,80,140,120,130,200,100,120,110,100,320];
+  const headers = ["Dealer Name","Make(s)","City","State","Contact Name","Title","Direct Line","Email","OOS Friendly?","Typical Doc Fee ($)","Works With Us","Last Called","Notes","Primary Brand","Secondary Brands","Internet Sales Contact","F&I Contact","Avg Response Time","Relationship Score"];
+  const widths  = [200,140,120,80,140,120,130,200,100,120,110,100,320,140,160,150,150,130,130];
 
   setupSheet(sh, headers, widths, C.GRAY);
   setDropdown(sh, 2,  9, 1000, ["Yes","No","Unknown"]);
   setDropdown(sh, 2, 11, 1000, ["Yes — Easy","Yes — Works","Mixed","Difficult","No"]);
+  setDropdown(sh, 2, 18, 1000, ["< 1 hour","1-4 hours","Same day","Next day","2+ days"]);
+  setDropdown(sh, 2, 19, 1000, ["1 - Poor","2 - Below Avg","3 - Average","4 - Good","5 - Excellent"]);
   sh.getRange(2, 10, 999, 1).setNumberFormat("$#,##0");
   sh.getRange(2, 12, 999, 1).setNumberFormat("mm/dd/yyyy");
   sh.setFrozenRows(1);
@@ -616,6 +627,55 @@ function buildRegistry(ss) {
   sh.getRange("A2:O5000").createFilter();
   sh.setFrozenRows(1);
   sh.setFrozenColumns(1);
+}
+
+// ── NOTES LOG ────────────────────────────────────────────────
+function buildNotesLog(ss) {
+  let sh = ss.getSheetByName("Notes Log");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Notes Log");
+  sh.setTabColor(C.BLUE);
+
+  const headers = ["Date","Rep","Customer ID","Category","Note"];
+  const widths  = [110,120,140,130,400];
+
+  setupSheet(sh, headers, widths, C.BLUE);
+  setDropdown(sh, 2, 2, 1000, buildRepList());
+  setDropdown(sh, 2, 4, 1000, ["Call","Internal","Customer Request","Status Change"]);
+
+  sh.getRange(2, 1, 999, 1).setNumberFormat("mm/dd/yyyy");
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(2);
+}
+
+// ── FINANCIALS ───────────────────────────────────────────────
+function buildFinancials(ss) {
+  let sh = ss.getSheetByName("Financials");
+  if (sh && ss.getSheets().length > 1) { ss.deleteSheet(sh); SpreadsheetApp.flush(); }
+  sh = ss.insertSheet("Financials");
+  sh.setTabColor(C.GREEN);
+
+  const headers = ["Customer ID","Customer Name","Service Fee","Discount Applied","Net Service Fee","Deposit Collected","Payment Method","Payment Date","Invoice Status","Platform/Processing Fees","Tax Withheld","Other Expenses","Expense Notes","Net Profit"];
+  const widths  = [130, 160, 110, 120, 120, 120, 130, 110, 110, 140, 110, 110, 200, 120];
+
+  setupSheet(sh, headers, widths, C.GREEN);
+  setDropdown(sh, 2, 7, 1000, ["Credit Card","ACH/Bank Transfer","Check","Cash","Zelle/Venmo"]);
+  setDropdown(sh, 2, 9, 1000, ["Pending","Paid","Partial","Refunded","Overdue"]);
+  setDropdown(sh, 2, 4, 1000, ["None","Military 15%","First Responder 15%","Student 5%"]);
+
+  // Currency format on cols 3, 5, 6, 10, 11, 12, 14
+  [3, 5, 6, 10, 11, 12, 14].forEach(function(col) {
+    sh.getRange(2, col, 499, 1).setNumberFormat("$#,##0");
+  });
+  sh.getRange(2, 8, 499, 1).setNumberFormat("mm/dd/yyyy");
+
+  // Formulas for Net Service Fee (col 5) and Net Profit (col 14)
+  for (let r = 2; r <= 500; r++) {
+    sh.getRange(r, 5).setFormula('=IF(C' + r + '="","",IF(D' + r + '="Military 15%",C' + r + '*0.85,IF(D' + r + '="First Responder 15%",C' + r + '*0.85,IF(D' + r + '="Student 5%",C' + r + '*0.95,C' + r + '))))');
+    sh.getRange(r, 14).setFormula('=IF(E' + r + '="","",E' + r + '-J' + r + '-K' + r + '-L' + r + ')');
+  }
+
+  sh.setFrozenRows(1);
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
@@ -886,6 +946,7 @@ function doGet(e) {
           status:   String(row[5] || 'Open'),
           priority: String(row[6] || 'Medium'),
           notes:    String(row[7] || ''),
+          category: String(row[9] || ''),
         });
       });
       followUps.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -901,6 +962,7 @@ function doGet(e) {
       rows.forEach((row, i) => {
         if (i === 0 || !row[0]) return;
         activity.push({
+          rowIndex: i + 1,
           date:     Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'),
           rep:      String(row[1] || ''),
           customer: String(row[2] || ''),
@@ -1254,6 +1316,258 @@ function doGet(e) {
       return json({ success: matched, message: matched ? 'Follow-up completed' : 'Follow-up not found' }, cb);
     }
 
+    // ── Add new customer ────────────────────────────────────
+    if (p.action === 'addCustomer') {
+      const today = new Date();
+      const idType = p.tier === 'Tier 2' ? 'SKC' : 'SKC';
+      const tierCode = p.tier === 'Tier 2' ? 'T2' : 'T1';
+      const newId = reserveNextId(ss, idType, tierCode);
+
+      // Add to Registry
+      const reg = ss.getSheetByName('Registry');
+      if (reg) {
+        const vehicle = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ');
+        reg.appendRow([
+          newId, 'Consultation', p.tier || 'Tier 1', p.customerName || '',
+          p.phone || '', p.email || '', p.city || '', p.state || '', p.zip || '',
+          vehicle, p.rep || '', today, 'Active', '', '',
+        ]);
+      }
+
+      // Add to Pipeline
+      const pipeline = ss.getSheetByName('Pipeline');
+      if (pipeline) {
+        pipeline.appendRow([
+          newId, p.customerName || '', [p.city, p.state].filter(Boolean).join(', '),
+          p.tier || 'Tier 1', p.rep || '', 'New',
+          p.year || '', p.make || '', p.model || '', p.trim || '', p.extColor || '', '',
+          today, today, '',
+          '', '', '', p.discount || 'None', '', 'Consultation', '', '',
+          p.phone || '', p.email || '', p.zip || '', p.notes || '',
+          p.budgetRange || '', p.timeline || '', p.financingType || '',
+          p.leadSource || '', p.commPref || '', p.urgency || '',
+        ]);
+      }
+
+      // Log activity
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '', '[' + newId + '] ' + (p.customerName || ''),
+          'Customer Added', 'Info Only', p.tier || '', '', 'New customer added via CRM web view',
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true, customerId: newId }, cb);
+    }
+
+    // ── Edit customer details ─────────────────────────────────
+    if (p.action === 'editCustomer') {
+      const today = new Date();
+      const pipeline = ss.getSheetByName('Pipeline');
+      const registry = ss.getSheetByName('Registry');
+
+      if (pipeline) {
+        const rows = pipeline.getDataRange().getValues();
+        rows.forEach((row, i) => {
+          if (i === 0) return;
+          if (String(row[0]).trim() === p.customerId) {
+            const r = i + 1;
+            if (p.customerName)   pipeline.getRange(r, 2).setValue(p.customerName);
+            if (p.location)       pipeline.getRange(r, 3).setValue(p.location);
+            if (p.tier)           pipeline.getRange(r, 4).setValue(p.tier);
+            if (p.rep)            pipeline.getRange(r, 5).setValue(p.rep);
+            if (p.customerStatus) pipeline.getRange(r, 6).setValue(p.customerStatus);
+            if (p.year)           pipeline.getRange(r, 7).setValue(p.year);
+            if (p.make)           pipeline.getRange(r, 8).setValue(p.make);
+            if (p.model)          pipeline.getRange(r, 9).setValue(p.model);
+            if (p.trim)           pipeline.getRange(r, 10).setValue(p.trim);
+            if (p.extColor)       pipeline.getRange(r, 11).setValue(p.extColor);
+            if (p.phone)          pipeline.getRange(r, 24).setValue(p.phone);
+            if (p.email)          pipeline.getRange(r, 25).setValue(p.email);
+            if (p.zip)            pipeline.getRange(r, 26).setValue(p.zip);
+            if (p.budgetRange)    pipeline.getRange(r, 28).setValue(p.budgetRange);
+            if (p.timeline)       pipeline.getRange(r, 29).setValue(p.timeline);
+            if (p.financingType)  pipeline.getRange(r, 30).setValue(p.financingType);
+            if (p.leadSource)     pipeline.getRange(r, 31).setValue(p.leadSource);
+            if (p.commPref)       pipeline.getRange(r, 32).setValue(p.commPref);
+            if (p.urgency)        pipeline.getRange(r, 33).setValue(p.urgency);
+            if (p.discount)       pipeline.getRange(r, 19).setValue(p.discount);
+            pipeline.getRange(r, 14).setValue(today);
+          }
+        });
+      }
+
+      if (registry) {
+        const rows = registry.getDataRange().getValues();
+        rows.forEach((row, i) => {
+          if (i === 0) return;
+          if (String(row[0]).trim() === p.customerId) {
+            const r = i + 1;
+            if (p.customerName) registry.getRange(r, 4).setValue(p.customerName);
+            if (p.phone)        registry.getRange(r, 5).setValue(p.phone);
+            if (p.email)        registry.getRange(r, 6).setValue(p.email);
+            if (p.tier)         registry.getRange(r, 3).setValue(p.tier);
+            if (p.rep)          registry.getRange(r, 11).setValue(p.rep);
+            const vehicle = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ');
+            if (vehicle)        registry.getRange(r, 10).setValue(vehicle);
+          }
+        });
+      }
+
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '', '[' + p.customerId + '] ' + (p.customerName || ''),
+          'Customer Update', 'Info Only', p.tier || '', '',
+          'Customer details edited via CRM web view',
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true }, cb);
+    }
+
+    // ── Add note ──────────────────────────────────────────────
+    if (p.action === 'addNote') {
+      const today = new Date();
+      const notesLog = ss.getSheetByName('Notes Log');
+      if (notesLog) {
+        notesLog.appendRow([
+          today, p.rep || '', p.customerId || '', p.category || 'Internal', p.note || '',
+        ]);
+      }
+      const repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          today, p.rep || '',
+          (p.customerId ? '[' + p.customerId + '] ' : '') + (p.customerName || ''),
+          'Note Added', 'Info Only', '', '', p.note || '',
+        ]);
+      }
+      SpreadsheetApp.flush();
+      return json({ success: true }, cb);
+    }
+
+    // ── Get notes ─────────────────────────────────────────────
+    if (p.action === 'getNotes') {
+      const sh = ss.getSheetByName('Notes Log');
+      if (!sh) return json({ success: true, notes: [] }, cb);
+      const rows = sh.getDataRange().getValues();
+      const notes = [];
+      rows.forEach((row, i) => {
+        if (i === 0) return;
+        const custId = String(row[2] || '').trim();
+        if (p.customerId && !custId.includes(p.customerId)) return;
+        notes.push({
+          date: row[0] ? Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') : '',
+          rep: String(row[1] || ''),
+          customerId: custId,
+          category: String(row[3] || ''),
+          note: String(row[4] || ''),
+        });
+      });
+      notes.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return json({ success: true, notes: notes }, cb);
+    }
+
+    // ── Get dealers ───────────────────────────────────────────
+    if (p.action === 'getDealers') {
+      const sh = ss.getSheetByName('Dealer Database');
+      if (!sh) return json({ success: true, dealers: [] }, cb);
+      const rows = sh.getDataRange().getValues();
+      const dealers = [];
+      rows.forEach((row, i) => {
+        if (i === 0 || !row[0]) return;
+        dealers.push({
+          name: String(row[0] || ''),
+          makes: String(row[1] || ''),
+          city: String(row[2] || ''),
+          state: String(row[3] || ''),
+          contactName: String(row[4] || ''),
+          title: String(row[5] || ''),
+          directLine: String(row[6] || ''),
+          email: String(row[7] || ''),
+          oosFriendly: String(row[8] || ''),
+          typicalDocFee: String(row[9] || ''),
+          worksWithUs: String(row[10] || ''),
+          lastCalled: row[11] ? Utilities.formatDate(new Date(row[11]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+          notes: String(row[12] || ''),
+          primaryBrand: String(row[13] || ''),
+          secondaryBrands: String(row[14] || ''),
+          internetSalesContact: String(row[15] || ''),
+          fiContact: String(row[16] || ''),
+          avgResponseTime: String(row[17] || ''),
+          relationshipScore: String(row[18] || ''),
+        });
+      });
+      return json({ success: true, dealers: dealers }, cb);
+    }
+
+    // ── Get financials ────────────────────────────────────────
+    if (p.action === 'getFinancials') {
+      const sh = ss.getSheetByName('Financials');
+      if (!sh) return json({ success: true, financials: [], summary: {} }, cb);
+      const rows = sh.getDataRange().getValues();
+      const financials = [];
+      let totalServiceFees = 0, totalNetFees = 0, totalExpenses = 0, totalNetProfit = 0, outstanding = 0;
+      rows.forEach((row, i) => {
+        if (i === 0 || !row[0]) return;
+        const serviceFee = parseFloat(String(row[2]).replace(/[^0-9.-]/g, '')) || 0;
+        const netFee = parseFloat(String(row[4]).replace(/[^0-9.-]/g, '')) || 0;
+        const deposit = parseFloat(String(row[5]).replace(/[^0-9.-]/g, '')) || 0;
+        const platformFees = parseFloat(String(row[9]).replace(/[^0-9.-]/g, '')) || 0;
+        const tax = parseFloat(String(row[10]).replace(/[^0-9.-]/g, '')) || 0;
+        const otherExpenses = parseFloat(String(row[11]).replace(/[^0-9.-]/g, '')) || 0;
+        const netProfit = parseFloat(String(row[13]).replace(/[^0-9.-]/g, '')) || 0;
+        const status = String(row[8] || '');
+
+        totalServiceFees += serviceFee;
+        totalNetFees += netFee;
+        totalExpenses += platformFees + tax + otherExpenses;
+        totalNetProfit += netProfit;
+        if (status === 'Pending' || status === 'Partial' || status === 'Overdue') outstanding += netFee;
+
+        financials.push({
+          customerId: String(row[0] || ''),
+          customerName: String(row[1] || ''),
+          serviceFee: serviceFee,
+          discount: String(row[3] || ''),
+          netServiceFee: netFee,
+          deposit: deposit,
+          paymentMethod: String(row[6] || ''),
+          paymentDate: row[7] ? Utilities.formatDate(new Date(row[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+          invoiceStatus: status,
+          platformFees: platformFees,
+          tax: tax,
+          otherExpenses: otherExpenses,
+          expenseNotes: String(row[12] || ''),
+          netProfit: netProfit,
+          rowIndex: i + 1,
+        });
+      });
+      return json({ success: true, financials: financials, summary: { totalServiceFees, totalNetFees, totalExpenses, totalNetProfit, outstanding } }, cb);
+    }
+
+    // ── Edit activity log entry ─────────────────────────────
+    if (p.action === 'editActivity') {
+      const sh = ss.getSheetByName('Rep Activity');
+      if (!sh) return json({ success: false, message: 'Sheet not found' }, cb);
+      const row = parseInt(p.rowIndex);
+      if (!row || row < 2) return json({ success: false, message: 'Invalid row' }, cb);
+      if (p.date)     sh.getRange(row, 1).setValue(new Date(p.date));
+      if (p.rep)      sh.getRange(row, 2).setValue(p.rep);
+      if (p.customer) sh.getRange(row, 3).setValue(p.customer);
+      if (p.actionType) sh.getRange(row, 4).setValue(p.actionType);
+      if (p.outcome)  sh.getRange(row, 5).setValue(p.outcome);
+      if (p.tier)     sh.getRange(row, 6).setValue(p.tier);
+      if (p.savings)  sh.getRange(row, 7).setValue(p.savings);
+      if (p.notes)    sh.getRange(row, 8).setValue(p.notes);
+      SpreadsheetApp.flush();
+      return json({ success: true }, cb);
+    }
+
     return json({ status: 'Unknown action.' }, cb);
 
   } catch(err) {
@@ -1378,6 +1692,12 @@ function getActiveCustomers(ss, filter) {
         phone:       String(row[23] || ''),
         email:       String(row[24] || ''),
         notes:       String(row[26] || ''),
+        budgetRange:   String(row[27] || ''),
+        timeline:      String(row[28] || ''),
+        financingType: String(row[29] || ''),
+        leadSource:    String(row[30] || ''),
+        commPref:      String(row[31] || ''),
+        urgency:       String(row[32] || ''),
       };
     });
   }
@@ -1432,6 +1752,12 @@ function getActiveCustomers(ss, filter) {
       serviceFee:  pl.serviceFee || '',
       discount:    pl.discount   || '',
       notes:       pl.notes      || '',
+      budgetRange:   pl.budgetRange  || '',
+      timeline:      pl.timeline     || '',
+      financingType: pl.financingType || '',
+      leadSource:    pl.leadSource   || '',
+      commPref:      pl.commPref     || '',
+      urgency:       pl.urgency      || '',
     });
   });
 

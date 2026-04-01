@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Skippr CRM</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#C9A84C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skippr CRM">
+<link rel="apple-touch-icon" href="../logo1.png">
+<link rel="icon" type="image/png" href="../logo1.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.08);
+  --gold-border: rgba(201,168,76,0.2);
+  --black: #09090b;
+  --off-black: #0c0c0e;
+  --dark: #131316;
+  --dark2: #1a1a1f;
+  --surface: #16161a;
+  --white: #f0ede6;
+  --gray: #71717a;
+  --gray2: #3f3f46;
+  --border: rgba(255,255,255,0.06);
+  --border-2: rgba(255,255,255,0.1);
+  --green: #34d399;
+  --radius: 8px;
+  --font-d: 'Inter', system-ui, sans-serif;
+  --font-b: 'Outfit', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--black);color:var(--white);font-family:var(--font-b);overflow:hidden;-webkit-font-smoothing:antialiased;}
+
+.app-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+
+.app-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:0 20px;height:52px;min-height:52px;
+  background:var(--off-black);border-bottom:1px solid var(--border);
+  z-index:10;
+}
+.app-logo{font-family:var(--font-d);font-size:1.2rem;font-weight:700;color:var(--gold);letter-spacing:0.06em;}
+.app-logo-sub{font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gray);font-weight:500;}
+.app-tabs{display:flex;gap:4px;margin-left:auto;}
+.app-tab{
+  padding:7px 20px;font-size:0.72rem;font-weight:500;
+  letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--gray);background:var(--dark2);
+  border:1px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;transition:all 0.2s;
+  font-family:var(--font-b);
+}
+.app-tab:hover{color:var(--white);border-color:var(--border-2);}
+.app-tab.active{color:var(--gold);background:var(--gold-dim);border-color:var(--gold-border);}
+.app-status{display:flex;align-items:center;gap:8px;margin-left:16px;}
+.app-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(52,211,153,0.4);}
+.app-status-txt{font-size:0.62rem;color:var(--gray);letter-spacing:0.08em;font-weight:500;}
+
+.app-frame{flex:1;border:none;width:100%;height:100%;background:var(--black);}
+.app-frame.hidden{display:none;}
+
+/* Install banner */
+.install-banner{
+  display:none;align-items:center;gap:12px;
+  padding:10px 20px;background:var(--surface);
+  border-bottom:1px solid var(--gold-border);
+  font-size:0.78rem;color:var(--gray);
+}
+.install-banner.show{display:flex;}
+.install-btn{
+  padding:6px 16px;background:var(--gold);color:var(--black);
+  border:none;border-radius:var(--radius);font-family:var(--font-b);
+  font-size:0.7rem;font-weight:600;letter-spacing:0.08em;
+  text-transform:uppercase;cursor:pointer;transition:all 0.2s;margin-left:auto;
+}
+.install-btn:hover{filter:brightness(1.1);}
+.install-dismiss{
+  background:none;border:none;color:var(--gray);cursor:pointer;
+  font-size:1.1rem;padding:0 4px;
+}
+
+@media(max-width:600px){
+  .app-bar{padding:0 12px;gap:10px;}
+  .app-logo-sub{display:none;}
+  .app-tab{padding:6px 14px;font-size:0.65rem;}
+  .app-status-txt{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- Install banner -->
+  <div class="install-banner" id="installBanner">
+    <span>Install Skippr CRM for quick access</span>
+    <button class="install-btn" id="installBtn">Install</button>
+    <button class="install-dismiss" id="installDismiss">&times;</button>
+  </div>
+
+  <!-- App bar -->
+  <div class="app-bar">
+    <span class="app-logo">Skippr</span>
+    <span class="app-logo-sub">CRM</span>
+    <div class="app-tabs">
+      <div class="app-tab active" id="tab-dashboard" onclick="switchTab('dashboard')">Dashboard</div>
+      <div class="app-tab" id="tab-checklist" onclick="switchTab('checklist')">Call Checklist</div>
+    </div>
+    <div class="app-status">
+      <div class="app-dot" id="appDot"></div>
+      <span class="app-status-txt" id="appStatus">Ready</span>
+    </div>
+  </div>
+
+  <!-- Embedded views -->
+  <iframe class="app-frame" id="frame-dashboard" src="skipprCRM_WEBVIEW(v.2).html"></iframe>
+  <iframe class="app-frame hidden" id="frame-checklist" src="NEW_skippr_call_checklist v1.html"></iframe>
+</div>
+
+<script>
+// Tab switching
+function switchTab(tab) {
+  document.querySelectorAll('.app-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.app-frame').forEach(f => f.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('frame-' + tab).classList.remove('hidden');
+}
+
+// Monitor iframe connection status
+const dashFrame = document.getElementById('frame-dashboard');
+dashFrame.addEventListener('load', () => {
+  document.getElementById('appDot').style.background = 'var(--green)';
+  document.getElementById('appDot').style.boxShadow = '0 0 6px rgba(52,211,153,0.4)';
+  document.getElementById('appStatus').textContent = 'Connected';
+});
+
+// PWA install
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+document.getElementById('installDismiss').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
