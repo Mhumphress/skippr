@@ -281,7 +281,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="stats-grid">
         <div class="stat-card" onclick="drillDown('active')"><div class="stat-label">Active Deals</div><div class="stat-value white" id="stat-active">—</div><div class="stat-sub">View all →</div></div>
         <div class="stat-card" onclick="drillDown('tier2')"><div class="stat-label">Tier 2 Active</div><div class="stat-value gold" id="stat-t2">—</div><div class="stat-sub">Priority customers →</div></div>
-        <div class="stat-card" onclick="drillDown('closed')"><div class="stat-label">Closed This Month</div><div class="stat-value green" id="stat-closed">—</div><div class="stat-sub">View closed →</div></div>
+        <div class="stat-card" onclick="drillDown('closed')"><div class="stat-label">Deals Closed</div><div class="stat-value green" id="stat-closed">—</div><div class="stat-sub">This month →</div></div>
         <div class="stat-card" onclick="drillDown('overdue')"><div class="stat-label">Overdue Follow-Ups</div><div class="stat-value red" id="stat-overdue">—</div><div class="stat-sub">View overdue →</div></div>
         <div class="stat-card" onclick="drillDown('savings')"><div class="stat-label">Savings Delivered</div><div class="stat-value gold" id="stat-savings">$0</div><div class="stat-sub">View financials →</div></div>
       </div>
@@ -302,7 +302,8 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
           <button class="filter-btn" onclick="setFilter('Tier 2',this)">Tier 2</button>
           <button class="filter-btn" onclick="setFilter('Tier 1',this)">Tier 1</button>
           <button class="filter-btn" onclick="setFilter('overdue',this)">Overdue</button>
-          <button class="filter-btn" onclick="setFilter('closed',this)">Closed / Lost</button>
+          <button class="filter-btn" onclick="setFilter('closed',this)">Closed</button>
+          <button class="filter-btn" onclick="setFilter('lost',this)">Lost</button>
           <button class="filter-btn" onclick="setFilter('all',this)">All</button>
           <button class="filter-btn" onclick="openAddCustomerModal()" style="margin-left:auto;border-color:var(--gold);color:var(--gold);">+ Add Customer</button>
         </div>
@@ -1054,7 +1055,8 @@ function applyFilter(arr) {
     const today = new Date(); today.setHours(0,0,0,0);
     return arr.filter(c => c.followUp && new Date(c.followUp) < today && !['Closed','Lost'].includes(c.status));
   }
-  if (custFilter === 'closed')  return arr.filter(c => ['Closed','Lost'].includes(c.status));
+  if (custFilter === 'closed')  return arr.filter(c => c.status === 'Closed');
+  if (custFilter === 'lost')    return arr.filter(c => c.status === 'Lost');
   if (custFilter === 'all')     return arr;
   return arr;
 }
