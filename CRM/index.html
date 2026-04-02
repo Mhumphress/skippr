@@ -133,11 +133,18 @@ function switchTab(tab) {
 // Listen for CRM refresh requests from iframes (checklist saves, etc.)
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'skippr-crm-refresh') {
-    // Switch to dashboard tab
+    // Switch to dashboard tab immediately so user sees it
     switchTab('dashboard');
-    // Tell the dashboard iframe to refresh its data
-    const dashFrame = document.getElementById('frame-dashboard');
-    try { dashFrame.contentWindow.postMessage({ type: 'skippr-refresh' }, '*'); } catch(err) {}
+    // Update status to show refresh is coming
+    var dot = document.getElementById('appDot');
+    var txt = document.getElementById('appStatus');
+    if (dot) { dot.style.background = 'var(--gold)'; dot.style.boxShadow = '0 0 6px rgba(201,168,76,0.4)'; }
+    if (txt) txt.textContent = 'Syncing...';
+    // Delay refresh to give Apps Script time to finish writing
+    setTimeout(function() {
+      var dashFrame = document.getElementById('frame-dashboard');
+      try { dashFrame.contentWindow.postMessage({ type: 'skippr-refresh' }, '*'); } catch(err) {}
+    }, 2000);
   }
 });
 

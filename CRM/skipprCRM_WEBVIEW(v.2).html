@@ -552,7 +552,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     <div class="modal-sub" id="edit-activity-sub"></div>
     <div class="form-row">
       <div class="form-field"><label>Action Type</label>
-        <select id="ea-action"><option>Customer Added</option><option>Dealer Called</option><option>Callback Scheduled</option><option>Follow-Up Sent</option><option>Deal Found</option><option>Deal Presented</option><option>Deal Closed</option><option>Deal Lost</option><option>Converted to Purchase</option><option>Note Added</option><option>Customer Update</option></select>
+        <select id="ea-action"><option>Customer Added</option><option>Customer Consultation</option><option>Dealer Called</option><option>Callback Scheduled</option><option>Follow-Up Sent</option><option>Deal Found</option><option>Deal Presented</option><option>Deal Closed</option><option>Deal Lost</option><option>Converted to Purchase</option><option>Note Added</option><option>Customer Update</option></select>
       </div>
       <div class="form-field"><label>Outcome</label>
         <select id="ea-outcome"><option>Won</option><option>Strong Lead</option><option>Possible</option><option>Not Competitive</option><option>Pending Customer</option><option>On Hold</option><option>Lost</option><option>Info Only</option><option>Converted</option></select>
@@ -1989,9 +1989,10 @@ async function submitConvert() {
 
 // ── REFRESH LISTENER ──────────────────────────────────────────
 // Parent shell or other iframes can request a data refresh via postMessage
+// Delay gives Apps Script time to finish writing before we read back
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'skippr-refresh') {
-    loadAll();
+    setTimeout(function() { loadAll(); }, 2500);
   }
 });
 

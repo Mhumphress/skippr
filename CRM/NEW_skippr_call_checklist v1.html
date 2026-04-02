@@ -404,6 +404,19 @@
       <div class="toggle-group" id="tg-payment"><div class="tog on" data-val="finance">Financing</div><div class="tog" data-val="cash">Cash</div><div class="tog" data-val="lease">Lease</div></div>
       <span class="tog-label" style="margin-top:14px;">Does the customer have a trade-in?</span>
       <div class="toggle-group" id="tg-trade"><div class="tog on" data-val="no">No trade-in</div><div class="tog" data-val="yes">Yes — has a trade-in</div></div>
+      <div id="tg-trade-fields" style="display:none;margin-top:10px;padding:14px 16px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.12);border-radius:8px;">
+        <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px;">Trade-In Vehicle Details</div>
+        <div class="row">
+          <div class="field"><label>Year</label><input type="text" id="i-trade-year" placeholder="2020"/></div>
+          <div class="field"><label>Make</label><input type="text" id="i-trade-make" placeholder="Honda"/></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Model</label><input type="text" id="i-trade-model" placeholder="Civic"/></div>
+          <div class="field"><label>Trim</label><input type="text" id="i-trade-trim" placeholder="EX-L"/></div>
+        </div>
+        <div class="field"><label>VIN (if available)</label><input type="text" id="i-trade-vin" placeholder="1HGBH41JXMN109186" style="font-family:monospace;letter-spacing:0.06em;"/></div>
+        <div class="field"><label>Trade-in notes (mileage, condition, payoff, etc.)</label><textarea id="i-trade-notes" placeholder="e.g. 45k miles, clean title, $8,200 remaining payoff..." style="min-height:60px;width:100%;resize:vertical;"></textarea></div>
+      </div>
       <span class="tog-label" style="margin-top:14px;">How specific is the customer on the vehicle?</span>
       <div class="toggle-group" id="tg-spec"><div class="tog on" data-val="exact">Exact spec</div><div class="tog" data-val="flexible">Flexible (open to alternatives)</div></div>
       <span class="tog-label" style="margin-top:14px;">Is this a rare, high-demand, or luxury vehicle?</span>
@@ -571,6 +584,11 @@ document.querySelectorAll('.toggle-group').forEach(group=>{
       // Show/hide down payment amount field
       if(group.id==='tg-downpayment'){
         const box=document.getElementById('tg-downpayment-amt');
+        if(box) box.style.display=tog.dataset.val==='yes'?'block':'none';
+      }
+      // Show/hide trade-in vehicle fields
+      if(group.id==='tg-trade'){
+        const box=document.getElementById('tg-trade-fields');
         if(box) box.style.display=tog.dataset.val==='yes'?'block':'none';
       }
     });
@@ -1155,6 +1173,13 @@ async function saveConsultation() {
     tier:           getTier(),
     discount:       'None',
     notes:          getVal('i-consult-notes'),
+    tradeIn:        selections['tg-trade'] === 'yes' ? 'yes' : 'no',
+    tradeYear:      getVal('i-trade-year'),
+    tradeMake:      getVal('i-trade-make'),
+    tradeModel:     getVal('i-trade-model'),
+    tradeTrim:      getVal('i-trade-trim'),
+    tradeVin:       getVal('i-trade-vin'),
+    tradeNotes:     getVal('i-trade-notes'),
     newCustomer:    'true',
   };
 
@@ -1262,6 +1287,13 @@ async function saveToCRM() {
     savings:         getVal('out-savings'),
     followUpDate:    getVal('out-followup'),
     notes:           getVal('out-notes'),
+    tradeIn:         selections['tg-trade'] === 'yes' ? 'yes' : 'no',
+    tradeYear:       getVal('i-trade-year'),
+    tradeMake:       getVal('i-trade-make'),
+    tradeModel:      getVal('i-trade-model'),
+    tradeTrim:       getVal('i-trade-trim'),
+    tradeVin:        getVal('i-trade-vin'),
+    tradeNotes:      getVal('i-trade-notes'),
     checklistData:   checkedItems.join('\n').substring(0, 1500),
     saveToDrive:     'true',
     newCustomer:     'true',

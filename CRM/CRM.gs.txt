@@ -513,7 +513,7 @@ function buildRepActivity(ss) {
 
   setupSheet(sh, headers, widths, C.GREEN);
   setDropdown(sh, 2, 2, 1000, buildRepList());
-  setDropdown(sh, 2, 4, 1000, ["Customer Added","Dealer Called","Callback Scheduled","Follow-Up Sent","Deal Found","Deal Presented","Deal Closed","Deal Lost","Converted to Purchase","Note Added","Customer Update"]);
+  setDropdown(sh, 2, 4, 1000, ["Customer Added","Customer Consultation","Dealer Called","Callback Scheduled","Follow-Up Sent","Deal Found","Deal Presented","Deal Closed","Deal Lost","Converted to Purchase","Note Added","Customer Update"]);
   setDropdown(sh, 2, 5, 1000, ["Won","Strong Lead","Possible","Not Competitive","Pending Customer","On Hold","Lost","Info Only","Converted"]);
   setDropdown(sh, 2, 6, 1000, ["Tier 1","Tier 2"]);
 
@@ -1198,6 +1198,15 @@ function doGet(e) {
 
       updateRegistry(ss, p, customerId, today, driveLink, registryStatus);
 
+      // Build trade-in string for notes
+      let tradeInInfo = '';
+      if (p.tradeIn === 'yes') {
+        const tradeVehicle = [p.tradeYear, p.tradeMake, p.tradeModel, p.tradeTrim].filter(Boolean).join(' ');
+        tradeInInfo = 'TRADE-IN: ' + (tradeVehicle || 'Details TBD');
+        if (p.tradeVin) tradeInInfo += ' | VIN: ' + p.tradeVin;
+        if (p.tradeNotes) tradeInInfo += ' | ' + p.tradeNotes;
+      }
+
       // Dealer Log (20 cols)
       const dealerLog = ss.getSheetByName('Dealer Log');
       if (dealerLog) {
@@ -1245,6 +1254,10 @@ function doGet(e) {
           pipeline.getRange(existingRow, 21).setValue(wl);
           if (p.originalId)   pipeline.getRange(existingRow, 22).setValue(p.originalId);
           if (driveLink)      pipeline.getRange(existingRow, 23).setValue(driveLink);
+          if (tradeInInfo) {
+            const existingNotes = String(pipeline.getRange(existingRow, 27).getValue() || '');
+            pipeline.getRange(existingRow, 27).setValue(existingNotes ? existingNotes + ' | ' + tradeInInfo : tradeInInfo);
+          }
         } else {
           pipeline.appendRow([
             p.customerId    || '',
@@ -1272,19 +1285,20 @@ function doGet(e) {
             p.customerPhone || '',
             p.customerEmail || '',
             p.customerZip   || '',
-            p.notes         || '',
+            [p.notes, tradeInInfo].filter(Boolean).join(' | '),
           ]);
         }
       }
 
       // Rep Activity (8 cols)
+      const actionType = wl === 'Consultation' ? 'Customer Consultation' : 'Dealer Called';
       const repActivity = ss.getSheetByName('Rep Activity');
       if (repActivity) {
         repActivity.appendRow([
           today,
           p.rep          || '',
           (customerId ? '['+customerId+'] ' : '') + (p.customerName || ''),
-          'Dealer Called',
+          actionType,
           outcome,
           p.tier         || '',
           p.savings      || '',
@@ -1977,6 +1991,14 @@ function saveChecklistToDrive(p, today) {
     body.appendHorizontalRule();
     body.appendParagraph('VEHICLE').setHeading(DocumentApp.ParagraphHeading.HEADING2);
     body.appendParagraph(vehicle + (p.extColor ? ' — ' + p.extColor : ''));
+    if (p.tradeIn === 'yes') {
+      body.appendHorizontalRule();
+      body.appendParagraph('TRADE-IN').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+      const tradeVeh = [p.tradeYear, p.tradeMake, p.tradeModel, p.tradeTrim].filter(Boolean).join(' ');
+      body.appendParagraph('Vehicle: ' + (tradeVeh || 'Details TBD'));
+      if (p.tradeVin) body.appendParagraph('VIN: ' + p.tradeVin);
+      if (p.tradeNotes) body.appendParagraph('Notes: ' + p.tradeNotes);
+    }
     body.appendHorizontalRule();
     body.appendParagraph('DEALER').setHeading(DocumentApp.ParagraphHeading.HEADING2);
     body.appendParagraph('Dealer: '   + (p.dealerName || ''));
