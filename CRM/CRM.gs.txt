@@ -364,9 +364,10 @@ function buildPipeline(ss) {
     "Date Added","Last Contact","Follow-Up Date",
     "Final Price ($)","Savings ($)","Service Fee ($)","Discount Applied",
     "Dealer","Workflow Type","Original ID","Drive File URL","Phone","Email","Zip","Notes",
-    "Budget Range","Timeline","Financing Type","Lead Source","Communication Pref","Urgency Level"
+    "Budget Range","Timeline","Financing Type","Lead Source","Communication Pref","Urgency Level",
+    "Trade-In Vehicle","Trade-In VIN","Trade-In Value ($)","Initial Price ($)"
   ];
-  const widths = [120,160,140,80,130,110,60,100,140,140,110,110,100,100,110,120,100,110,130,180,120,120,220,130,180,80,260,120,120,120,130,130,110];
+  const widths = [120,160,140,80,130,110,60,100,140,140,110,110,100,100,110,120,100,110,130,180,120,120,220,130,180,80,260,120,120,120,130,130,110,180,170,120,120];
 
   setupSheet(sh, headers, widths, C.GOLD);
 
@@ -384,8 +385,10 @@ function buildPipeline(ss) {
   sh.getRange(2, 14, 999, 1).setNumberFormat("mm/dd/yyyy");
   sh.getRange(2, 15, 999, 1).setNumberFormat("mm/dd/yyyy");
   sh.getRange(2, 16, 999, 3).setNumberFormat("$#,##0");
+  sh.getRange(2, 36, 999, 1).setNumberFormat("$#,##0");  // Trade-In Value
+  sh.getRange(2, 37, 999, 1).setNumberFormat("$#,##0");  // Initial Price
 
-  const fullRowRange = sh.getRange("A2:AA5000");
+  const fullRowRange = sh.getRange("A2:AK5000");
   const statusRange  = sh.getRange("F2:F5000");
   const fuRange      = sh.getRange("O2:O5000");
 
@@ -1035,9 +1038,26 @@ function doGet(e) {
       }
 
       const pipeline = ss.getSheetByName('Pipeline');
+      // Read trade-in and deal data from old SKC row before closing it
+      let skcTradeVehicle = '', skcTradeVin = '', skcTradeValue = '';
+      let skcInitialPrice = '', skcSavings = '', skcFinalPrice = '', skcDiscount = '';
+      let skcBudget = '', skcTimeline = '', skcFinancing = '', skcLeadSource = '', skcCommPref = '', skcUrgency = '';
       if (pipeline) {
         pipeline.getDataRange().getValues().forEach((row, i) => {
           if (i > 0 && String(row[0]).trim() === skcId) {
+            skcTradeVehicle = String(row[33] || '');
+            skcTradeVin     = String(row[34] || '');
+            skcTradeValue   = String(row[35] || '');
+            skcInitialPrice = String(row[36] || '');
+            skcSavings      = String(row[16] || '');
+            skcFinalPrice   = String(row[15] || '');
+            skcDiscount     = String(row[18] || '');
+            skcBudget       = String(row[27] || '');
+            skcTimeline     = String(row[28] || '');
+            skcFinancing    = String(row[29] || '');
+            skcLeadSource   = String(row[30] || '');
+            skcCommPref     = String(row[31] || '');
+            skcUrgency      = String(row[32] || '');
             pipeline.getRange(i+1, 6).setValue('Closed');
             pipeline.getRange(i+1, 21).setValue('Converted');
           }
@@ -1060,10 +1080,12 @@ function doGet(e) {
           p.tier || '', p.rep || '', 'Searching',
           '', '', '', '', '', '',
           today, today, '',
-          '', '', '', 'None', '',
+          skcFinalPrice, skcSavings, '', skcDiscount || 'None', '',
           'Purchase', skcId, '',
           p.customerPhone || '', p.customerEmail || '', p.customerZip || '',
           'Converted from ' + skcId,
+          skcBudget, skcTimeline, skcFinancing, skcLeadSource, skcCommPref, skcUrgency,
+          skcTradeVehicle, skcTradeVin, skcTradeValue, skcInitialPrice,
         ]);
       }
 
@@ -1254,9 +1276,18 @@ function doGet(e) {
           pipeline.getRange(existingRow, 21).setValue(wl);
           if (p.originalId)   pipeline.getRange(existingRow, 22).setValue(p.originalId);
           if (driveLink)      pipeline.getRange(existingRow, 23).setValue(driveLink);
+          if (p.tradeIn === 'yes') {
+            const tradeVehicle = [p.tradeYear, p.tradeMake, p.tradeModel, p.tradeTrim].filter(Boolean).join(' ');
+            if (tradeVehicle)    pipeline.getRange(existingRow, 34).setValue(tradeVehicle);
+            if (p.tradeVin)      pipeline.getRange(existingRow, 35).setValue(p.tradeVin);
+            if (p.tradeValue)    pipeline.getRange(existingRow, 36).setValue(p.tradeValue);
+          }
+          if (p.initialPrice)    pipeline.getRange(existingRow, 37).setValue(p.initialPrice);
           if (tradeInInfo) {
             const existingNotes = String(pipeline.getRange(existingRow, 27).getValue() || '');
-            pipeline.getRange(existingRow, 27).setValue(existingNotes ? existingNotes + ' | ' + tradeInInfo : tradeInInfo);
+            if (!existingNotes.includes('TRADE-IN')) {
+              pipeline.getRange(existingRow, 27).setValue(existingNotes ? existingNotes + ' | ' + tradeInInfo : tradeInInfo);
+            }
           }
         } else {
           pipeline.appendRow([
@@ -1286,6 +1317,16 @@ function doGet(e) {
             p.customerEmail || '',
             p.customerZip   || '',
             [p.notes, tradeInInfo].filter(Boolean).join(' | '),
+            p.budgetRange   || '',
+            p.timeline      || '',
+            p.financingType || '',
+            p.leadSource    || '',
+            p.commPref      || '',
+            p.urgency       || '',
+            p.tradeIn === 'yes' ? [p.tradeYear, p.tradeMake, p.tradeModel, p.tradeTrim].filter(Boolean).join(' ') : '',
+            p.tradeVin      || '',
+            p.tradeValue    || '',
+            p.initialPrice  || '',
           ]);
         }
       }
@@ -1468,6 +1509,10 @@ function doGet(e) {
             if (p.commPref)       pipeline.getRange(r, 32).setValue(p.commPref);
             if (p.urgency)        pipeline.getRange(r, 33).setValue(p.urgency);
             if (p.discount)       pipeline.getRange(r, 19).setValue(p.discount);
+            if (p.tradeInVehicle) pipeline.getRange(r, 34).setValue(p.tradeInVehicle);
+            if (p.tradeInVin)     pipeline.getRange(r, 35).setValue(p.tradeInVin);
+            if (p.tradeInValue)   pipeline.getRange(r, 36).setValue(p.tradeInValue);
+            if (p.initialPrice)   pipeline.getRange(r, 37).setValue(p.initialPrice);
             pipeline.getRange(r, 14).setValue(today);
           }
         });
@@ -1895,6 +1940,10 @@ function getActiveCustomers(ss, filter) {
         leadSource:    String(row[30] || ''),
         commPref:      String(row[31] || ''),
         urgency:       String(row[32] || ''),
+        tradeInVehicle: String(row[33] || ''),
+        tradeInVin:     String(row[34] || ''),
+        tradeInValue:   String(row[35] || ''),
+        initialPrice:   String(row[36] || ''),
       };
     });
   }
@@ -1956,6 +2005,10 @@ function getActiveCustomers(ss, filter) {
       leadSource:    pl.leadSource   || '',
       commPref:      pl.commPref     || '',
       urgency:       pl.urgency      || '',
+      tradeInVehicle: pl.tradeInVehicle || '',
+      tradeInVin:     pl.tradeInVin     || '',
+      tradeInValue:   pl.tradeInValue   || '',
+      initialPrice:   pl.initialPrice   || '',
     });
   });
 

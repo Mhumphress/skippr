@@ -516,6 +516,17 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field"><label>Comm Preference</label><select id="ec-commpref"><option value="">—</option><option>Phone</option><option>Text</option><option>Email</option></select></div>
       <div class="form-field"><label>Urgency</label><select id="ec-urgency"><option value="">—</option><option>High</option><option>Medium</option><option>Low</option></select></div>
     </div>
+    <div style="border-top:1px solid var(--border);margin:16px 0 12px;padding-top:12px;">
+      <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px;">Trade-In</div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Trade-In Vehicle</label><input id="ec-trade-vehicle" placeholder="2020 Honda Civic EX-L"/></div>
+      <div class="form-field"><label>Trade-In VIN</label><input id="ec-trade-vin" placeholder="1HGBH41JXMN109186" style="font-family:monospace;"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Trade-In Value ($)</label><input id="ec-trade-value" placeholder="$12,500"/></div>
+      <div class="form-field"><label>Initial Asking Price ($)</label><input id="ec-initial-price" placeholder="$46,800"/></div>
+    </div>
     <div class="modal-actions">
       <button class="modal-btn" onclick="closeModal('edit-customer-modal')">Cancel</button>
       <button class="modal-btn primary" onclick="submitEditCustomer()">Save Changes</button>
@@ -1130,12 +1141,50 @@ function renderCustomerDetail(id) {
         ${infoRow('Dealer', c.dealer   || '—')}
       </div>
       <div class="info-card">
-        <div class="info-card-title">Financials</div>
-        ${infoRow('Final Price', c.finalPrice ? '$' + Number(String(c.finalPrice).replace(/[^0-9.-]/g,'')).toLocaleString() : '—')}
-        ${infoRow('Savings',     c.savings    ? '$' + Number(String(c.savings).replace(/[^0-9.-]/g,'')).toLocaleString()    : '—')}
-        ${infoRow('Service Fee', c.serviceFee ? '$' + Number(String(c.serviceFee).replace(/[^0-9.-]/g,'')).toLocaleString() : '—')}
+        <div class="info-card-title">Deal Pricing</div>
+        ${infoRow('Initial Price', c.initialPrice ? '$' + parseMoney(c.initialPrice).toLocaleString() : '—')}
+        ${infoRow('Final Price',   c.finalPrice   ? '$' + parseMoney(c.finalPrice).toLocaleString()   : '—')}
+        ${(() => {
+          const saved = parseMoney(c.savings);
+          return infoRow('Savings', saved ? '<span style="color:var(--green);font-weight:600">$' + saved.toLocaleString() + '</span>' : '—');
+        })()}
         ${infoRow('Type',        c.type       || '—')}
         ${infoRow('Original ID', c.originalId || '—')}
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-card-title">Invoice Breakdown</div>
+        ${(() => {
+          const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2000 : 750);
+          const discountPct = c.discount === 'Military 15%' || c.discount === 'First Responder 15%' ? 0.15 : c.discount === 'Student 5%' ? 0.05 : 0;
+          const discountAmt = Math.round(fee * discountPct);
+          const netFee = fee - discountAmt;
+          let html = infoRow('Service Tier', c.tier || '—');
+          html += infoRow('Service Fee', '<span style="color:var(--gold)">$' + fee.toLocaleString() + '</span>');
+          if (discountPct > 0) {
+            html += infoRow('Discount', '<span style="color:var(--amber)">' + esc(c.discount) + ' (-$' + discountAmt.toLocaleString() + ')</span>');
+          } else {
+            html += infoRow('Discount', 'None');
+          }
+          html += '<div class="info-row" style="border-top:1px solid var(--gold-border);padding-top:10px;margin-top:4px;">';
+          html += '<span class="info-label" style="color:var(--gold);font-weight:600;">Customer Paid</span>';
+          html += '<span class="info-value" style="color:var(--gold);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
+          html += '</div>';
+          return html;
+        })()}
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">Trade-In</div>
+        ${c.tradeInVehicle ? `
+          ${infoRow('Vehicle', c.tradeInVehicle)}
+          ${infoRow('VIN', c.tradeInVin || '—')}
+          ${(() => {
+            const val = parseMoney(c.tradeInValue);
+            return infoRow('Est. Value', val ? '<span style="color:var(--green);font-weight:600">$' + val.toLocaleString() + '</span>' : '—');
+          })()}
+        ` : '<div style="text-align:center;padding:16px;color:var(--gray);font-size:0.82rem;">No trade-in on file</div>'}
       </div>
     </div>
 
@@ -1191,6 +1240,12 @@ function infoRow(label, value) {
     <span class="info-label">${label}</span>
     <span class="info-value">${value}</span>
   </div>`;
+}
+
+function parseMoney(v) {
+  if (!v) return 0;
+  const n = parseFloat(String(v).replace(/[^0-9.-]/g, ''));
+  return isNaN(n) ? 0 : Math.round(n);
 }
 
 // ── CUSTOMER TRANSACTIONS ─────────────────────────────────────
@@ -1697,6 +1752,10 @@ function openEditModal(id) {
   document.getElementById('ec-source').value = c.leadSource || '';
   document.getElementById('ec-commpref').value = c.commPref || '';
   document.getElementById('ec-urgency').value = c.urgency || '';
+  document.getElementById('ec-trade-vehicle').value = c.tradeInVehicle || '';
+  document.getElementById('ec-trade-vin').value = c.tradeInVin || '';
+  document.getElementById('ec-trade-value').value = c.tradeInValue || '';
+  document.getElementById('ec-initial-price').value = c.initialPrice || '';
   const repSelect = document.getElementById('ec-rep');
   repSelect.innerHTML = '';
   REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
@@ -1730,6 +1789,10 @@ async function submitEditCustomer() {
       leadSource: document.getElementById('ec-source').value,
       commPref: document.getElementById('ec-commpref').value,
       urgency: document.getElementById('ec-urgency').value,
+      tradeInVehicle: document.getElementById('ec-trade-vehicle').value.trim(),
+      tradeInVin: document.getElementById('ec-trade-vin').value.trim(),
+      tradeInValue: document.getElementById('ec-trade-value').value.trim(),
+      initialPrice: document.getElementById('ec-initial-price').value.trim(),
     });
     toast('Customer updated ✓', 'success');
     await loadAll();

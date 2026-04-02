@@ -415,6 +415,7 @@
           <div class="field"><label>Trim</label><input type="text" id="i-trade-trim" placeholder="EX-L"/></div>
         </div>
         <div class="field"><label>VIN (if available)</label><input type="text" id="i-trade-vin" placeholder="1HGBH41JXMN109186" style="font-family:monospace;letter-spacing:0.06em;"/></div>
+        <div class="field"><label>Estimated Trade-In Value (KBB)</label><input type="text" id="i-trade-value" placeholder="$12,500"/></div>
         <div class="field"><label>Trade-in notes (mileage, condition, payoff, etc.)</label><textarea id="i-trade-notes" placeholder="e.g. 45k miles, clean title, $8,200 remaining payoff..." style="min-height:60px;width:100%;resize:vertical;"></textarea></div>
       </div>
       <span class="tog-label" style="margin-top:14px;">How specific is the customer on the vehicle?</span>
@@ -769,7 +770,8 @@ function generate(){
     <div class="outcome-grid">
       <div class="field"><label>Customer status</label><select id="out-status"><option value="">Select status...</option><option>New</option><option>Searching</option><option>Deal Found</option><option>Pending</option><option>On Hold</option><option>Closed</option><option>Lost</option></select></div>
       <div class="field"><label>Call outcome</label><select id="out-outcome"><option value="">Select...</option><option>Strong lead — moving forward</option><option>Possible — needs follow-up</option><option>Not competitive — eliminated</option><option>Vehicle not available</option><option>Waiting on callback</option><option>Deal closed</option></select></div>
-      <div class="field"><label>Best OTD price quoted</label><input id="out-price" type="text" placeholder="e.g. $43,200"/></div>
+      <div class="field"><label>Initial asking price (first offer)</label><input id="out-initial-price" type="text" placeholder="e.g. $46,800"/></div>
+      <div class="field"><label>Best OTD price quoted (final)</label><input id="out-price" type="text" placeholder="e.g. $43,200"/></div>
       <div class="field"><label>Total fees</label><input id="out-fees" type="text" placeholder="e.g. $1,100"/></div>
       <div class="field"><label>Savings achieved ($)</label><input id="out-savings" type="text" placeholder="e.g. $2,400"/></div>
       <div class="field"><label>Follow-up date</label><input id="out-followup" type="datetime-local"/></div>
@@ -1179,6 +1181,7 @@ async function saveConsultation() {
     tradeModel:     getVal('i-trade-model'),
     tradeTrim:      getVal('i-trade-trim'),
     tradeVin:       getVal('i-trade-vin'),
+    tradeValue:     getVal('i-trade-value'),
     tradeNotes:     getVal('i-trade-notes'),
     newCustomer:    'true',
   };
@@ -1293,7 +1296,9 @@ async function saveToCRM() {
     tradeModel:      getVal('i-trade-model'),
     tradeTrim:       getVal('i-trade-trim'),
     tradeVin:        getVal('i-trade-vin'),
+    tradeValue:      getVal('i-trade-value'),
     tradeNotes:      getVal('i-trade-notes'),
+    initialPrice:    getVal('out-initial-price'),
     checklistData:   checkedItems.join('\n').substring(0, 1500),
     saveToDrive:     'true',
     newCustomer:     'true',
