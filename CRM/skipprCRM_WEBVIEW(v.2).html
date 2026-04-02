@@ -839,6 +839,28 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <label>Vehicle</label>
       <input id="conv-vehicle" readonly style="opacity:0.7;"/>
     </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Discount</label>
+        <select id="conv-discount" onchange="toggleConvCustomDiscount();updateConvertCalc()">
+          <option value="None">None</option>
+          <option value="Military 15%">Military 15%</option>
+          <option value="First Responder 15%">First Responder 15%</option>
+          <option value="Student 5%">Student 5%</option>
+          <option value="Other">Other (custom)</option>
+        </select>
+      </div>
+      <div class="form-field" id="conv-discount-reason-wrap" style="display:none;">
+        <label>Reason</label>
+        <select id="conv-discount-reason"><option>Customer Satisfaction</option><option>Promotional</option><option>Referral</option><option>Override</option><option>Other</option></select>
+      </div>
+    </div>
+    <div id="conv-custom-discount" style="display:none;">
+      <div class="form-row">
+        <div class="form-field"><label>Type</label><select id="conv-discount-type" onchange="updateConvertCalc()"><option value="dollar">Dollar ($)</option><option value="percent">Percentage (%)</option></select></div>
+        <div class="form-field"><label>Amount</label><input id="conv-discount-amount" type="text" placeholder="e.g. 100 or 10" oninput="updateConvertCalc()"/></div>
+      </div>
+    </div>
     <div style="border-top:1px solid var(--border);margin:16px 0 12px;padding-top:12px;">
       <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px;">Payment Information</div>
     </div>
@@ -2355,7 +2377,8 @@ async function submitRefund() {
 let convertData = {};
 function openConvertModal(id, name, tier, phone, email, zip, vehicle, rep) {
   const c = DB.customers.find(x => x.id === id) || {};
-  convertData = { id, name, tier, phone, email, zip, vehicle, rep, discount: c.discount || 'None' };
+  const disc = c.discount || 'None';
+  convertData = { id, name, tier, phone, email, zip, vehicle, rep, discount: disc };
   document.getElementById('convert-modal-sub').textContent = name + ' · ' + id + ' → New SKP record';
   document.getElementById('conv-name').value = name;
   document.getElementById('conv-tier').value = tier || 'Tier 1';
@@ -2367,6 +2390,23 @@ function openConvertModal(id, name, tier, phone, email, zip, vehicle, rep) {
   document.getElementById('conv-inv-status').value = 'Pending';
   document.getElementById('conv-deposit').value = '0';
   document.getElementById('conv-processing').value = '0';
+  // Populate discount
+  if (disc.startsWith('Other')) {
+    document.getElementById('conv-discount').value = 'Other';
+    document.getElementById('conv-custom-discount').style.display = 'block';
+    document.getElementById('conv-discount-reason-wrap').style.display = 'block';
+    const reasonMatch = disc.match(/\(([^)]+)\)/);
+    if (reasonMatch) document.getElementById('conv-discount-reason').value = reasonMatch[1];
+    const valMatch = disc.match(/:\s*\$?(\d+\.?\d*)(%)?/);
+    if (valMatch) {
+      document.getElementById('conv-discount-type').value = valMatch[2] ? 'percent' : 'dollar';
+      document.getElementById('conv-discount-amount').value = valMatch[1];
+    }
+  } else {
+    document.getElementById('conv-discount').value = disc;
+    document.getElementById('conv-custom-discount').style.display = 'none';
+    document.getElementById('conv-discount-reason-wrap').style.display = 'none';
+  }
   const repSelect = document.getElementById('conv-rep');
   repSelect.innerHTML = '';
   REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
@@ -2375,10 +2415,25 @@ function openConvertModal(id, name, tier, phone, email, zip, vehicle, rep) {
   document.getElementById('convert-modal').classList.add('open');
 }
 
+function toggleConvCustomDiscount() {
+  const isOther = document.getElementById('conv-discount').value === 'Other';
+  document.getElementById('conv-custom-discount').style.display = isOther ? 'block' : 'none';
+  document.getElementById('conv-discount-reason-wrap').style.display = isOther ? 'block' : 'none';
+}
+
+function getConvDiscountValue() {
+  const sel = document.getElementById('conv-discount').value;
+  if (sel !== 'Other') return sel;
+  const reason = document.getElementById('conv-discount-reason').value;
+  const type = document.getElementById('conv-discount-type').value;
+  const amt = document.getElementById('conv-discount-amount').value || '0';
+  return 'Other (' + reason + '): ' + (type === 'percent' ? amt + '%' : '$' + amt);
+}
+
 function updateConvertCalc() {
   const tier = document.getElementById('conv-tier').value;
   const fee = tier === 'Tier 2' ? 2000 : 750;
-  const discount = convertData.discount || 'None';
+  const discount = getConvDiscountValue();
   const discountAmt = calcDiscountAmount(discount, fee);
   const total = fee - discountAmt;
   document.getElementById('conv-fee-display').textContent = '$' + fee.toLocaleString();
@@ -2421,7 +2476,7 @@ async function submitConvert() {
       tier: tier,
       rep: rep,
       vehicle: convertData.vehicle,
-      discount: convertData.discount || 'None',
+      discount: getConvDiscountValue(),
       paymentMethod: document.getElementById('conv-method').value,
       invoiceStatus: document.getElementById('conv-inv-status').value,
       deposit: document.getElementById('conv-deposit').value,
@@ -2450,7 +2505,7 @@ async function submitConvert() {
           model: c.model || '',
           trim: c.trim || '',
           extColor: c.extColor || '',
-          discount: convertData.discount || 'None',
+          discount: getConvDiscountValue(),
           tradeInVehicle: c.tradeInVehicle || '',
           tradeInVin: c.tradeInVin || '',
           tradeInValue: c.tradeInValue || '',
