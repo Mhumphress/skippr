@@ -513,7 +513,14 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     </div>
     <div class="form-row">
       <div class="form-field"><label>Ext Color</label><input id="ec-color"/></div>
-      <div class="form-field"><label>Discount</label><select id="ec-discount"><option>None</option><option>Military 15%</option><option>First Responder 15%</option><option>Student 5%</option></select></div>
+      <div class="form-field"><label>Discount</label><select id="ec-discount" onchange="toggleEditCustomDiscount()"><option>None</option><option>Military 15%</option><option>First Responder 15%</option><option>Student 5%</option><option value="Other">Other (custom)</option></select></div>
+    </div>
+    <div id="ec-custom-discount" style="display:none;">
+      <div class="form-row">
+        <div class="form-field"><label>Reason</label><select id="ec-discount-reason"><option>Customer Satisfaction</option><option>Promotional</option><option>Referral</option><option>Override</option><option>Other</option></select></div>
+        <div class="form-field"><label>Type</label><select id="ec-discount-type"><option value="dollar">Dollar ($)</option><option value="percent">Percentage (%)</option></select></div>
+      </div>
+      <div class="form-field"><label>Amount</label><input id="ec-discount-amount" type="text" placeholder="e.g. 100 or 10"/></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Budget Range</label><input id="ec-budget" placeholder="e.g. $35,000 - $45,000"/></div>
@@ -612,7 +619,33 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
           <option value="Military 15%">Military 15%</option>
           <option value="First Responder 15%">First Responder 15%</option>
           <option value="Student 5%">Student 5%</option>
+          <option value="Other">Other (custom)</option>
         </select>
+      </div>
+    </div>
+    <div id="inv-custom-discount" style="display:none;margin-bottom:16px;">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Discount Reason</label>
+          <select id="inv-discount-reason">
+            <option>Customer Satisfaction</option>
+            <option>Promotional</option>
+            <option>Referral</option>
+            <option>Override</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Type</label>
+          <select id="inv-discount-type" onchange="updateInvoiceCalc()">
+            <option value="dollar">Dollar amount ($)</option>
+            <option value="percent">Percentage (%)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Discount Amount</label>
+        <input id="inv-discount-amount" type="text" placeholder="e.g. 100 or 10" value="" oninput="updateInvoiceCalc()"/>
       </div>
     </div>
     <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
@@ -1224,15 +1257,14 @@ function renderCustomerDetail(id) {
         <div class="info-card-title">Invoice Breakdown</div>
         ${(() => {
           const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2000 : 750);
-          const discountPct = c.discount === 'Military 15%' || c.discount === 'First Responder 15%' ? 0.15 : c.discount === 'Student 5%' ? 0.05 : 0;
-          const discountAmt = Math.round(fee * discountPct);
+          const discountAmt = calcDiscountAmount(c.discount, fee);
           const netFee = fee - discountAmt;
           const isConsultation = c.id.startsWith('SKC') || c.workflow === 'Consultation';
           const txns = getCustomerTransactions(c.id);
           const hasPaidInvoice = txns.some(t => t.invoiceStatus === 'Paid');
           let html = infoRow('Service Tier', c.tier || '—');
           html += infoRow('Service Fee', '<span style="color:var(--gold)">$' + fee.toLocaleString() + '</span>');
-          if (discountPct > 0) {
+          if (discountAmt > 0) {
             html += infoRow('Discount', '<span style="color:var(--amber)">' + esc(c.discount) + ' (-$' + discountAmt.toLocaleString() + ')</span>');
           } else {
             html += infoRow('Discount', 'None');
@@ -1317,6 +1349,35 @@ function infoRow(label, value) {
     <span class="info-label">${label}</span>
     <span class="info-value">${value}</span>
   </div>`;
+}
+
+function toggleEditCustomDiscount() {
+  const panel = document.getElementById('ec-custom-discount');
+  panel.style.display = document.getElementById('ec-discount').value === 'Other' ? 'block' : 'none';
+}
+
+function buildCustomDiscount(selId, reasonId, typeId, amtId) {
+  const sel = document.getElementById(selId).value;
+  if (sel !== 'Other') return sel;
+  const reason = document.getElementById(reasonId).value;
+  const type = document.getElementById(typeId).value;
+  const amt = document.getElementById(amtId).value || '0';
+  return 'Other (' + reason + '): ' + (type === 'percent' ? amt + '%' : '$' + amt);
+}
+
+// Parse any discount string (standard or custom) into a dollar amount given a fee
+function calcDiscountAmount(discountStr, fee) {
+  if (!discountStr || discountStr === 'None') return 0;
+  const stdMap = { 'Military 15%': 0.15, 'First Responder 15%': 0.15, 'Student 5%': 0.05 };
+  if (stdMap[discountStr]) return Math.round(fee * stdMap[discountStr]);
+  // Parse custom: "Other (Reason): $100" or "Other (Reason): 10%"
+  const match = discountStr.match(/:\s*\$?(\d+\.?\d*)(%)?/);
+  if (match) {
+    const val = parseFloat(match[1]) || 0;
+    if (match[2] || discountStr.includes('%')) return Math.round(fee * (val / 100));
+    return Math.round(val);
+  }
+  return 0;
 }
 
 function parseMoney(v) {
@@ -1889,7 +1950,22 @@ function openEditModal(id) {
   document.getElementById('ec-model').value = c.model || '';
   document.getElementById('ec-trim').value = c.trim || '';
   document.getElementById('ec-color').value = c.extColor || '';
-  document.getElementById('ec-discount').value = c.discount || 'None';
+  // Set discount — handle custom discounts
+  const disc = c.discount || 'None';
+  if (disc.startsWith('Other')) {
+    document.getElementById('ec-discount').value = 'Other';
+    document.getElementById('ec-custom-discount').style.display = 'block';
+    const reasonMatch = disc.match(/\(([^)]+)\)/);
+    if (reasonMatch) document.getElementById('ec-discount-reason').value = reasonMatch[1];
+    const valMatch = disc.match(/:\s*\$?(\d+\.?\d*)(%)?/);
+    if (valMatch) {
+      document.getElementById('ec-discount-type').value = valMatch[2] ? 'percent' : 'dollar';
+      document.getElementById('ec-discount-amount').value = valMatch[1];
+    }
+  } else {
+    document.getElementById('ec-discount').value = disc;
+    document.getElementById('ec-custom-discount').style.display = 'none';
+  }
   document.getElementById('ec-budget').value = c.budgetRange || '';
   document.getElementById('ec-timeline').value = c.timeline || '';
   document.getElementById('ec-financing').value = c.financingType || '';
@@ -1943,7 +2019,7 @@ async function submitEditCustomer() {
       model: document.getElementById('ec-model').value.trim(),
       trim: document.getElementById('ec-trim').value.trim(),
       extColor: document.getElementById('ec-color').value.trim(),
-      discount: document.getElementById('ec-discount').value,
+      discount: buildCustomDiscount('ec-discount','ec-discount-reason','ec-discount-type','ec-discount-amount'),
       budgetRange: document.getElementById('ec-budget').value.trim(),
       timeline: document.getElementById('ec-timeline').value.trim(),
       financingType: document.getElementById('ec-financing').value,
@@ -2080,21 +2156,49 @@ function openInvoiceModal(id, name, tier, discount) {
 function updateInvoiceCalc() {
   const fee = parseFloat(document.getElementById('inv-tier').value) || 0;
   const discountVal = document.getElementById('inv-discount').value;
+  const customPanel = document.getElementById('inv-custom-discount');
+  customPanel.style.display = discountVal === 'Other' ? 'block' : 'none';
+
+  let discountAmt = 0;
+  let discountLabel = discountVal;
   const discountMap = { 'Military 15%': 0.15, 'First Responder 15%': 0.15, 'Student 5%': 0.05 };
-  const pct = discountMap[discountVal] || 0;
-  const discountAmt = Math.round(fee * pct);
+
+  if (discountVal === 'Other') {
+    const type = document.getElementById('inv-discount-type').value;
+    const amt = parseFloat(document.getElementById('inv-discount-amount').value) || 0;
+    const reason = document.getElementById('inv-discount-reason').value;
+    if (type === 'percent') {
+      discountAmt = Math.round(fee * (amt / 100));
+      discountLabel = reason + ' ' + amt + '%';
+    } else {
+      discountAmt = Math.round(amt);
+      discountLabel = reason + ' $' + amt;
+    }
+  } else {
+    discountAmt = Math.round(fee * (discountMap[discountVal] || 0));
+  }
   const total = fee - discountAmt;
 
   document.getElementById('inv-fee-display').textContent = '$' + fee.toLocaleString();
   const discRow = document.getElementById('inv-discount-row');
-  if (pct > 0) {
+  if (discountAmt > 0) {
     discRow.hidden = false;
-    document.getElementById('inv-discount-label').textContent = discountVal;
+    document.getElementById('inv-discount-label').textContent = discountLabel;
     document.getElementById('inv-discount-display').textContent = '-$' + discountAmt.toLocaleString();
   } else {
     discRow.hidden = true;
   }
   document.getElementById('inv-total-display').textContent = '$' + total.toLocaleString();
+}
+
+// Build the discount string for saving to backend
+function getInvoiceDiscountValue() {
+  const sel = document.getElementById('inv-discount').value;
+  if (sel !== 'Other') return sel;
+  const reason = document.getElementById('inv-discount-reason').value;
+  const type = document.getElementById('inv-discount-type').value;
+  const amt = document.getElementById('inv-discount-amount').value || '0';
+  return 'Other (' + reason + '): ' + (type === 'percent' ? amt + '%' : '$' + amt);
 }
 
 async function submitInvoice() {
@@ -2108,7 +2212,7 @@ async function submitInvoice() {
       customerName: invoiceCustomer.name,
       tier: invoiceCustomer.tier,
       serviceFee: fee,
-      discount: document.getElementById('inv-discount').value,
+      discount: getInvoiceDiscountValue(),
       paymentMethod: document.getElementById('inv-method').value,
       invoiceStatus: document.getElementById('inv-status').value,
       deposit: document.getElementById('inv-deposit').value,
@@ -2183,9 +2287,7 @@ function updateConvertCalc() {
   const tier = document.getElementById('conv-tier').value;
   const fee = tier === 'Tier 2' ? 2000 : 750;
   const discount = convertData.discount || 'None';
-  const discountMap = { 'Military 15%': 0.15, 'First Responder 15%': 0.15, 'Student 5%': 0.05 };
-  const pct = discountMap[discount] || 0;
-  const discountAmt = Math.round(fee * pct);
+  const discountAmt = calcDiscountAmount(discount, fee);
   const total = fee - discountAmt;
   document.getElementById('conv-fee-display').textContent = '$' + fee.toLocaleString();
   const discRow = document.getElementById('conv-discount-row');

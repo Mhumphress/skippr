@@ -374,7 +374,7 @@ function buildPipeline(ss) {
   setDropdown(sh, 2, 4,  1000, ["Tier 1","Tier 2"]);
   setDropdown(sh, 2, 5,  1000, buildRepList());
   setDropdown(sh, 2, 6,  1000, ["New","Searching","Deal Found","Pending","On Hold","Closed","Lost"]);
-  setDropdown(sh, 2, 19, 1000, ["None","Military 15%","First Responder 15%","Student 5%"]);
+  setDropdown(sh, 2, 19, 1000, ["None","Military 15%","First Responder 15%","Student 5%","Other"]);
   setDropdown(sh, 2, 21, 1000, ["Consultation","Purchase","Converted"]);
   setDropdown(sh, 2, 30, 1000, ["Cash","Finance","Lease"]);
   setDropdown(sh, 2, 31, 1000, ["Referral","Website","Social Media","Phone","Other"]);
@@ -665,7 +665,7 @@ function buildFinancials(ss) {
   setupSheet(sh, headers, widths, C.GREEN);
   setDropdown(sh, 2, 7, 1000, ["Credit Card","ACH/Bank Transfer","Check","Cash","Zelle/Venmo"]);
   setDropdown(sh, 2, 9, 1000, ["Draft","Pending","Paid","Partial","Refunded","Overdue"]);
-  setDropdown(sh, 2, 4, 1000, ["None","Military 15%","First Responder 15%","Student 5%"]);
+  setDropdown(sh, 2, 4, 1000, ["None","Military 15%","First Responder 15%","Student 5%","Other"]);
 
   // Currency format on cols 3, 5, 6, 10, 11, 12, 14
   [3, 5, 6, 10, 11, 12, 14].forEach(function(col) {
@@ -718,6 +718,23 @@ function setDropdown(sh, startRow, col, count, values) {
     .setAllowInvalid(false)
     .build();
   sh.getRange(startRow, col, count, 1).setDataValidation(rule);
+}
+
+// Parse discount string → multiplier (0.85 = 15% off, etc.)
+// Handles: "None", "Military 15%", "Other (Reason): $100", "Other (Reason): 10%"
+function calcDiscountMultiplier(discountStr, serviceFee) {
+  if (!discountStr || discountStr === 'None') return 1;
+  const stdMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
+  if (stdMap[discountStr]) return stdMap[discountStr];
+  // Custom: "Other (Reason): $100" or "Other (Reason): 10%"
+  const match = discountStr.match(/:\s*\$?(\d+\.?\d*)(%)?/);
+  if (match) {
+    const val = parseFloat(match[1]) || 0;
+    if (match[2] || discountStr.includes('%')) return Math.max(0, 1 - (val / 100));
+    // Dollar amount: return as ratio
+    if (serviceFee > 0) return Math.max(0, (serviceFee - val) / serviceFee);
+  }
+  return 1;
 }
 
 function buildRepList() {
@@ -1117,8 +1134,7 @@ function doGet(e) {
           if (String(row[0]).trim() === skcId) {
             const r = i + 1;
             const newFee = p.tier === 'Tier 2' ? 2000 : 750;
-            const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
-            const discountMult = discountMap[convDiscount] || 1;
+            const discountMult = calcDiscountMultiplier(convDiscount, newFee);
             const netFee = Math.round(newFee * discountMult * 100) / 100;
             const netProfit = netFee - convPlatformFees;
             finSheet.getRange(r, 1).setValue(skpId);               // Update Customer ID
@@ -1143,8 +1159,7 @@ function doGet(e) {
         // If no draft invoice existed for this SKC, create a new one with payment info
         if (!invoiceUpdated) {
           const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
-          const discountMap2 = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
-          const discountMult2 = discountMap2[convDiscount] || 1;
+          const discountMult2 = calcDiscountMultiplier(convDiscount, serviceFee);
           const netFee2 = Math.round(serviceFee * discountMult2 * 100) / 100;
           const netProfit2 = netFee2 - convPlatformFees;
           const newInvoiceNum = reserveNextInvoiceNumber(ss);
@@ -1476,8 +1491,7 @@ function doGet(e) {
       const finSheet = ss.getSheetByName('Financials');
       if (finSheet) {
         const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
-        const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
-        const discountMult = discountMap[p.discount] || 1;
+        const discountMult = calcDiscountMultiplier(p.discount || 'None', serviceFee);
         const netFee = Math.round(serviceFee * discountMult * 100) / 100;
         const draftInvoiceNum = reserveNextInvoiceNumber(ss);
         finSheet.appendRow([
@@ -1733,13 +1747,7 @@ function doGet(e) {
       if (!sh) return json({ success: false, message: 'Financials sheet not found' }, cb);
 
       const serviceFee = parseFloat(p.serviceFee) || 0;
-      const discountMap = {
-        'Military 15%': 0.85,
-        'First Responder 15%': 0.85,
-        'Student 5%': 0.95,
-        'None': 1
-      };
-      const discountMult = discountMap[p.discount] || 1;
+      const discountMult = calcDiscountMultiplier(p.discount || 'None', serviceFee);
       const netFee = Math.round(serviceFee * discountMult * 100) / 100;
 
       // Check for existing Draft invoice — update instead of creating duplicate

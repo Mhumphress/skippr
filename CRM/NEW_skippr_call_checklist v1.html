@@ -429,7 +429,14 @@
       <span class="tog-label" style="margin-top:14px;">Does the customer need shipping / transport?</span>
       <div class="toggle-group" id="tg-ship"><div class="tog" data-val="no">Customer will pick up</div><div class="tog" data-val="yes">Needs shipping arranged</div><div class="tog on" data-val="tbd">TBD — depends on dealer location</div></div>
       <span class="tog-label" style="margin-top:14px;">Applicable discount?</span>
-      <div class="toggle-group" id="tg-discount"><div class="tog on" data-val="none">None</div><div class="tog" data-val="military">Military / Veteran</div><div class="tog" data-val="firstresponder">First Responder</div><div class="tog" data-val="student">Student</div></div>
+      <div class="toggle-group" id="tg-discount"><div class="tog on" data-val="none">None</div><div class="tog" data-val="military">Military / Veteran</div><div class="tog" data-val="firstresponder">First Responder</div><div class="tog" data-val="student">Student</div><div class="tog" data-val="other">Other</div></div>
+      <div id="tg-discount-custom" style="display:none;margin-top:10px;padding:14px 16px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.12);border-radius:8px;">
+        <div class="grid2">
+          <div class="field"><label>Discount Reason</label><select id="i-discount-reason"><option>Customer Satisfaction</option><option>Promotional</option><option>Referral</option><option>Override</option><option>Other</option></select></div>
+          <div class="field"><label>Type</label><select id="i-discount-type"><option value="dollar">Dollar amount ($)</option><option value="percent">Percentage (%)</option></select></div>
+        </div>
+        <div class="field"><label>Discount Amount</label><input type="text" id="i-discount-amount" placeholder="e.g. 100 or 10"/></div>
+      </div>
     </div>
 
     <!-- Consultation-only: notes + save -->
@@ -591,6 +598,11 @@ document.querySelectorAll('.toggle-group').forEach(group=>{
         const box=document.getElementById('tg-downpayment-amt');
         if(box) box.style.display=tog.dataset.val==='yes'?'block':'none';
       }
+      // Show/hide custom discount fields
+      if(group.id==='tg-discount'){
+        const box=document.getElementById('tg-discount-custom');
+        if(box) box.style.display=tog.dataset.val==='other'?'block':'none';
+      }
       // Show/hide trade-in vehicle fields
       if(group.id==='tg-trade'){
         const box=document.getElementById('tg-trade-fields');
@@ -744,7 +756,7 @@ function generate(){
     {label:s['tg-spec']==='flexible'?'Flexible spec':'Exact spec',gold:s['tg-spec']==='flexible'},
     {label:s['tg-rare']==='yes'?'Rare/luxury':'Standard',gold:s['tg-rare']==='yes'},
     {label:s['tg-ship']==='yes'?'Needs shipping':s['tg-ship']==='tbd'?'Shipping TBD':'Pickup',gold:s['tg-ship']==='yes'},
-    ...(s['tg-discount']!=='none'?[{label:{military:'Military 15%',firstresponder:'First Responder 15%',student:'Student 5%'}[s['tg-discount']],gold:true}]:[]),
+    ...(s['tg-discount']!=='none'?[{label:s['tg-discount']==='other'?'Custom discount':{military:'Military 15%',firstresponder:'First Responder 15%',student:'Student 5%'}[s['tg-discount']],gold:true}]:[]),
   ];
   document.getElementById('summary').innerHTML=
     `<strong>${name}</strong>${phone?' · '+phone:''}${email?' · '+email:''} · <strong>${vehicleStr}</strong> · ${dealer}${dealerLoc?' ('+dealerLoc+')':''} · ${custLoc}${rep?' · Rep: <strong>'+rep+'</strong>':''} `+
@@ -1372,6 +1384,12 @@ function getTier() {
 
 function getDiscountLabel() {
   const d = selections['tg-discount'] || 'none';
+  if (d === 'other') {
+    const reason = document.getElementById('i-discount-reason')?.value || 'Other';
+    const type = document.getElementById('i-discount-type')?.value || 'dollar';
+    const amt = document.getElementById('i-discount-amount')?.value || '0';
+    return 'Other (' + reason + '): ' + (type === 'percent' ? amt + '%' : '$' + amt);
+  }
   return { none:'None', military:'Military 15%', firstresponder:'First Responder 15%', student:'Student 5%' }[d] || 'None';
 }
 
