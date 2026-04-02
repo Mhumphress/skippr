@@ -298,13 +298,13 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
           <input class="tbl-search" id="cust-search" placeholder="Search by name, ID, vehicle, rep..." oninput="filterCustomers()"/>
-          <button class="filter-btn active" onclick="setFilter('active',this)">Active</button>
+          <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
           <button class="filter-btn" onclick="setFilter('Tier 2',this)">Tier 2</button>
           <button class="filter-btn" onclick="setFilter('Tier 1',this)">Tier 1</button>
           <button class="filter-btn" onclick="setFilter('overdue',this)">Overdue</button>
           <button class="filter-btn" onclick="setFilter('closed',this)">Closed</button>
           <button class="filter-btn" onclick="setFilter('lost',this)">Lost</button>
-          <button class="filter-btn" onclick="setFilter('all',this)">All</button>
+          <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
           <button class="filter-btn" onclick="openAddCustomerModal()" style="margin-left:auto;border-color:var(--gold);color:var(--gold);">+ Add Customer</button>
         </div>
         <div id="cust-table-wrap">
@@ -754,7 +754,7 @@ const PROXY_URL       = 'https://frosty-boat-6a06.xvzvf8rnsk.workers.dev';
 let DB = { customers: [], followUps: [], activity: [], stats: {}, dealers: [], financials: { records: [], summary: {} }, notes: {} };
 const REPS = ['M. Humphress', 'T. Williams'];
 let currentCustomerId    = null;
-let custFilter           = 'active';
+let custFilter           = 'all';
 let fuFilter             = 'open';
 let currentModalCustomer = null;
 
