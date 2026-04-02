@@ -1035,6 +1035,8 @@ async function submitConvert() {
 
       document.getElementById('id-display-box').style.borderColor = 'rgba(76,175,125,0.5)';
       document.getElementById('id-display-type').style.color      = '#4caf7d';
+      // Notify parent to refresh dashboard
+      try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
     } else {
       throw new Error(result.message || 'Unknown error');
     }
@@ -1095,6 +1097,8 @@ async function saveCallback() {
     notes:        document.getElementById('cb-notes').value,
   });
   showCbStatus('success', '✦ Callback reminder saved to Follow-Ups.');
+  // Notify parent to refresh dashboard
+  try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
   document.getElementById('cb-date').value  = '';
   document.getElementById('cb-notes').value = '';
 }
@@ -1179,6 +1183,8 @@ async function saveConsultation() {
     btn.textContent           = '✓ Saved';
     btn.style.background      = '#4caf7d';
     btn.style.borderColor     = '#4caf7d';
+    // Notify parent to switch to dashboard and refresh
+    try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
   } catch(err) {
     const statusEl = document.getElementById('consult-crm-status');
     statusEl.style.display    = 'block';
@@ -1282,6 +1288,8 @@ async function saveToCRM() {
     btn.style.background = '#4caf7d';
     btn.style.borderColor = '#4caf7d';
     btn.disabled         = false;
+    // Notify parent to switch to dashboard and refresh
+    try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
   } catch(err) {
     showCRMStatus('error', 'Save failed — ' + err.message);
     btn.textContent = 'Save to CRM ↑';

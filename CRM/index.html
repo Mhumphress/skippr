@@ -130,6 +130,17 @@ function switchTab(tab) {
   document.getElementById('frame-' + tab).classList.remove('hidden');
 }
 
+// Listen for CRM refresh requests from iframes (checklist saves, etc.)
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'skippr-crm-refresh') {
+    // Switch to dashboard tab
+    switchTab('dashboard');
+    // Tell the dashboard iframe to refresh its data
+    const dashFrame = document.getElementById('frame-dashboard');
+    try { dashFrame.contentWindow.postMessage({ type: 'skippr-refresh' }, '*'); } catch(err) {}
+  }
+});
+
 // Monitor iframe connection status
 const dashFrame = document.getElementById('frame-dashboard');
 dashFrame.addEventListener('load', () => {
