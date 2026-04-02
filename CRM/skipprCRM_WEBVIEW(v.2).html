@@ -2291,7 +2291,7 @@ function updateConvertCalc() {
   const total = fee - discountAmt;
   document.getElementById('conv-fee-display').textContent = '$' + fee.toLocaleString();
   const discRow = document.getElementById('conv-discount-row');
-  if (pct > 0) {
+  if (discountAmt > 0) {
     discRow.hidden = false;
     document.getElementById('conv-discount-label').textContent = discount;
     document.getElementById('conv-discount-display').textContent = '-$' + discountAmt.toLocaleString();
