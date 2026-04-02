@@ -960,15 +960,15 @@ async function loadAll() {
 // ── STATS ─────────────────────────────────────────────────────
 function computeStats() {
   const custs   = DB.customers;
-  const active  = custs.filter(c => !['Closed','Lost'].includes(c.status));
+  const active  = custs.filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
   const t2      = active.filter(c => c.tier === 'Tier 2');
   const today   = new Date(); today.setHours(0,0,0,0);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  // "Closed this month" — count customers closed during the current month
-  // Uses lastContact as the closest proxy for close date
+  // "Closed this month" — deals actually completed (exclude converted SKCs)
   const closed  = custs.filter(c => {
     if (c.status !== 'Closed') return false;
+    if (c.workflow === 'Converted') return false;  // SKC→SKP conversions are not "closings"
     const d = new Date(c.lastContact);
     return !isNaN(d) && d >= monthStart;
   });
@@ -1027,7 +1027,7 @@ function renderStats() {
 // ── DASHBOARD ─────────────────────────────────────────────────
 function renderPriorityQueue() {
   const t2 = DB.customers
-    .filter(c => !['Closed','Lost'].includes(c.status))
+    .filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted')
     .sort((a, b) => {
       const at = a.tier === 'Tier 2' ? 0 : 1;
       const bt = b.tier === 'Tier 2' ? 0 : 1;
@@ -1093,7 +1093,7 @@ function renderCustomerTable() {
       <th>Vehicle</th><th>Rep</th><th>Follow-Up</th><th>Phone</th>
     </tr></thead>
     <tbody>${customers.map(c => {
-      const closed = ['Closed','Lost'].includes(c.status);
+      const closed = ['Closed','Lost'].includes(c.status) || c.workflow === 'Converted';
       return `<tr
         class="${c.tier==='Tier 2'&&!closed?'t2-row':''} ${closed?'closed-row':''}"
         onclick="openCustomer('${escAttr(c.id)}')">
@@ -1113,9 +1113,9 @@ function renderCustomerTable() {
 
 function sortCustomers(arr) {
   return arr.sort((a, b) => {
-    // Push inactive customers to bottom
-    const aClosed = ['Closed','Lost'].includes(a.status) ? 1 : 0;
-    const bClosed = ['Closed','Lost'].includes(b.status) ? 1 : 0;
+    // Push inactive customers to bottom (including converted SKCs)
+    const aClosed = (['Closed','Lost'].includes(a.status) || a.workflow === 'Converted') ? 1 : 0;
+    const bClosed = (['Closed','Lost'].includes(b.status) || b.workflow === 'Converted') ? 1 : 0;
     if (aClosed !== bClosed) return aClosed - bClosed;
     // Then sort by tier (Tier 2 first)
     const at = a.tier === 'Tier 2' ? 0 : 1;
@@ -1141,14 +1141,14 @@ function setFilter(f, btn) {
 function filterCustomers() { renderCustomerTable(); }
 
 function applyFilter(arr) {
-  if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost'].includes(c.status));
+  if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
   if (custFilter === 'Tier 2')  return arr.filter(c => c.tier === 'Tier 2' && !['Closed','Lost'].includes(c.status));
   if (custFilter === 'Tier 1')  return arr.filter(c => c.tier === 'Tier 1' && !['Closed','Lost'].includes(c.status));
   if (custFilter === 'overdue') {
     const today = new Date(); today.setHours(0,0,0,0);
     return arr.filter(c => c.followUp && new Date(c.followUp) < today && !['Closed','Lost'].includes(c.status));
   }
-  if (custFilter === 'closed')  return arr.filter(c => c.status === 'Closed');
+  if (custFilter === 'closed')  return arr.filter(c => c.status === 'Closed' && c.workflow !== 'Converted');
   if (custFilter === 'lost')    return arr.filter(c => c.status === 'Lost');
   if (custFilter === 'all')     return arr;
   return arr;
