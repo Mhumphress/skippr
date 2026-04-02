@@ -427,7 +427,7 @@
       <span class="tog-label" style="margin-top:14px;">Is this a rare, high-demand, or luxury vehicle?</span>
       <div class="toggle-group" id="tg-rare"><div class="tog on" data-val="no">Standard / common</div><div class="tog" data-val="yes">Rare / high-demand / luxury</div></div>
       <span class="tog-label" style="margin-top:14px;">Does the customer need shipping / transport?</span>
-      <div class="toggle-group" id="tg-ship"><div class="tog on" data-val="no">Customer will pick up</div><div class="tog" data-val="yes">Needs shipping arranged</div></div>
+      <div class="toggle-group" id="tg-ship"><div class="tog" data-val="no">Customer will pick up</div><div class="tog" data-val="yes">Needs shipping arranged</div><div class="tog on" data-val="tbd">TBD — depends on dealer location</div></div>
       <span class="tog-label" style="margin-top:14px;">Applicable discount?</span>
       <div class="toggle-group" id="tg-discount"><div class="tog on" data-val="none">None</div><div class="tog" data-val="military">Military / Veteran</div><div class="tog" data-val="firstresponder">First Responder</div><div class="tog" data-val="student">Student</div></div>
     </div>
@@ -743,7 +743,7 @@ function generate(){
     {label:s['tg-trade']==='yes'?'Trade-in':'No trade',gold:s['tg-trade']==='yes'},
     {label:s['tg-spec']==='flexible'?'Flexible spec':'Exact spec',gold:s['tg-spec']==='flexible'},
     {label:s['tg-rare']==='yes'?'Rare/luxury':'Standard',gold:s['tg-rare']==='yes'},
-    {label:s['tg-ship']==='yes'?'Needs shipping':'Pickup',gold:s['tg-ship']==='yes'},
+    {label:s['tg-ship']==='yes'?'Needs shipping':s['tg-ship']==='tbd'?'Shipping TBD':'Pickup',gold:s['tg-ship']==='yes'},
     ...(s['tg-discount']!=='none'?[{label:{military:'Military 15%',firstresponder:'First Responder 15%',student:'Student 5%'}[s['tg-discount']],gold:true}]:[]),
   ];
   document.getElementById('summary').innerHTML=
@@ -1239,6 +1239,8 @@ async function saveConsultation() {
     btn.style.borderColor     = '#4caf7d';
     // Notify parent to switch to dashboard and refresh
     try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
+    // Reset form after short delay so user sees the success message
+    setTimeout(() => { window.location.reload(); }, 2000);
   } catch(err) {
     const statusEl = document.getElementById('consult-crm-status');
     statusEl.style.display    = 'block';
@@ -1353,6 +1355,8 @@ async function saveToCRM() {
     btn.disabled         = false;
     // Notify parent to switch to dashboard and refresh
     try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
+    // Reset form after short delay so user sees the success message
+    setTimeout(() => { window.location.reload(); }, 2000);
   } catch(err) {
     showCRMStatus('error', 'Save failed — ' + err.message);
     btn.textContent = 'Save to CRM ↑';
