@@ -622,6 +622,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field">
         <label>Invoice Status</label>
         <select id="inv-status">
+          <option>Draft</option>
           <option>Pending</option>
           <option>Paid</option>
           <option>Partial</option>
@@ -1206,7 +1207,7 @@ function renderCustomerTransactions(customerId) {
   }
 
   const statusColor = s => ({
-    Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)',
+    Draft:'var(--blue)', Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)',
     Partial:'var(--amber)', Refunded:'var(--red)'
   }[s] || 'var(--gray)');
 
@@ -1608,7 +1609,7 @@ function renderFinancials() {
     wrap.innerHTML = '<div class="empty-state"><p>No financial records yet</p></div>';
     return;
   }
-  const statusColor = s => ({ Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)', Partial:'var(--amber)', Refunded:'var(--gray)' }[s] || 'var(--gray)');
+  const statusColor = s => ({ Draft:'var(--blue)', Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)', Partial:'var(--amber)', Refunded:'var(--gray)' }[s] || 'var(--gray)');
   const profitColor = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray)';
   wrap.innerHTML = `<table>
     <thead><tr>

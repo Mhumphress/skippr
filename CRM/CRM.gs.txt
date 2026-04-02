@@ -660,7 +660,7 @@ function buildFinancials(ss) {
 
   setupSheet(sh, headers, widths, C.GREEN);
   setDropdown(sh, 2, 7, 1000, ["Credit Card","ACH/Bank Transfer","Check","Cash","Zelle/Venmo"]);
-  setDropdown(sh, 2, 9, 1000, ["Pending","Paid","Partial","Refunded","Overdue"]);
+  setDropdown(sh, 2, 9, 1000, ["Draft","Pending","Paid","Partial","Refunded","Overdue"]);
   setDropdown(sh, 2, 4, 1000, ["None","Military 15%","First Responder 15%","Student 5%"]);
 
   // Currency format on cols 3, 5, 6, 10, 11, 12, 14
@@ -1078,6 +1078,41 @@ function doGet(e) {
         ]);
       }
 
+      // Update draft invoice: change SKC ID → SKP ID, Draft → Pending
+      const finSheet = ss.getSheetByName('Financials');
+      if (finSheet) {
+        const finRows = finSheet.getDataRange().getValues();
+        let invoiceUpdated = false;
+        finRows.forEach((row, i) => {
+          if (i === 0) return;
+          if (String(row[0]).trim() === skcId) {
+            const r = i + 1;
+            finSheet.getRange(r, 1).setValue(skpId);               // Update Customer ID
+            finSheet.getRange(r, 9).setValue('Pending');            // Draft → Pending
+            finSheet.getRange(r, 8).setValue(today);                // Set payment date to conversion date
+            // Update tier-based fee if tier changed during conversion
+            if (p.tier) {
+              const newFee = p.tier === 'Tier 2' ? 2000 : 750;
+              const currentDiscount = String(row[3] || 'None');
+              const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
+              const discountMult = discountMap[currentDiscount] || 1;
+              const netFee = Math.round(newFee * discountMult * 100) / 100;
+              finSheet.getRange(r, 3).setValue(newFee);             // Service Fee
+              finSheet.getRange(r, 5).setValue(netFee);             // Net Service Fee
+            }
+            invoiceUpdated = true;
+          }
+        });
+        // If no draft invoice existed for this SKC, create a new Pending one
+        if (!invoiceUpdated) {
+          const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
+          finSheet.appendRow([
+            skpId, p.customerName || '', serviceFee, 'None', serviceFee,
+            0, '', today, 'Pending', 0, 0, 0, '', '',
+          ]);
+        }
+      }
+
       SpreadsheetApp.flush();
       return json({ success: true, skpId: skpId, originalId: skcId }, cb);
     }
@@ -1355,6 +1390,31 @@ function doGet(e) {
         repActivity.appendRow([
           today, p.rep || '', '[' + newId + '] ' + (p.customerName || ''),
           'Customer Added', 'Info Only', p.tier || '', '', 'New customer added via CRM web view',
+        ]);
+      }
+
+      // Auto-create draft invoice based on tier
+      const finSheet = ss.getSheetByName('Financials');
+      if (finSheet) {
+        const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
+        const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
+        const discountMult = discountMap[p.discount] || 1;
+        const netFee = Math.round(serviceFee * discountMult * 100) / 100;
+        finSheet.appendRow([
+          newId,                       // Customer ID
+          p.customerName || '',        // Customer Name
+          serviceFee,                  // Service Fee
+          p.discount || 'None',        // Discount Applied
+          netFee,                      // Net Service Fee
+          0,                           // Deposit Collected
+          '',                          // Payment Method
+          '',                          // Payment Date
+          'Draft',                     // Invoice Status
+          0,                           // Platform/Processing Fees
+          0,                           // Tax Withheld
+          0,                           // Other Expenses
+          '',                          // Expense Notes
+          '',                          // Net Profit (formula calculates)
         ]);
       }
 
