@@ -1171,8 +1171,15 @@ function doGet(e) {
         }
       }
 
+      // Auto-create Drive folder for the new SKP
+      let folderUrl = '';
+      try {
+        const folder = getOrCreateCustomerFolder(skpId);
+        folderUrl = folder.getUrl();
+      } catch(err) { Logger.log('Folder creation error: ' + err); }
+
       SpreadsheetApp.flush();
-      return json({ success: true, skpId: skpId, originalId: skcId }, cb);
+      return json({ success: true, skpId: skpId, originalId: skcId, folderUrl: folderUrl }, cb);
     }
 
     // ── Save callback / follow-up reminder ─────────────────
@@ -1888,6 +1895,48 @@ function doGet(e) {
       return json({ success: true }, cb);
     }
 
+    // ── Create/get customer Drive folder ─────────────────────
+    if (p.action === 'getOrCreateFolder') {
+      const customerId = p.customerId || '';
+      if (!customerId) return json({ success: false, message: 'Missing customerId' }, cb);
+      const folder = getOrCreateCustomerFolder(customerId);
+      return json({ success: true, folderId: folder.getId(), folderUrl: folder.getUrl() }, cb);
+    }
+
+    // ── Upload file to customer folder ────────────────────────
+    if (p.action === 'uploadFile') {
+      const customerId = p.customerId || '';
+      const fileName   = p.fileName   || 'upload';
+      const fileData   = p.fileData   || '';
+      const mimeType   = p.mimeType   || 'application/octet-stream';
+      if (!customerId || !fileData) return json({ success: false, message: 'Missing customerId or fileData' }, cb);
+
+      const folder = getOrCreateCustomerFolder(customerId);
+      const decoded = Utilities.base64Decode(fileData);
+      const blob = Utilities.newBlob(decoded, mimeType, fileName);
+      const file = folder.createFile(blob);
+      return json({ success: true, fileId: file.getId(), fileUrl: file.getUrl(), fileName: file.getName() }, cb);
+    }
+
+    // ── List files in customer folder ─────────────────────────
+    if (p.action === 'getFiles') {
+      const customerId = p.customerId || '';
+      if (!customerId) return json({ success: true, files: [] }, cb);
+      try {
+        const folder = getOrCreateCustomerFolder(customerId);
+        const files = folder.getFiles();
+        const result = [];
+        while (files.hasNext()) {
+          const f = files.next();
+          result.push({ name: f.getName(), url: f.getUrl(), id: f.getId(), size: f.getSize(), date: f.getDateCreated().toISOString() });
+        }
+        result.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return json({ success: true, files: result }, cb);
+      } catch(err) {
+        return json({ success: true, files: [] }, cb);
+      }
+    }
+
     return json({ status: 'Unknown action.' }, cb);
 
   } catch(err) {
@@ -1909,7 +1958,36 @@ function doOptions(e) {
   return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT);
 }
 
-function doPost(e) { return doGet(e); }
+function doPost(e) {
+  // For file uploads, merge JSON body into parameters
+  if (e.postData && e.postData.type === 'application/json') {
+    try {
+      const body = JSON.parse(e.postData.contents);
+      e.parameter = Object.assign({}, e.parameter || {}, body);
+    } catch(err) {}
+  }
+  return doGet(e);
+}
+
+// ── CUSTOMER DRIVE FOLDER ───────────────────────────────────
+// Creates: Skippr Data > Purchase Orders > SKP-XX-XXXX
+function getOrCreateCustomerFolder(customerId) {
+  const rootName = 'Skippr Data';
+  const subName  = 'Purchase Orders';
+
+  // Get or create root folder
+  let rootFolders = DriveApp.getFoldersByName(rootName);
+  let root = rootFolders.hasNext() ? rootFolders.next() : DriveApp.createFolder(rootName);
+
+  // Get or create subfolder
+  let subFolders = root.getFoldersByName(subName);
+  let sub = subFolders.hasNext() ? subFolders.next() : root.createFolder(subName);
+
+  // Get or create customer folder
+  let custFolders = sub.getFoldersByName(customerId);
+  if (custFolders.hasNext()) return custFolders.next();
+  return sub.createFolder(customerId);
+}
 
 // ── RESERVE NEXT ID ──────────────────────────────────────────
 function reserveNextId(ss, type, tierCode) {
