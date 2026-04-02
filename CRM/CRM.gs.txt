@@ -673,11 +673,9 @@ function buildFinancials(ss) {
   });
   sh.getRange(2, 8, 499, 1).setNumberFormat("mm/dd/yyyy");
 
-  // Formulas for Net Service Fee (col 5) and Net Profit (col 14)
-  for (let r = 2; r <= 500; r++) {
-    sh.getRange(r, 5).setFormula('=IF(C' + r + '="","",IF(D' + r + '="Military 15%",C' + r + '*0.85,IF(D' + r + '="First Responder 15%",C' + r + '*0.85,IF(D' + r + '="Student 5%",C' + r + '*0.95,C' + r + '))))');
-    sh.getRange(r, 14).setFormula('=IF(E' + r + '="","",E' + r + '-J' + r + '-K' + r + '-L' + r + ')');
-  }
+  // Net Service Fee (col 5) and Net Profit (col 14) are calculated in code
+  // by addCustomer, createInvoice, and convertCustomer actions.
+  // No formulas needed — they can't handle custom discount strings.
 
   sh.setFrozenRows(1);
 }
