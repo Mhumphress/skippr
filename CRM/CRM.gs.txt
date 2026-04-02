@@ -1042,7 +1042,7 @@ function doGet(e) {
       // Read trade-in and deal data from old SKC row before closing it
       let skcTradeVehicle = '', skcTradeVin = '', skcTradeValue = '';
       let skcInitialPrice = '', skcSavings = '', skcFinalPrice = '', skcDiscount = '';
-      let skcBudget = '', skcTimeline = '', skcFinancing = '', skcLeadSource = '', skcCommPref = '', skcUrgency = '';
+      let skcBudget = '', skcTimeline = '', skcFinancing = '', skcLeadSource = '', skcCommPref = '', skcUrgency = '', skcNotes = '';
       if (pipeline) {
         pipeline.getDataRange().getValues().forEach((row, i) => {
           if (i > 0 && String(row[0]).trim() === skcId) {
@@ -1059,6 +1059,7 @@ function doGet(e) {
             skcLeadSource   = String(row[30] || '');
             skcCommPref     = String(row[31] || '');
             skcUrgency      = String(row[32] || '');
+            skcNotes        = String(row[26] || '');
             pipeline.getRange(i+1, 6).setValue('Closed');
             pipeline.getRange(i+1, 21).setValue('Converted');
           }
@@ -1084,7 +1085,7 @@ function doGet(e) {
           skcFinalPrice, skcSavings, '', skcDiscount || 'None', '',
           'Purchase', skcId, '',
           p.customerPhone || '', p.customerEmail || '', p.customerZip || '',
-          'Converted from ' + skcId,
+          'Converted from ' + skcId + ' → ' + skpId + (skcNotes ? '\n"' + skcNotes + '"' : ''),
           skcBudget, skcTimeline, skcFinancing, skcLeadSource, skcCommPref, skcUrgency,
           skcTradeVehicle, skcTradeVin, skcTradeValue, skcInitialPrice,
         ]);
