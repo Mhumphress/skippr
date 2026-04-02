@@ -365,13 +365,20 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <h1 class="view-title">Financial <em>Summary</em></h1>
       <div class="gold-rule"></div>
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px;">
-        <div class="stat-card"><div class="stat-label">Gross Fees</div><div class="stat-value gold" id="stat-total-fees">$0</div></div>
-        <div class="stat-card"><div class="stat-label">Net After Discounts</div><div class="stat-value white" id="stat-net-fees">$0</div></div>
-        <div class="stat-card"><div class="stat-label">Total Expenses</div><div class="stat-value red" id="stat-expenses">$0</div></div>
-        <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-value green" id="stat-net-profit">$0</div></div>
-        <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value amber" id="stat-outstanding">$0</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue Collected</div><div class="stat-value gold" id="stat-total-fees">$0</div><div class="stat-sub">Gross service fees</div></div>
+        <div class="stat-card"><div class="stat-label">After Discounts</div><div class="stat-value white" id="stat-net-fees">$0</div><div class="stat-sub">Net to Skippr</div></div>
+        <div class="stat-card"><div class="stat-label">Taxes & Overhead</div><div class="stat-value red" id="stat-expenses">$0</div><div class="stat-sub">Processing, tax, fees</div></div>
+        <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-value green" id="stat-net-profit">$0</div><div class="stat-sub">Take-home</div></div>
+        <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value amber" id="stat-outstanding">$0</div><div class="stat-sub">Unpaid invoices</div></div>
       </div>
       <div class="tbl-wrap">
+        <div class="tbl-toolbar">
+          <input class="tbl-search" id="fin-search" placeholder="Search by name, ID, invoice #..." oninput="renderFinancials()"/>
+          <button class="filter-btn active" onclick="setFinFilter('purchases',this)">Purchases</button>
+          <button class="filter-btn" onclick="setFinFilter('pending',this)">Pending</button>
+          <button class="filter-btn" onclick="setFinFilter('drafts',this)">Drafts</button>
+          <button class="filter-btn" onclick="setFinFilter('all',this)">All</button>
+        </div>
         <div id="financial-table-wrap">
           <div class="loading"><div class="spinner"></div></div>
         </div>
@@ -805,6 +812,7 @@ let currentCustomerId    = null;
 let custFilter           = 'all';
 let fuFilter             = 'open';
 let currentModalCustomer = null;
+let finFilter            = 'purchases';
 
 // ── API CALLS ─────────────────────────────────────────────────
 // Primary: route through CORS proxy so the browser doesn't get blocked
@@ -1753,43 +1761,73 @@ function renderDealerTable() {
 }
 
 // ── FINANCIALS ───────────────────────────────────────────────
-function renderFinancials() {
-  const s = DB.financials.summary || {};
-  const el = id => document.getElementById(id);
-  if (el('stat-total-fees'))  el('stat-total-fees').textContent  = '$' + Math.round(s.totalServiceFees || 0).toLocaleString();
-  if (el('stat-net-fees'))    el('stat-net-fees').textContent    = '$' + Math.round(s.totalNetFees || 0).toLocaleString();
-  if (el('stat-expenses'))    el('stat-expenses').textContent    = '$' + Math.round(s.totalExpenses || 0).toLocaleString();
-  if (el('stat-net-profit'))  el('stat-net-profit').textContent  = '$' + Math.round(s.totalNetProfit || 0).toLocaleString();
-  if (el('stat-outstanding')) el('stat-outstanding').textContent = '$' + Math.round(s.outstanding || 0).toLocaleString();
+function setFinFilter(f, btn) {
+  finFilter = f;
+  document.querySelectorAll('#view-financials .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderFinancials();
+}
 
+function renderFinancials() {
   const wrap = document.getElementById('financial-table-wrap');
   if (!wrap) return;
-  const records = DB.financials.records || [];
+  let records = [...(DB.financials.records || [])];
+
+  // Apply filter
+  if (finFilter === 'purchases') records = records.filter(r => r.customerId.startsWith('SKP') && r.invoiceStatus !== 'Draft');
+  else if (finFilter === 'pending') records = records.filter(r => r.invoiceStatus === 'Pending' || r.invoiceStatus === 'Partial' || r.invoiceStatus === 'Overdue');
+  else if (finFilter === 'drafts') records = records.filter(r => r.invoiceStatus === 'Draft');
+
+  // Apply search
+  const q = (document.getElementById('fin-search')?.value || '').toLowerCase();
+  if (q) {
+    records = records.filter(r =>
+      (r.customerName || '').toLowerCase().includes(q) ||
+      (r.customerId || '').toLowerCase().includes(q) ||
+      (r.invoiceNumber || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Compute summary from filtered records
+  const totalFees = records.reduce((s, r) => s + (r.serviceFee || 0), 0);
+  const totalNet = records.reduce((s, r) => s + (r.netServiceFee || 0), 0);
+  const totalExp = records.reduce((s, r) => s + (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0), 0);
+  const totalProfit = records.reduce((s, r) => s + (r.netProfit || 0), 0);
+  const outstanding = records.filter(r => r.invoiceStatus !== 'Paid' && r.invoiceStatus !== 'Refunded' && r.invoiceStatus !== '').reduce((s, r) => s + (r.netServiceFee || 0), 0);
+
+  const el = id => document.getElementById(id);
+  if (el('stat-total-fees'))  el('stat-total-fees').textContent  = '$' + Math.round(totalFees).toLocaleString();
+  if (el('stat-net-fees'))    el('stat-net-fees').textContent    = '$' + Math.round(totalNet).toLocaleString();
+  if (el('stat-expenses'))    el('stat-expenses').textContent    = '$' + Math.round(totalExp).toLocaleString();
+  if (el('stat-net-profit'))  el('stat-net-profit').textContent  = '$' + Math.round(totalProfit).toLocaleString();
+  if (el('stat-outstanding')) el('stat-outstanding').textContent = '$' + Math.round(outstanding).toLocaleString();
+
   if (!records.length) {
-    wrap.innerHTML = '<div class="empty-state"><p>No financial records yet</p></div>';
+    wrap.innerHTML = '<div class="empty-state"><p>No financial records match this filter</p></div>';
     return;
   }
   const statusColor = s => ({ Draft:'var(--blue)', Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)', Partial:'var(--amber)', Refunded:'var(--red)' }[s] || 'var(--gray)');
   const profitColor = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray)';
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th>Customer</th><th>Invoice #</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
-      <th>Expenses</th><th>Net Profit</th><th>Status</th><th>Method</th><th>Date</th><th></th>
+      <th>Customer</th><th>Invoice #</th><th>Customer Paid</th><th>Discount</th>
+      <th>Processing</th><th>Tax</th><th>Other</th><th>Net Profit</th>
+      <th>Status</th><th>Method</th><th>Date</th><th></th>
     </tr></thead>
     <tbody>${records.map(r => {
-      const expenses = (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0);
-      return `<tr>
-      <td class="name-cell">${esc(r.customerName)}<br><span style="font-family:monospace;color:var(--gold);font-size:0.7rem">${esc(r.customerId)}</span></td>
+      return `<tr onclick="openCustomer('${escAttr(r.customerId)}')" style="cursor:pointer">
+      <td class="name-cell">${esc(r.customerName)}<br><span style="font-family:monospace;color:var(--gold);font-size:0.72rem">${esc(r.customerId)}</span></td>
       <td style="font-family:monospace;font-size:0.75rem;color:var(--gray)">${esc(r.invoiceNumber || '—')}</td>
-      <td style="color:var(--gold)">$${(r.serviceFee||0).toLocaleString()}</td>
-      <td style="color:var(--gray);font-size:0.75rem">${esc(r.discount || 'None')}</td>
-      <td style="color:var(--white);font-weight:500">$${(r.netServiceFee||0).toLocaleString()}</td>
-      <td style="color:var(--red);font-size:0.78rem">${expenses ? '-$' + expenses.toLocaleString() : '—'}</td>
-      <td style="color:${profitColor(r.netProfit)};font-weight:600">$${(r.netProfit||0).toLocaleString()}</td>
-      <td><span style="color:${statusColor(r.invoiceStatus)}">${esc(r.invoiceStatus || '—')}</span></td>
-      <td style="color:var(--gray);font-size:0.75rem">${esc(r.paymentMethod || '—')}</td>
-      <td style="color:var(--gray);font-size:0.75rem">${formatDate(r.paymentDate)}</td>
-      <td>${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
+      <td style="color:var(--gold);font-weight:600">$${(r.netServiceFee||0).toLocaleString()}</td>
+      <td style="color:var(--amber);font-size:0.78rem">${r.discount && r.discount !== 'None' ? esc(r.discount) : '—'}</td>
+      <td style="color:var(--red);font-size:0.78rem">${r.platformFees ? '-$' + r.platformFees.toLocaleString() : '—'}</td>
+      <td style="color:var(--red);font-size:0.78rem">${r.tax ? '-$' + r.tax.toLocaleString() : '—'}</td>
+      <td style="color:var(--red);font-size:0.78rem">${r.otherExpenses ? '-$' + r.otherExpenses.toLocaleString() : '—'}</td>
+      <td style="color:${profitColor(r.netProfit)};font-weight:700;font-size:0.95rem">$${(r.netProfit||0).toLocaleString()}</td>
+      <td><span style="color:${statusColor(r.invoiceStatus)};font-weight:500">${esc(r.invoiceStatus || '—')}</span></td>
+      <td style="color:var(--gray);font-size:0.78rem">${esc(r.paymentMethod || '—')}</td>
+      <td style="color:var(--gray);font-size:0.78rem">${formatDate(r.paymentDate)}</td>
+      <td>${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="event.stopPropagation();openRefundModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
     </tr>`;}).join('')}</tbody></table>`;
 }
 
