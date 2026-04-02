@@ -1101,8 +1101,13 @@ function doGet(e) {
         ]);
       }
 
-      // Update draft invoice: change SKC ID → SKP ID, Draft → Pending
+      // Update draft invoice: change SKC ID → SKP ID, apply payment info
       const finSheet = ss.getSheetByName('Financials');
+      const convDiscount = p.discount || 'None';
+      const convInvStatus = p.invoiceStatus || 'Pending';
+      const convMethod = p.paymentMethod || '';
+      const convDeposit = parseFloat(p.deposit) || 0;
+      const convPlatformFees = parseFloat(p.platformFees) || 0;
       if (finSheet) {
         const finRows = finSheet.getDataRange().getValues();
         let invoiceUpdated = false;
@@ -1110,19 +1115,22 @@ function doGet(e) {
           if (i === 0) return;
           if (String(row[0]).trim() === skcId) {
             const r = i + 1;
+            const newFee = p.tier === 'Tier 2' ? 2000 : 750;
+            const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
+            const discountMult = discountMap[convDiscount] || 1;
+            const netFee = Math.round(newFee * discountMult * 100) / 100;
+            const netProfit = netFee - convPlatformFees;
             finSheet.getRange(r, 1).setValue(skpId);               // Update Customer ID
-            finSheet.getRange(r, 9).setValue('Pending');            // Draft → Pending
-            finSheet.getRange(r, 8).setValue(today);                // Set payment date to conversion date
-            // Update tier-based fee if tier changed during conversion
-            if (p.tier) {
-              const newFee = p.tier === 'Tier 2' ? 2000 : 750;
-              const currentDiscount = String(row[3] || 'None');
-              const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
-              const discountMult = discountMap[currentDiscount] || 1;
-              const netFee = Math.round(newFee * discountMult * 100) / 100;
-              finSheet.getRange(r, 3).setValue(newFee);             // Service Fee
-              finSheet.getRange(r, 5).setValue(netFee);             // Net Service Fee
-            }
+            finSheet.getRange(r, 2).setValue(p.customerName || ''); // Customer Name
+            finSheet.getRange(r, 3).setValue(newFee);               // Service Fee
+            finSheet.getRange(r, 4).setValue(convDiscount);         // Discount
+            finSheet.getRange(r, 5).setValue(netFee);               // Net Service Fee
+            finSheet.getRange(r, 6).setValue(convDeposit);          // Deposit
+            finSheet.getRange(r, 7).setValue(convMethod);           // Payment Method
+            finSheet.getRange(r, 8).setValue(today);                // Payment Date
+            finSheet.getRange(r, 9).setValue(convInvStatus);        // Invoice Status
+            finSheet.getRange(r, 10).setValue(convPlatformFees);    // Processing Fees
+            finSheet.getRange(r, 14).setValue(netProfit);           // Net Profit
             // Set invoice number if not already set
             if (!String(row[14] || '').trim()) {
               const convInvoiceNum = reserveNextInvoiceNumber(ss);
@@ -1131,13 +1139,18 @@ function doGet(e) {
             invoiceUpdated = true;
           }
         });
-        // If no draft invoice existed for this SKC, create a new Pending one
+        // If no draft invoice existed for this SKC, create a new one with payment info
         if (!invoiceUpdated) {
           const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
+          const discountMap2 = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
+          const discountMult2 = discountMap2[convDiscount] || 1;
+          const netFee2 = Math.round(serviceFee * discountMult2 * 100) / 100;
+          const netProfit2 = netFee2 - convPlatformFees;
           const newInvoiceNum = reserveNextInvoiceNumber(ss);
           finSheet.appendRow([
-            skpId, p.customerName || '', serviceFee, 'None', serviceFee,
-            0, '', today, 'Pending', 0, 0, 0, '', '', newInvoiceNum,
+            skpId, p.customerName || '', serviceFee, convDiscount, netFee2,
+            convDeposit, convMethod, today, convInvStatus,
+            convPlatformFees, 0, 0, '', netProfit2, newInvoiceNum,
           ]);
         }
       }

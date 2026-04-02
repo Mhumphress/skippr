@@ -705,7 +705,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       </div>
       <div class="form-field">
         <label>Tier</label>
-        <select id="conv-tier">
+        <select id="conv-tier" onchange="updateConvertCalc()">
           <option>Tier 1</option>
           <option>Tier 2</option>
         </select>
@@ -735,9 +735,57 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <label>Vehicle</label>
       <input id="conv-vehicle" readonly style="opacity:0.7;"/>
     </div>
+    <div style="border-top:1px solid var(--border);margin:16px 0 12px;padding-top:12px;">
+      <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px;">Payment Information</div>
+    </div>
+    <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.75rem;color:var(--gray);">Service Fee</span>
+        <span style="font-size:0.9rem;color:var(--white);" id="conv-fee-display">$750</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;" id="conv-discount-row" hidden>
+        <span style="font-size:0.75rem;color:var(--amber);" id="conv-discount-label">Discount</span>
+        <span style="font-size:0.9rem;color:var(--amber);" id="conv-discount-display">-$0</span>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;">
+        <span style="font-size:0.78rem;color:var(--gold);font-weight:600;">Total Due</span>
+        <span style="font-size:1.2rem;color:var(--gold);font-weight:700;" id="conv-total-display">$750</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Payment Method</label>
+        <select id="conv-method">
+          <option value="">Not yet collected</option>
+          <option>Credit Card</option>
+          <option>ACH/Bank Transfer</option>
+          <option>Check</option>
+          <option>Cash</option>
+          <option>Zelle/Venmo</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Invoice Status</label>
+        <select id="conv-inv-status">
+          <option>Pending</option>
+          <option>Paid</option>
+          <option>Partial</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Deposit Collected ($)</label>
+        <input id="conv-deposit" type="text" placeholder="0" value="0"/>
+      </div>
+      <div class="form-field">
+        <label>Processing Fees ($)</label>
+        <input id="conv-processing" type="text" placeholder="0" value="0"/>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="modal-btn" onclick="closeModal('convert-modal')">Cancel</button>
-      <button class="modal-btn primary" style="border-color:var(--green);color:var(--green);background:rgba(52,211,153,0.08);" onclick="submitConvert()">Convert to Purchase</button>
+      <button class="modal-btn primary" style="border-color:var(--green);color:var(--green);background:rgba(52,211,153,0.08);" onclick="submitConvert()">Convert & Log Payment</button>
     </div>
   </div>
 </div>
@@ -2072,7 +2120,8 @@ async function submitRefund() {
 // ── CONVERT TO PURCHASE ──────────────────────────────────────
 let convertData = {};
 function openConvertModal(id, name, tier, phone, email, zip, vehicle, rep) {
-  convertData = { id, name, tier, phone, email, zip, vehicle, rep };
+  const c = DB.customers.find(x => x.id === id) || {};
+  convertData = { id, name, tier, phone, email, zip, vehicle, rep, discount: c.discount || 'None' };
   document.getElementById('convert-modal-sub').textContent = name + ' · ' + id + ' → New SKP record';
   document.getElementById('conv-name').value = name;
   document.getElementById('conv-tier').value = tier || 'Tier 1';
@@ -2080,11 +2129,36 @@ function openConvertModal(id, name, tier, phone, email, zip, vehicle, rep) {
   document.getElementById('conv-email').value = email || '';
   document.getElementById('conv-zip').value = zip || '';
   document.getElementById('conv-vehicle').value = vehicle || '';
+  document.getElementById('conv-method').value = '';
+  document.getElementById('conv-inv-status').value = 'Pending';
+  document.getElementById('conv-deposit').value = '0';
+  document.getElementById('conv-processing').value = '0';
   const repSelect = document.getElementById('conv-rep');
   repSelect.innerHTML = '';
   REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
   repSelect.value = rep || localStorage.getItem('skippr_rep') || '';
+  updateConvertCalc();
   document.getElementById('convert-modal').classList.add('open');
+}
+
+function updateConvertCalc() {
+  const tier = document.getElementById('conv-tier').value;
+  const fee = tier === 'Tier 2' ? 2000 : 750;
+  const discount = convertData.discount || 'None';
+  const discountMap = { 'Military 15%': 0.15, 'First Responder 15%': 0.15, 'Student 5%': 0.05 };
+  const pct = discountMap[discount] || 0;
+  const discountAmt = Math.round(fee * pct);
+  const total = fee - discountAmt;
+  document.getElementById('conv-fee-display').textContent = '$' + fee.toLocaleString();
+  const discRow = document.getElementById('conv-discount-row');
+  if (pct > 0) {
+    discRow.hidden = false;
+    document.getElementById('conv-discount-label').textContent = discount;
+    document.getElementById('conv-discount-display').textContent = '-$' + discountAmt.toLocaleString();
+  } else {
+    discRow.hidden = true;
+  }
+  document.getElementById('conv-total-display').textContent = '$' + total.toLocaleString();
 }
 
 async function submitConvert() {
@@ -2102,7 +2176,7 @@ async function submitConvert() {
     const skpId = idResult.id;
     toast('Converting to ' + skpId + '...', 'success');
 
-    // Step 2: Convert
+    // Step 2: Convert with payment info
     const rep = document.getElementById('conv-rep').value;
     await crmCall({
       action: 'convertCustomer',
@@ -2115,6 +2189,11 @@ async function submitConvert() {
       tier: tier,
       rep: rep,
       vehicle: convertData.vehicle,
+      discount: convertData.discount || 'None',
+      paymentMethod: document.getElementById('conv-method').value,
+      invoiceStatus: document.getElementById('conv-inv-status').value,
+      deposit: document.getElementById('conv-deposit').value,
+      platformFees: document.getElementById('conv-processing').value,
     });
 
     toast('Converted! New ID: ' + skpId, 'success');
