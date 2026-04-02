@@ -979,10 +979,14 @@ function computeStats() {
     return !isNaN(d) && d < today;
   });
 
-  // savings: field is a string from Apps Script, parse it
+  // savings = initial asking price - final OTD price (auto-calculated)
   const savings = custs.reduce((sum, c) => {
-    const v = parseFloat(String(c.savings).replace(/[^0-9.-]/g, ''));
-    return sum + (isNaN(v) ? 0 : v);
+    const initial = parseMoney(c.initialPrice);
+    const final_ = parseMoney(c.finalPrice);
+    if (initial > 0 && final_ > 0) return sum + (initial - final_);
+    // Fallback to manually entered savings field
+    const manual = parseMoney(c.savings);
+    return sum + manual;
   }, 0);
 
   DB.stats = {
@@ -1244,8 +1248,10 @@ function renderCustomerDetail(id) {
         ${infoRow('Initial Price', c.initialPrice ? '$' + parseMoney(c.initialPrice).toLocaleString() : '—')}
         ${infoRow('Final Price',   c.finalPrice   ? '$' + parseMoney(c.finalPrice).toLocaleString()   : '—')}
         ${(() => {
-          const saved = parseMoney(c.savings);
-          return infoRow('Savings', saved ? '<span style="color:var(--green);font-weight:600">$' + saved.toLocaleString() + '</span>' : '—');
+          const initial = parseMoney(c.initialPrice);
+          const final_ = parseMoney(c.finalPrice);
+          const saved = (initial > 0 && final_ > 0) ? (initial - final_) : parseMoney(c.savings);
+          return infoRow('Savings', saved > 0 ? '<span style="color:var(--green);font-weight:600">$' + saved.toLocaleString() + '</span>' : '—');
         })()}
         ${infoRow('Type',        c.type       || '—')}
         ${infoRow('Original ID', c.originalId || '—')}
