@@ -1476,11 +1476,11 @@ function renderCustomerTransactions(customerId) {
 
   const profitColor = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray)';
 
-  // Summary row
-  const totalFees = txns.reduce((s, r) => s + (r.serviceFee || 0), 0);
-  const totalNet  = txns.reduce((s, r) => s + (r.netServiceFee || 0), 0);
-  const totalExp  = txns.reduce((s, r) => s + (r.platformFees||0) + (r.tax||0) + (r.otherExpenses||0), 0);
-  const totalProfit = txns.reduce((s, r) => s + (r.netProfit || 0), 0);
+  // Summary row — exclude refunded from totals
+  const totalFees = txns.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.serviceFee || 0), 0);
+  const totalNet  = txns.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netServiceFee || 0), 0);
+  const totalExp  = txns.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.platformFees||0) + (r.tax||0) + (r.otherExpenses||0), 0);
+  const totalProfit = txns.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netProfit || 0), 0);
   const paid = txns.filter(r => r.invoiceStatus === 'Paid').length;
   const pending = txns.filter(r => r.invoiceStatus === 'Pending' || r.invoiceStatus === 'Partial').length;
   const refunded = txns.filter(r => r.invoiceStatus === 'Refunded').length;
@@ -1920,12 +1920,12 @@ function renderFinancials() {
     );
   }
 
-  // Compute summary from filtered records
-  const totalFees = records.reduce((s, r) => s + (r.serviceFee || 0), 0);
-  const totalNet = records.reduce((s, r) => s + (r.netServiceFee || 0), 0);
-  const totalExp = records.reduce((s, r) => s + (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0), 0);
-  const totalProfit = records.reduce((s, r) => s + (r.netProfit || 0), 0);
-  const outstanding = records.filter(r => r.invoiceStatus !== 'Paid' && r.invoiceStatus !== 'Refunded' && r.invoiceStatus !== '').reduce((s, r) => s + (r.netServiceFee || 0), 0);
+  // Compute summary — refunded records subtract from totals
+  const totalFees = records.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.serviceFee || 0), 0);
+  const totalNet = records.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netServiceFee || 0), 0);
+  const totalExp = records.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0), 0);
+  const totalProfit = records.reduce((s, r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netProfit || 0), 0);
+  const outstanding = records.filter(r => r.invoiceStatus !== 'Paid' && r.invoiceStatus !== 'Refunded' && r.invoiceStatus !== '' && r.invoiceStatus !== 'Draft').reduce((s, r) => s + (r.netServiceFee || 0), 0);
 
   const el = id => document.getElementById(id);
   if (el('stat-total-fees'))  el('stat-total-fees').textContent  = '$' + Math.round(totalFees).toLocaleString();
@@ -2575,9 +2575,9 @@ function exportPDF(data, type) {
   html += '<div class="meta">Generated: ' + new Date().toLocaleDateString() + ' · Period: ' + start.toLocaleDateString() + ' — ' + end.toLocaleDateString() + '</div>';
 
   if ((type === 'financials' || type === 'both') && data.financials.length) {
-    const totFees = data.financials.reduce((s,r) => s + (r.netServiceFee||0), 0);
-    const totExp = data.financials.reduce((s,r) => s + (r.platformFees||0) + (r.tax||0) + (r.otherExpenses||0), 0);
-    const totProfit = data.financials.reduce((s,r) => s + (r.netProfit||0), 0);
+    const totFees = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netServiceFee||0), 0);
+    const totExp = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.platformFees||0) + (r.tax||0) + (r.otherExpenses||0), 0);
+    const totProfit = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netProfit||0), 0);
     html += '<h2>Financial Summary</h2>';
     html += '<div class="summary"><div class="summary-item"><div class="summary-label">Net Revenue</div><div class="summary-value gold">$' + totFees.toLocaleString() + '</div></div>';
     html += '<div class="summary-item"><div class="summary-label">Expenses</div><div class="summary-value red">$' + totExp.toLocaleString() + '</div></div>';
