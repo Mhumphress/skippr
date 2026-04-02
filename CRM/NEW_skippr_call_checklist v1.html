@@ -389,8 +389,10 @@
           <option value="Tier 2">Tier 2 — White Glove ($2,000) · Full concierge experience</option>
         </select>
       </div>
-      <span class="tog-label">Has the customer test driven this vehicle?</span>
-      <div class="toggle-group" id="tg-testdrive"><div class="tog on" data-val="no">Not yet</div><div class="tog" data-val="yes">Yes — test driven</div><div class="tog" data-val="ordered">Ordering without test drive</div></div>
+      <div id="testdrive-toggle">
+        <span class="tog-label">Has the customer test driven this vehicle?</span>
+        <div class="toggle-group" id="tg-testdrive"><div class="tog on" data-val="no">Not yet</div><div class="tog" data-val="yes">Yes — test driven</div><div class="tog" data-val="ordered">Ordering without test drive</div></div>
+      </div>
       <span class="tog-label" style="margin-top:14px;">Does the customer qualify for any manufacturer rebates?</span>
       <div class="toggle-group" id="tg-rebate"><div class="tog on" data-val="unknown">Unknown — needs research</div><div class="tog" data-val="yes">Yes — qualifies</div><div class="tog" data-val="no">No rebates available</div></div>
       <span class="tog-label" style="margin-top:14px;">Is the customer putting money down?</span>
@@ -398,8 +400,10 @@
       <div id="tg-downpayment-amt" style="display:none;margin-top:10px;">
         <div class="field"><label>Down payment amount</label><input type="text" id="i-downpayment" placeholder="e.g. $5,000"/></div>
       </div>
-      <span class="tog-label" style="margin-top:14px;">Is the customer local or out of state from this dealer?</span>
-      <div class="toggle-group" id="tg-location"><div class="tog on" data-val="local">Local (same state)</div><div class="tog" data-val="outofstate">Out of state</div></div>
+      <div id="dealer-location-toggle">
+        <span class="tog-label" style="margin-top:14px;">Is the customer local or out of state from this dealer?</span>
+        <div class="toggle-group" id="tg-location"><div class="tog on" data-val="local">Local (same state)</div><div class="tog" data-val="outofstate">Out of state</div></div>
+      </div>
       <span class="tog-label" style="margin-top:14px;">How is the customer paying?</span>
       <div class="toggle-group" id="tg-payment"><div class="tog on" data-val="finance">Financing</div><div class="tog" data-val="cash">Cash</div><div class="tog" data-val="lease">Lease</div></div>
       <span class="tog-label" style="margin-top:14px;">Does the customer have a trade-in?</span>
@@ -923,6 +927,8 @@ function proceedToPhase1(tier, prefix) {
   document.getElementById('card-dealer').style.display             = isConsultation ? 'none' : '';
   document.getElementById('card-purchase-conditions').style.display = '';
   document.getElementById('card-consult-save').style.display        = isConsultation ? 'block' : 'none';
+  document.getElementById('dealer-location-toggle').style.display   = isConsultation ? 'none' : '';
+  document.getElementById('testdrive-toggle').style.display         = isConsultation ? 'none' : '';
   document.getElementById('checklist-btn').style.display            = isConsultation ? 'none' : 'block';
   document.getElementById('tab2').innerHTML = isConsultation
     ? '<span class="num">2</span>Save'

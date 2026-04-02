@@ -1168,6 +1168,9 @@ function renderCustomerDetail(id) {
           const discountPct = c.discount === 'Military 15%' || c.discount === 'First Responder 15%' ? 0.15 : c.discount === 'Student 5%' ? 0.05 : 0;
           const discountAmt = Math.round(fee * discountPct);
           const netFee = fee - discountAmt;
+          const isConsultation = c.id.startsWith('SKC') || c.workflow === 'Consultation';
+          const txns = getCustomerTransactions(c.id);
+          const hasPaidInvoice = txns.some(t => t.invoiceStatus === 'Paid');
           let html = infoRow('Service Tier', c.tier || '—');
           html += infoRow('Service Fee', '<span style="color:var(--gold)">$' + fee.toLocaleString() + '</span>');
           if (discountPct > 0) {
@@ -1176,8 +1179,16 @@ function renderCustomerDetail(id) {
             html += infoRow('Discount', 'None');
           }
           html += '<div class="info-row" style="border-top:1px solid var(--gold-border);padding-top:10px;margin-top:4px;">';
-          html += '<span class="info-label" style="color:var(--gold);font-weight:600;">Customer Paid</span>';
-          html += '<span class="info-value" style="color:var(--gold);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
+          if (isConsultation) {
+            html += '<span class="info-label" style="color:var(--amber);font-weight:600;">Amount Owed</span>';
+            html += '<span class="info-value" style="color:var(--amber);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
+          } else if (hasPaidInvoice) {
+            html += '<span class="info-label" style="color:var(--green);font-weight:600;">Paid</span>';
+            html += '<span class="info-value" style="color:var(--green);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
+          } else {
+            html += '<span class="info-label" style="color:var(--gold);font-weight:600;">Amount Due</span>';
+            html += '<span class="info-value" style="color:var(--gold);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
+          }
           html += '</div>';
           return html;
         })()}
@@ -1942,7 +1953,7 @@ function openInvoiceModal(id, name, tier, discount) {
   document.getElementById('inv-tier').value = tier === 'Tier 2' ? '2000' : '750';
   document.getElementById('inv-discount').value = discount && discount !== 'None' ? discount : 'None';
   document.getElementById('inv-method').value = '';
-  document.getElementById('inv-status').value = 'Pending';
+  document.getElementById('inv-status').value = id.startsWith('SKC') ? 'Draft' : 'Pending';
   document.getElementById('inv-deposit').value = '0';
   document.getElementById('inv-processing').value = '0';
   updateInvoiceCalc();
