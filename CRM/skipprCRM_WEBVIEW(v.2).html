@@ -399,7 +399,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <div class="info-card">
           <div class="info-card-title">Data to Export</div>
           <div class="form-field" style="margin-bottom:0;">
-            <select id="rpt-data" style="width:100%;background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:var(--font-b);font-size:0.88rem;outline:none;border-radius:var(--radius);">
+            <select id="rpt-data" onchange="refreshReportPreview()" style="width:100%;background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:var(--font-b);font-size:0.88rem;outline:none;border-radius:var(--radius);">
               <option value="financials">Financial Records</option>
               <option value="customers">Customer Records</option>
               <option value="both">Financials + Customers</option>
@@ -411,7 +411,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <div class="info-card">
           <div class="info-card-title">Date Range</div>
           <div class="form-field" style="margin-bottom:0;">
-            <select id="rpt-range" onchange="updateReportDates()" style="width:100%;background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:var(--font-b);font-size:0.88rem;outline:none;border-radius:var(--radius);">
+            <select id="rpt-range" onchange="updateReportDates();refreshReportPreview()" style="width:100%;background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:var(--font-b);font-size:0.88rem;outline:none;border-radius:var(--radius);">
               <option value="today">Today</option>
               <option value="7">Last 7 Days</option>
               <option value="30" selected>Last 30 Days</option>
@@ -1746,6 +1746,7 @@ function nav(view) {
   const nav = document.getElementById('nav-'  + view);
   if (el)  el.classList.add('active');
   if (nav) nav.classList.add('active');
+  if (view === 'reports') setTimeout(refreshReportPreview, 100);
 }
 
 // ── DRILL-DOWN (stat card clicks) ────────────────────────────
@@ -2471,17 +2472,27 @@ function getReportData() {
 
   if (type === 'financials' || type === 'both') {
     result.financials = (DB.financials.records || []).filter(r => {
-      const d = r.paymentDate ? new Date(r.paymentDate) : null;
-      return d && d >= start && d <= end;
+      if (!r.paymentDate) return true;  // Include records with no date
+      const d = new Date(r.paymentDate);
+      return !isNaN(d) ? (d >= start && d <= end) : true;
     });
   }
   if (type === 'customers' || type === 'both') {
     result.customers = DB.customers.filter(c => {
-      const d = c.dateAdded ? new Date(c.dateAdded) : null;
-      return d && d >= start && d <= end;
+      if (!c.dateAdded) return true;  // Include records with no date
+      const d = new Date(c.dateAdded);
+      return !isNaN(d) ? (d >= start && d <= end) : true;
     });
   }
   return result;
+}
+
+function refreshReportPreview() {
+  const data = getReportData();
+  const type = document.getElementById('rpt-data').value;
+  const total = data.financials.length + data.customers.length;
+  document.getElementById('rpt-count').textContent = total + ' records';
+  renderReportPreview(data, type);
 }
 
 function exportReport(format) {
@@ -2489,8 +2500,6 @@ function exportReport(format) {
   const type = document.getElementById('rpt-data').value;
   const total = data.financials.length + data.customers.length;
   document.getElementById('rpt-count').textContent = total + ' records';
-
-  // Show preview
   renderReportPreview(data, type);
 
   if (format === 'csv') exportCSV(data, type);
