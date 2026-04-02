@@ -1970,23 +1970,16 @@ function doPost(e) {
 }
 
 // ── CUSTOMER DRIVE FOLDER ───────────────────────────────────
-// Creates: Skippr - Data (Shared Drive) > Purchase Orders > SKP-XX-XXXX
-const SHARED_DRIVE_ID = '0APJsstEGvYFNUk9PVA';
+// Creates: Purchase Orders > SKP-XX-XXXX (inside Skippr - Data Shared Drive)
+const PURCHASE_ORDERS_FOLDER_ID = '1eCzdyKCgs4e4PYMxiiSGYc5gk23xIfHm';
 
 function getOrCreateCustomerFolder(customerId) {
-  const subName = 'Purchase Orders';
-
-  // Open the Shared Drive root
-  const root = DriveApp.getFolderById(SHARED_DRIVE_ID);
-
-  // Get or create Purchase Orders subfolder
-  let subFolders = root.getFoldersByName(subName);
-  let sub = subFolders.hasNext() ? subFolders.next() : root.createFolder(subName);
+  const parent = DriveApp.getFolderById(PURCHASE_ORDERS_FOLDER_ID);
 
   // Get or create customer folder
-  let custFolders = sub.getFoldersByName(customerId);
+  let custFolders = parent.getFoldersByName(customerId);
   if (custFolders.hasNext()) return custFolders.next();
-  return sub.createFolder(customerId);
+  return parent.createFolder(customerId);
 }
 
 // ── RESERVE NEXT ID ──────────────────────────────────────────
@@ -2223,9 +2216,9 @@ function getActiveCustomers(ss, filter) {
 function saveChecklistToDrive(p, today) {
   try {
     const folderName = 'Call Records';
-    const root       = DriveApp.getFolderById(SHARED_DRIVE_ID);
-    const folders    = root.getFoldersByName(folderName);
-    const folder     = folders.hasNext() ? folders.next() : root.createFolder(folderName);
+    const parent     = DriveApp.getFolderById(PURCHASE_ORDERS_FOLDER_ID);
+    const folders    = parent.getFoldersByName(folderName);
+    const folder     = folders.hasNext() ? folders.next() : parent.createFolder(folderName);
 
     const vehicle    = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ') || 'Vehicle TBD';
     const customerId = p.customerId || 'NO-ID';
