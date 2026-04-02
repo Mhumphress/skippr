@@ -422,7 +422,7 @@ function buildPipeline(ss) {
   sh.setConditionalFormatRules([tier2Rule, closedRule, lostRule, ...statusRules, overdueRule, todayFuRule]);
   sh.setFrozenRows(1);
   sh.setFrozenColumns(2);
-  sh.getRange("A1:AA1").createFilter();
+  sh.getRange("A1:AK1").createFilter();
 }
 
 // ── DEALER LOG ───────────────────────────────────────────────
@@ -568,6 +568,7 @@ function buildSettings(ss) {
     ["Notify Email", CONFIG.NOTIFY_EMAIL, "Receives all automated reminder emails"],
     ["Timezone", CONFIG.TIMEZONE, "e.g. America/Indianapolis"],
     ["Next ID Counter", 500, "Auto-increments — do not edit manually"],
+    ["Next Invoice Counter", 1001, "Auto-increments — do not edit manually"],
     ["CRM Version", "1.1", "Do not edit"],
     ["Last Setup", new Date().toLocaleDateString(), "Auto-filled"],
   ];
@@ -658,8 +659,8 @@ function buildFinancials(ss) {
   sh = ss.insertSheet("Financials");
   sh.setTabColor(C.GREEN);
 
-  const headers = ["Customer ID","Customer Name","Service Fee","Discount Applied","Net Service Fee","Deposit Collected","Payment Method","Payment Date","Invoice Status","Platform/Processing Fees","Tax Withheld","Other Expenses","Expense Notes","Net Profit"];
-  const widths  = [130, 160, 110, 120, 120, 120, 130, 110, 110, 140, 110, 110, 200, 120];
+  const headers = ["Customer ID","Customer Name","Service Fee","Discount Applied","Net Service Fee","Deposit Collected","Payment Method","Payment Date","Invoice Status","Platform/Processing Fees","Tax Withheld","Other Expenses","Expense Notes","Net Profit","Invoice Number"];
+  const widths  = [130, 160, 110, 120, 120, 120, 130, 110, 110, 140, 110, 110, 200, 120, 130];
 
   setupSheet(sh, headers, widths, C.GREEN);
   setDropdown(sh, 2, 7, 1000, ["Credit Card","ACH/Bank Transfer","Check","Cash","Zelle/Venmo"]);
@@ -1122,15 +1123,21 @@ function doGet(e) {
               finSheet.getRange(r, 3).setValue(newFee);             // Service Fee
               finSheet.getRange(r, 5).setValue(netFee);             // Net Service Fee
             }
+            // Set invoice number if not already set
+            if (!String(row[14] || '').trim()) {
+              const convInvoiceNum = reserveNextInvoiceNumber(ss);
+              finSheet.getRange(r, 15).setValue(convInvoiceNum);
+            }
             invoiceUpdated = true;
           }
         });
         // If no draft invoice existed for this SKC, create a new Pending one
         if (!invoiceUpdated) {
           const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
+          const newInvoiceNum = reserveNextInvoiceNumber(ss);
           finSheet.appendRow([
             skpId, p.customerName || '', serviceFee, 'None', serviceFee,
-            0, '', today, 'Pending', 0, 0, 0, '', '',
+            0, '', today, 'Pending', 0, 0, 0, '', '', newInvoiceNum,
           ]);
         }
       }
@@ -1153,7 +1160,8 @@ function doGet(e) {
           'Open',
           p.priority     || 'Medium',
           p.notes        || '',
-          'Callback reminder',
+          '',                    // Linked Sheet Row
+          'Callback',            // Category
         ]);
         const repActivity = ss.getSheetByName('Rep Activity');
         if (repActivity) {
@@ -1360,7 +1368,8 @@ function doGet(e) {
             'Open',
             'Medium',
             p.notes        || '',
-            'From checklist — ' + (p.dealerName || ''),
+            '',                    // Linked Sheet Row
+            'Callback',            // Category
           ]);
         }
       }
@@ -1436,6 +1445,7 @@ function doGet(e) {
           p.phone || '', p.email || '', p.zip || '', p.notes || '',
           p.budgetRange || '', p.timeline || '', p.financingType || '',
           p.leadSource || '', p.commPref || '', p.urgency || '',
+          '', '', '', '',  // Trade-In Vehicle, VIN, Value, Initial Price
         ]);
       }
 
@@ -1455,6 +1465,7 @@ function doGet(e) {
         const discountMap = { 'Military 15%': 0.85, 'First Responder 15%': 0.85, 'Student 5%': 0.95 };
         const discountMult = discountMap[p.discount] || 1;
         const netFee = Math.round(serviceFee * discountMult * 100) / 100;
+        const draftInvoiceNum = reserveNextInvoiceNumber(ss);
         finSheet.appendRow([
           newId,                       // Customer ID
           p.customerName || '',        // Customer Name
@@ -1469,7 +1480,8 @@ function doGet(e) {
           0,                           // Tax Withheld
           0,                           // Other Expenses
           '',                          // Expense Notes
-          '',                          // Net Profit (formula calculates)
+          netFee,                      // Net Profit
+          draftInvoiceNum,             // Invoice Number
         ]);
       }
 
@@ -1480,6 +1492,14 @@ function doGet(e) {
     // ── Edit customer details ─────────────────────────────────
     if (p.action === 'editCustomer') {
       const today = new Date();
+      // Check if deal-locked fields are being modified on a closed deal
+      if (isFieldLocked(ss, p.customerId, 'deal')) {
+        const lockedFields = ['year','make','model','trim','extColor','tier','discount','tradeInVehicle','tradeInVin','tradeInValue','initialPrice'];
+        const attemptingLocked = lockedFields.some(f => p[f]);
+        if (attemptingLocked) {
+          return json({ success: false, message: 'Deal is closed — vehicle, pricing, and financial details are locked.' }, cb);
+        }
+      }
       const pipeline = ss.getSheetByName('Pipeline');
       const registry = ss.getSheetByName('Registry');
 
@@ -1529,6 +1549,11 @@ function doGet(e) {
             if (p.email)        registry.getRange(r, 6).setValue(p.email);
             if (p.tier)         registry.getRange(r, 3).setValue(p.tier);
             if (p.rep)          registry.getRange(r, 11).setValue(p.rep);
+            if (p.zip)          registry.getRange(r, 9).setValue(p.zip);
+            if (p.customerStatus) {
+              const regStat = ({Closed:'Closed', Lost:'Lost'}[p.customerStatus]) || 'Active';
+              registry.getRange(r, 13).setValue(regStat);
+            }
             const vehicle = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ');
             if (vehicle)        registry.getRange(r, 10).setValue(vehicle);
           }
@@ -1646,7 +1671,7 @@ function doGet(e) {
         totalNetFees += netFee;
         totalExpenses += platformFees + tax + otherExpenses;
         totalNetProfit += netProfit;
-        if (status === 'Pending' || status === 'Partial' || status === 'Overdue') outstanding += netFee;
+        if (netFee > 0 && status !== 'Paid' && status !== 'Refunded' && status !== '') outstanding += netFee;
 
         financials.push({
           customerId: String(row[0] || ''),
@@ -1663,6 +1688,7 @@ function doGet(e) {
           otherExpenses: otherExpenses,
           expenseNotes: String(row[12] || ''),
           netProfit: netProfit,
+          invoiceNumber: String(row[14] || ''),
           rowIndex: i + 1,
         });
       });
@@ -1702,22 +1728,52 @@ function doGet(e) {
       const discountMult = discountMap[p.discount] || 1;
       const netFee = Math.round(serviceFee * discountMult * 100) / 100;
 
-      sh.appendRow([
-        p.customerId || '',
-        p.customerName || '',
-        serviceFee,
-        p.discount || 'None',
-        netFee,
-        parseFloat(p.deposit) || 0,
-        p.paymentMethod || '',
-        p.paymentDate ? new Date(p.paymentDate) : today,
-        p.invoiceStatus || 'Pending',
-        parseFloat(p.platformFees) || 0,
-        parseFloat(p.tax) || 0,
-        parseFloat(p.otherExpenses) || 0,
-        p.expenseNotes || '',
-        '', // Net Profit — formula will calculate
-      ]);
+      // Check for existing Draft invoice — update instead of creating duplicate
+      const existingRows = sh.getDataRange().getValues();
+      let existingDraftRow = -1;
+      existingRows.forEach((row, i) => {
+        if (i === 0) return;
+        if (String(row[0]).trim() === p.customerId && String(row[8]).trim() === 'Draft') {
+          existingDraftRow = i + 1;
+        }
+      });
+
+      const invoiceNum = reserveNextInvoiceNumber(ss);
+
+      if (existingDraftRow > 0) {
+        sh.getRange(existingDraftRow, 2).setValue(p.customerName || '');
+        sh.getRange(existingDraftRow, 3).setValue(serviceFee);
+        sh.getRange(existingDraftRow, 4).setValue(p.discount || 'None');
+        sh.getRange(existingDraftRow, 5).setValue(netFee);
+        sh.getRange(existingDraftRow, 6).setValue(parseFloat(p.deposit) || 0);
+        sh.getRange(existingDraftRow, 7).setValue(p.paymentMethod || '');
+        sh.getRange(existingDraftRow, 8).setValue(p.paymentDate ? new Date(p.paymentDate) : today);
+        sh.getRange(existingDraftRow, 9).setValue(p.invoiceStatus || 'Pending');
+        sh.getRange(existingDraftRow, 10).setValue(parseFloat(p.platformFees) || 0);
+        sh.getRange(existingDraftRow, 11).setValue(parseFloat(p.tax) || 0);
+        sh.getRange(existingDraftRow, 12).setValue(parseFloat(p.otherExpenses) || 0);
+        sh.getRange(existingDraftRow, 13).setValue(p.expenseNotes || '');
+        sh.getRange(existingDraftRow, 14).setValue(netFee - (parseFloat(p.platformFees) || 0) - (parseFloat(p.tax) || 0) - (parseFloat(p.otherExpenses) || 0));
+        sh.getRange(existingDraftRow, 15).setValue(invoiceNum);
+      } else {
+        sh.appendRow([
+          p.customerId || '',
+          p.customerName || '',
+          serviceFee,
+          p.discount || 'None',
+          netFee,
+          parseFloat(p.deposit) || 0,
+          p.paymentMethod || '',
+          p.paymentDate ? new Date(p.paymentDate) : today,
+          p.invoiceStatus || 'Pending',
+          parseFloat(p.platformFees) || 0,
+          parseFloat(p.tax) || 0,
+          parseFloat(p.otherExpenses) || 0,
+          p.expenseNotes || '',
+          netFee - (parseFloat(p.platformFees) || 0) - (parseFloat(p.tax) || 0) - (parseFloat(p.otherExpenses) || 0),
+          invoiceNum,
+        ]);
+      }
 
       // Log to Rep Activity
       const repActivity = ss.getSheetByName('Rep Activity');
@@ -1740,7 +1796,7 @@ function doGet(e) {
       }
 
       SpreadsheetApp.flush();
-      return json({ success: true, netFee: netFee }, cb);
+      return json({ success: true, netFee: netFee, invoiceNumber: invoiceNum }, cb);
     }
 
     if (p.action === 'processRefund') {
@@ -1861,6 +1917,53 @@ function reserveNextId(ss, type, tierCode) {
   return newId;
 }
 
+function reserveNextInvoiceNumber(ss) {
+  const settings = ss.getSheetByName('Settings');
+  const data = settings.getDataRange().getValues();
+  let counterRow = -1;
+  let currentNum = 1001;
+  data.forEach((row, i) => {
+    if (String(row[0]).includes('Next Invoice Counter')) {
+      counterRow = i + 1;
+      currentNum = parseInt(row[1]) || 1001;
+    }
+  });
+  const invoiceNum = 'INV-' + String(currentNum).padStart(4, '0');
+  if (counterRow > 0) {
+    settings.getRange(counterRow, 2).setValue(currentNum + 1);
+  } else {
+    settings.appendRow(['Next Invoice Counter', currentNum + 1, 'Auto-incremented']);
+  }
+  SpreadsheetApp.flush();
+  return invoiceNum;
+}
+
+function isFieldLocked(ss, customerId, fieldGroup) {
+  if (fieldGroup === 'deal') {
+    const pipeline = ss.getSheetByName('Pipeline');
+    if (!pipeline) return false;
+    const rows = pipeline.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === customerId) {
+        const status = String(rows[i][5]);
+        if (status === 'Closed' || status === 'Lost') return true;
+      }
+    }
+  }
+  if (fieldGroup === 'financial') {
+    const fin = ss.getSheetByName('Financials');
+    if (!fin) return false;
+    const rows = fin.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === customerId) {
+        const invStatus = String(rows[i][8]);
+        if (invStatus === 'Paid' || invStatus === 'Refunded') return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ── UPDATE REGISTRY ──────────────────────────────────────────
 function updateRegistry(ss, p, customerId, today, driveLink, registryStatus) {
   const reg = ss.getSheetByName('Registry');
@@ -1933,6 +2036,7 @@ function getActiveCustomers(ss, filter) {
         driveUrl:    String(row[22] || ''),
         phone:       String(row[23] || ''),
         email:       String(row[24] || ''),
+        zip:         String(row[25] || ''),
         notes:       String(row[26] || ''),
         budgetRange:   String(row[27] || ''),
         timeline:      String(row[28] || ''),
@@ -1979,7 +2083,7 @@ function getActiveCustomers(ss, filter) {
       id: custId, name, type, tier, rep,
       phone:       pl.phone    || phone,
       email:       pl.email    || email,
-      city, state, zip,
+      city, state, zip: pl.zip || zip,
       year:        pl.year     || vParts[0] || '',
       make:        pl.make     || vParts[1] || '',
       model:       pl.model    || vParts.slice(2).join(' ') || '',

@@ -212,6 +212,8 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
 .modal-btn:hover{border-color:var(--white);color:var(--white);}
 .modal-btn.primary{border-color:var(--gold-border);background:var(--gold-dim);color:var(--gold);}
 .modal-btn.primary:hover{background:var(--gold);color:var(--black);}
+.modal-btn.danger{border-color:rgba(248,113,113,0.2);color:var(--red);background:var(--red-dim);}
+.modal-btn.danger:hover{background:var(--red);color:var(--white);}
 
 @media(max-width:900px){
   .shell{grid-template-columns:1fr;}
@@ -282,7 +284,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <div class="stat-card"><div class="stat-label">Overdue Follow-Ups</div><div class="stat-value red" id="stat-overdue">—</div></div>
         <div class="stat-card"><div class="stat-label">Savings Delivered</div><div class="stat-value gold" id="stat-savings">$0</div></div>
       </div>
-      <div class="section-hd"><h3>★ Priority Queue — Tier 2 Active</h3><div class="line"></div></div>
+      <div class="section-hd"><h3>Priority Queue — Active Customers</h3><div class="line"></div></div>
       <div id="priority-queue"></div>
       <div class="section-hd"><h3>Recent Activity</h3><div class="line"></div></div>
       <div id="recent-activity"></div>
@@ -867,7 +869,7 @@ async function loadAll() {
 // ── STATS ─────────────────────────────────────────────────────
 function computeStats() {
   const custs   = DB.customers;
-  const active  = custs.filter(c => !['Closed','Lost','Converted'].includes(c.status));
+  const active  = custs.filter(c => !['Closed','Lost'].includes(c.status));
   const t2      = active.filter(c => c.tier === 'Tier 2');
   const today   = new Date(); today.setHours(0,0,0,0);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -930,11 +932,16 @@ function renderStats() {
 // ── DASHBOARD ─────────────────────────────────────────────────
 function renderPriorityQueue() {
   const t2 = DB.customers
-    .filter(c => c.tier === 'Tier 2' && !['Closed','Lost'].includes(c.status))
-    .sort(sortByFollowUp);
+    .filter(c => !['Closed','Lost'].includes(c.status))
+    .sort((a, b) => {
+      const at = a.tier === 'Tier 2' ? 0 : 1;
+      const bt = b.tier === 'Tier 2' ? 0 : 1;
+      if (at !== bt) return at - bt;
+      return sortByFollowUp(a, b);
+    });
   const el = document.getElementById('priority-queue');
   if (!t2.length) {
-    el.innerHTML = '<div class="empty-state"><div class="ico">★</div><p>No active Tier 2 customers</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="ico">★</div><p>No active customers</p></div>';
     return;
   }
   el.innerHTML = `<div class="tbl-wrap"><table>
@@ -942,7 +949,7 @@ function renderPriorityQueue() {
       <th>ID</th><th>Customer</th><th>Vehicle</th><th>Status</th><th>Rep</th><th>Follow-Up</th>
     </tr></thead>
     <tbody>${t2.slice(0, 8).map(c => `
-      <tr class="t2-row" onclick="openCustomer('${esc(c.id)}')">
+      <tr class="${c.tier==='Tier 2'?'t2-row':''}" onclick="openCustomer('${escAttr(c.id)}')">
         <td><span style="font-family:monospace;color:var(--gold);font-size:0.8rem;">${esc(c.id)}</span></td>
         <td class="name-cell">${esc(c.name)}</td>
         <td style="color:var(--gray)">${esc(c.vehicle)}</td>
@@ -991,10 +998,10 @@ function renderCustomerTable() {
       <th>Vehicle</th><th>Rep</th><th>Follow-Up</th><th>Phone</th>
     </tr></thead>
     <tbody>${customers.map(c => {
-      const closed = ['Closed','Lost','Converted'].includes(c.status);
+      const closed = ['Closed','Lost'].includes(c.status);
       return `<tr
         class="${c.tier==='Tier 2'&&!closed?'t2-row':''} ${closed?'closed-row':''}"
-        onclick="openCustomer('${esc(c.id)}')">
+        onclick="openCustomer('${escAttr(c.id)}')">
         <td style="text-align:center">${c.tier==='Tier 2'?'<span class="priority-star">★</span>':''}</td>
         <td><span style="font-family:monospace;color:var(--gold);font-size:0.78rem;">${esc(c.id)}</span></td>
         <td class="name-cell">${esc(c.name)}</td>
@@ -1012,8 +1019,8 @@ function renderCustomerTable() {
 function sortCustomers(arr) {
   return arr.sort((a, b) => {
     // Push inactive customers to bottom
-    const aClosed = ['Closed','Lost','Converted'].includes(a.status) ? 1 : 0;
-    const bClosed = ['Closed','Lost','Converted'].includes(b.status) ? 1 : 0;
+    const aClosed = ['Closed','Lost'].includes(a.status) ? 1 : 0;
+    const bClosed = ['Closed','Lost'].includes(b.status) ? 1 : 0;
     if (aClosed !== bClosed) return aClosed - bClosed;
     // Then sort by tier (Tier 2 first)
     const at = a.tier === 'Tier 2' ? 0 : 1;
@@ -1039,14 +1046,14 @@ function setFilter(f, btn) {
 function filterCustomers() { renderCustomerTable(); }
 
 function applyFilter(arr) {
-  if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost','Converted'].includes(c.status));
-  if (custFilter === 'Tier 2')  return arr.filter(c => c.tier === 'Tier 2' && !['Closed','Lost','Converted'].includes(c.status));
-  if (custFilter === 'Tier 1')  return arr.filter(c => c.tier === 'Tier 1' && !['Closed','Lost','Converted'].includes(c.status));
+  if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost'].includes(c.status));
+  if (custFilter === 'Tier 2')  return arr.filter(c => c.tier === 'Tier 2' && !['Closed','Lost'].includes(c.status));
+  if (custFilter === 'Tier 1')  return arr.filter(c => c.tier === 'Tier 1' && !['Closed','Lost'].includes(c.status));
   if (custFilter === 'overdue') {
     const today = new Date(); today.setHours(0,0,0,0);
-    return arr.filter(c => c.followUp && new Date(c.followUp) < today && !['Closed','Lost','Converted'].includes(c.status));
+    return arr.filter(c => c.followUp && new Date(c.followUp) < today && !['Closed','Lost'].includes(c.status));
   }
-  if (custFilter === 'closed')  return arr.filter(c => ['Closed','Lost','Converted'].includes(c.status));
+  if (custFilter === 'closed')  return arr.filter(c => ['Closed','Lost'].includes(c.status));
   if (custFilter === 'all')     return arr;
   return arr;
 }
@@ -1104,13 +1111,13 @@ function renderCustomerDetail(id) {
         </div>
       </div>
       <div class="detail-actions">
-        <button class="action-btn primary" onclick="openStatusModal('${esc(c.id)}')">✎ Update Status</button>
-        <button class="action-btn" onclick="openFuModal('${esc(c.id)}','${esc(c.name)}')">+ Follow-Up</button>
-        ${c.driveUrl ? `<button class="action-btn" onclick="window.open('${esc(c.driveUrl)}','_blank')">↗ Drive File</button>` : ''}
-        <button class="action-btn" onclick="openEditModal('${esc(c.id)}')">✎ Edit Details</button>
-        <button class="action-btn" onclick="openNoteModal('${esc(c.id)}','${esc(c.name)}')">✦ Add Note</button>
-        <button class="action-btn primary" onclick="openInvoiceModal('${esc(c.id)}','${esc(c.name)}','${esc(c.tier)}','${esc(c.discount)}')">$ Create Invoice</button>
-        ${c.id.startsWith('SKC') && c.status !== 'Closed' && c.status !== 'Lost' ? `<button class="action-btn" onclick="openConvertModal('${esc(c.id)}','${esc(c.name)}','${esc(c.tier)}','${esc(c.phone)}','${esc(c.email)}','${esc(c.zip)}','${esc(c.vehicle)}','${esc(c.rep)}')" style="border-color:var(--green);color:var(--green);">↑ Convert to Purchase</button>` : ''}
+        <button class="action-btn primary" onclick="openStatusModal('${escAttr(c.id)}')">✎ Update Status</button>
+        <button class="action-btn" onclick="openFuModal('${escAttr(c.id)}','${escAttr(c.name)}')">+ Follow-Up</button>
+        ${c.driveUrl ? `<button class="action-btn" onclick="window.open('${escAttr(c.driveUrl)}','_blank')">↗ Drive File</button>` : ''}
+        <button class="action-btn" onclick="openEditModal('${escAttr(c.id)}')">✎ Edit Details</button>
+        <button class="action-btn" onclick="openNoteModal('${escAttr(c.id)}','${escAttr(c.name)}')">✦ Add Note</button>
+        <button class="action-btn primary" onclick="openInvoiceModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.discount)}')">$ Create Invoice</button>
+        ${c.id.startsWith('SKC') && c.status !== 'Closed' && c.status !== 'Lost' && c.status !== 'Converted' ? `<button class="action-btn" onclick="openConvertModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.phone)}','${escAttr(c.email)}','${escAttr(c.zip)}','${escAttr(c.vehicle)}','${escAttr(c.rep)}')" style="border-color:var(--green);color:var(--green);">↑ Convert to Purchase</button>` : ''}
       </div>
     </div>
 
@@ -1298,13 +1305,14 @@ function renderCustomerTransactions(customerId) {
 
   html += `<div class="tbl-wrap" style="margin-bottom:28px;"><table>
     <thead><tr>
-      <th>Date</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
+      <th>Date</th><th>Invoice #</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
       <th>Expenses</th><th>Net Profit</th><th>Status</th><th>Method</th><th></th>
     </tr></thead>
     <tbody>${txns.map(r => {
       const expenses = (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0);
       return `<tr>
         <td style="font-family:monospace;font-size:0.75rem;color:var(--gray)">${formatDate(r.paymentDate)}</td>
+        <td style="font-family:monospace;font-size:0.75rem;color:var(--gray)">${esc(r.invoiceNumber || '—')}</td>
         <td style="color:var(--gold)">$${(r.serviceFee||0).toLocaleString()}</td>
         <td style="color:var(--gray);font-size:0.75rem">${esc(r.discount || 'None')}</td>
         <td style="color:var(--white);font-weight:500">$${(r.netServiceFee||0).toLocaleString()}</td>
@@ -1313,7 +1321,7 @@ function renderCustomerTransactions(customerId) {
         <td><span style="color:${statusColor(r.invoiceStatus)}">${esc(r.invoiceStatus || '—')}</span></td>
         <td style="color:var(--gray);font-size:0.75rem">${esc(r.paymentMethod || '—')}</td>
         <td>${r.invoiceStatus !== 'Refunded'
-          ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + esc(r.customerId) + '\',\'' + esc(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>'
+          ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>'
           : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
       </tr>`;
     }).join('')}</tbody></table></div>`;
@@ -1357,7 +1365,7 @@ function renderFuCard(f) {
       <div class="fu-priority ${(f.priority||'').toLowerCase()}">${esc(f.priority||'')}</div>
       <div class="fu-rep">${esc(f.rep)}</div>
       ${f.status === 'Open'
-        ? `<button class="fu-done-btn" onclick="markFuDone(event,'${esc(String(f.id||f.customer))}')">✓ Done</button>`
+        ? `<button class="fu-done-btn" onclick="markFuDone(event,'${escAttr(String(f.id||f.customer))}')">✓ Done</button>`
         : '<span style="font-size:0.65rem;color:var(--green)">Complete</span>'}
     </div>
   </div>`;
@@ -1382,7 +1390,7 @@ async function markFuDone(e, id) {
   toast('Follow-up marked complete', 'success');
 
   try {
-    await crmSend({
+    await crmCall({
       action:       'markFollowUpDone',
       followUpId:   String(fu.id || ''),
       customerName: fu.customer || '',
@@ -1415,7 +1423,7 @@ function renderActivityLog() {
       <td>${esc(a.action)}</td>
       <td>${esc(a.outcome)}</td>
       <td><span class="badge badge-${a.tier==='Tier 2'?'t2':'t1'}">${esc(a.tier||'—')}</span></td>
-      <td style="color:var(--green)">${a.savings ? '$' + Number(String(a.savings).replace(/[^0-9.-]/g,'')).toLocaleString() : ''}</td>
+      <td style="color:var(--green)">${parseMoney(a.savings) ? '$' + parseMoney(a.savings).toLocaleString() : ''}</td>
       <td style="color:var(--gray);font-size:0.75rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.notes)}</td>
       <td><button class="fu-done-btn" onclick="openEditActivityModal(${a.rowIndex})" style="font-size:0.58rem">Edit</button></td>
     </tr>`).join('')}</tbody></table>`;
@@ -1455,7 +1463,7 @@ async function submitStatusUpdate() {
     // Maps to Apps Script updateCustomer action in doGet()
     // Updates: Pipeline col F (status), col N (lastContact), col O (followUp)
     // Also appends to Rep Activity if notes provided
-    await crmSend({
+    await crmCall({
       action:         'updateCustomer',
       customerId:     c.id,
       customerName:   c.name,
@@ -1505,7 +1513,7 @@ async function submitFollowUp() {
   try {
     // Maps to Apps Script saveCallback action in doGet()
     // Appends to Follow-Ups sheet AND Rep Activity sheet
-    await crmSend({
+    await crmCall({
       action:       'saveCallback',
       customerId:   c.id,
       customerName: c.name,
@@ -1544,7 +1552,14 @@ function esc(s) {
   if (s == null) return '';
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function escAttr(s) {
+  if (s == null) return '';
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"')
+    .replace(/</g,'\\x3c').replace(/>/g,'\\x3e');
 }
 
 function statusBadge(s) {
@@ -1664,17 +1679,18 @@ function renderFinancials() {
     wrap.innerHTML = '<div class="empty-state"><p>No financial records yet</p></div>';
     return;
   }
-  const statusColor = s => ({ Draft:'var(--blue)', Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)', Partial:'var(--amber)', Refunded:'var(--gray)' }[s] || 'var(--gray)');
+  const statusColor = s => ({ Draft:'var(--blue)', Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)', Partial:'var(--amber)', Refunded:'var(--red)' }[s] || 'var(--gray)');
   const profitColor = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray)';
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th>Customer</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
+      <th>Customer</th><th>Invoice #</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
       <th>Expenses</th><th>Net Profit</th><th>Status</th><th>Method</th><th>Date</th><th></th>
     </tr></thead>
     <tbody>${records.map(r => {
       const expenses = (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0);
       return `<tr>
       <td class="name-cell">${esc(r.customerName)}<br><span style="font-family:monospace;color:var(--gold);font-size:0.7rem">${esc(r.customerId)}</span></td>
+      <td style="font-family:monospace;font-size:0.75rem;color:var(--gray)">${esc(r.invoiceNumber || '—')}</td>
       <td style="color:var(--gold)">$${(r.serviceFee||0).toLocaleString()}</td>
       <td style="color:var(--gray);font-size:0.75rem">${esc(r.discount || 'None')}</td>
       <td style="color:var(--white);font-weight:500">$${(r.netServiceFee||0).toLocaleString()}</td>
@@ -1683,7 +1699,7 @@ function renderFinancials() {
       <td><span style="color:${statusColor(r.invoiceStatus)}">${esc(r.invoiceStatus || '—')}</span></td>
       <td style="color:var(--gray);font-size:0.75rem">${esc(r.paymentMethod || '—')}</td>
       <td style="color:var(--gray);font-size:0.75rem">${formatDate(r.paymentDate)}</td>
-      <td>${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + esc(r.customerId) + '\',\'' + esc(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
+      <td>${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
     </tr>`;}).join('')}</tbody></table>`;
 }
 
@@ -1706,7 +1722,7 @@ async function submitAddCustomer() {
   closeModal('add-customer-modal');
   toast('Creating customer...', 'success');
   try {
-    const result = await crmSend({
+    const result = await crmCall({
       action: 'addCustomer',
       customerName: name,
       phone: document.getElementById('ac-phone').value.trim(),
@@ -1760,6 +1776,23 @@ function openEditModal(id) {
   repSelect.innerHTML = '';
   REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
   repSelect.value = c.rep || '';
+  // Lock deal fields if customer deal is closed
+  const isDealClosed = c.status === 'Closed' || c.status === 'Lost';
+  const lockFields = ['ec-tier','ec-year','ec-make','ec-model','ec-trim','ec-color','ec-discount','ec-trade-vehicle','ec-trade-vin','ec-trade-value','ec-initial-price'];
+  lockFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = isDealClosed;
+  });
+  // Show/hide lock banner
+  let banner = document.getElementById('edit-lock-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'edit-lock-banner';
+    banner.style.cssText = 'padding:10px 14px;margin-bottom:12px;font-size:0.78rem;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(251,191,36,0.2);border-radius:8px;display:none;';
+    banner.textContent = 'Deal is closed — vehicle, pricing, and financial details are locked.';
+    document.getElementById('edit-modal-sub').after(banner);
+  }
+  banner.style.display = isDealClosed ? 'block' : 'none';
   document.getElementById('edit-customer-modal').classList.add('open');
 }
 
@@ -1768,7 +1801,7 @@ async function submitEditCustomer() {
   closeModal('edit-customer-modal');
   toast('Saving changes...', 'success');
   try {
-    await crmSend({
+    await crmCall({
       action: 'editCustomer',
       customerId: editCustomerId,
       customerName: document.getElementById('ec-name').value.trim(),
@@ -1820,7 +1853,7 @@ async function submitNote() {
   closeModal('note-modal');
   const c = DB.customers.find(x => x.id === noteCustomerId);
   try {
-    await crmSend({
+    await crmCall({
       action: 'addNote',
       customerId: noteCustomerId,
       customerName: c ? c.name : '',
@@ -1885,7 +1918,7 @@ async function submitEditActivity() {
   closeModal('edit-activity-modal');
   toast('Saving changes...', 'success');
   try {
-    await crmSend({
+    await crmCall({
       action: 'editActivity',
       rowIndex: editActivityRowIndex,
       actionType: document.getElementById('ea-action').value,
@@ -1941,7 +1974,7 @@ async function submitInvoice() {
   toast('Creating invoice...', 'success');
   const fee = parseFloat(document.getElementById('inv-tier').value) || 0;
   try {
-    await crmSend({
+    await crmCall({
       action: 'createInvoice',
       customerId: invoiceCustomer.id,
       customerName: invoiceCustomer.name,
@@ -1978,7 +2011,7 @@ async function submitRefund() {
   const reason = document.getElementById('refund-reason').value;
   const notes = document.getElementById('refund-notes').value;
   try {
-    await crmSend({
+    await crmCall({
       action: 'processRefund',
       rowIndex: refundTarget.rowIndex,
       customerId: refundTarget.customerId,
@@ -2029,7 +2062,7 @@ async function submitConvert() {
 
     // Step 2: Convert
     const rep = document.getElementById('conv-rep').value;
-    await crmSend({
+    await crmCall({
       action: 'convertCustomer',
       originalId: convertData.id,
       customerId: skpId,

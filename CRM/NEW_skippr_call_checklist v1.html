@@ -406,17 +406,17 @@
       <div class="toggle-group" id="tg-trade"><div class="tog on" data-val="no">No trade-in</div><div class="tog" data-val="yes">Yes — has a trade-in</div></div>
       <div id="tg-trade-fields" style="display:none;margin-top:10px;padding:14px 16px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.12);border-radius:8px;">
         <div style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:12px;">Trade-In Vehicle Details</div>
-        <div class="row">
+        <div class="grid2">
           <div class="field"><label>Year</label><input type="text" id="i-trade-year" placeholder="2020"/></div>
           <div class="field"><label>Make</label><input type="text" id="i-trade-make" placeholder="Honda"/></div>
         </div>
-        <div class="row">
+        <div class="grid2">
           <div class="field"><label>Model</label><input type="text" id="i-trade-model" placeholder="Civic"/></div>
           <div class="field"><label>Trim</label><input type="text" id="i-trade-trim" placeholder="EX-L"/></div>
         </div>
         <div class="field"><label>VIN (if available)</label><input type="text" id="i-trade-vin" placeholder="1HGBH41JXMN109186" style="font-family:monospace;letter-spacing:0.06em;"/></div>
         <div class="field"><label>Estimated Trade-In Value (KBB)</label><input type="text" id="i-trade-value" placeholder="$12,500"/></div>
-        <div class="field"><label>Trade-in notes (mileage, condition, payoff, etc.)</label><textarea id="i-trade-notes" placeholder="e.g. 45k miles, clean title, $8,200 remaining payoff..." style="min-height:60px;width:100%;resize:vertical;"></textarea></div>
+        <div class="field"><label>Trade-in notes (mileage, condition, payoff, etc.)</label><textarea id="i-trade-notes" placeholder="e.g. 45k miles, clean title, $8,200 remaining payoff..." style="min-height:60px;width:100%;resize:vertical;background:var(--dark2);color:var(--white);border:1px solid var(--border);padding:10px 12px;font-family:var(--font-body);outline:none;border-radius:var(--radius);"></textarea></div>
       </div>
       <span class="tog-label" style="margin-top:14px;">How specific is the customer on the vehicle?</span>
       <div class="toggle-group" id="tg-spec"><div class="tog on" data-val="exact">Exact spec</div><div class="tog" data-val="flexible">Flexible (open to alternatives)</div></div>
@@ -434,7 +434,7 @@
         <div class="card-title">Consultation notes</div>
         <div class="field">
           <label>Notes from this call</label>
-          <textarea id="i-consult-notes" placeholder="What did the customer share? Budget, timeline, preferences, concerns..." style="min-height:90px;width:100%;resize:vertical;"></textarea>
+          <textarea id="i-consult-notes" placeholder="What did the customer share? Budget, timeline, preferences, concerns..." style="min-height:90px;width:100%;resize:vertical;background:var(--dark2);color:var(--white);border:1px solid var(--border);padding:10px 12px;font-family:var(--font-body);outline:none;border-radius:var(--radius);"></textarea>
         </div>
       </div>
       <div id="consult-crm-status" style="display:none;padding:10px 14px;margin-bottom:1rem;font-size:0.82rem;font-weight:500;letter-spacing:0.06em;"></div>
@@ -998,14 +998,27 @@ async function submitConvert() {
   const tierTog  = document.querySelector('#convert-tier-tog .tog.on');
   const tier     = tierTog ? tierTog.dataset.val : 'Tier 1';
   const tierCode = tier === 'Tier 2' ? 'T2' : 'T1';
-  const parts    = skcId.split('-');
-  const num      = parts[2] || '0500';
-  const skpId    = 'SKP-' + tierCode + '-' + num;
   const customer = activeCustomers.find(c => c.id === skcId) || {};
 
   const btn = document.getElementById('convert-submit-btn');
   btn.textContent = 'Saving...';
   btn.disabled    = true;
+
+  // Get proper unique ID from server
+  let skpId;
+  try {
+    const idResult = await crmCall({ action: 'nextId', type: 'SKP', tier: tierCode });
+    if (!idResult.success || !idResult.id) {
+      throw new Error('Failed to generate purchase ID');
+    }
+    skpId = idResult.id;
+  } catch(e) {
+    btn.textContent = 'Confirm Conversion & Create Purchase Record →';
+    btn.disabled = false;
+    const errEl = document.getElementById('wf-gen-status-convert');
+    if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Error: ' + e.message; }
+    return;
+  }
 
   try {
     const result = await crmCall({
@@ -1094,6 +1107,14 @@ function fillCallbackCustomer() {
     ].filter(Boolean).join(' ');
     document.getElementById('cb-rep').value  = document.getElementById('i-rep')?.value || '';
     document.getElementById('cb-tier').value = document.getElementById('i-tier')?.value || '';
+  } else if (sel.value) {
+    const cust = activeCustomers.find(c => c.id === sel.value);
+    if (cust) {
+      document.getElementById('cb-id').value      = cust.id || '';
+      document.getElementById('cb-vehicle').value = cust.vehicle || '';
+      document.getElementById('cb-rep').value     = cust.rep || '';
+      document.getElementById('cb-tier').value    = cust.tier || '';
+    }
   }
 }
 
@@ -1105,7 +1126,7 @@ async function saveCallback() {
   const customerId   = document.getElementById('cb-id').value;
   const customerName = document.getElementById('i-name')?.value || customerId;
 
-  await crmSend({
+  try { await crmCall({
     action:       'saveCallback',
     customerId:   customerId,
     customerName: customerName,
@@ -1117,6 +1138,7 @@ async function saveCallback() {
     notes:        document.getElementById('cb-notes').value,
   });
   showCbStatus('success', '✦ Callback reminder saved to Follow-Ups.');
+  } catch(e) { showCbStatus('error', 'Save failed — ' + e.message); return; }
   // Notify parent to refresh dashboard
   try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'checklist' }, '*'); } catch(e) {}
   document.getElementById('cb-date').value  = '';
@@ -1137,7 +1159,6 @@ async function saveConsultation() {
 
   // FIX: validate required fields before saving
   const nameVal = document.getElementById('i-name')?.value?.trim();
-  const repVal  = document.getElementById('i-rep')?.value?.trim();
   if (!nameVal) {
     const statusEl = document.getElementById('consult-crm-status');
     statusEl.style.display    = 'block';
@@ -1170,10 +1191,9 @@ async function saveConsultation() {
     model:          getVal('i-model'),
     trim:           getSelText('i-trim'),
     extColor:       getVal('i-color'),
-    customerStatus: 'Searching',
-    // FIX: was hardcoded to '' — now reads the tier the rep selected
+    customerStatus: getVal('i-status') || 'Searching',
     tier:           getTier(),
-    discount:       'None',
+    discount:       getDiscountLabel(),
     notes:          getVal('i-consult-notes'),
     tradeIn:        selections['tg-trade'] === 'yes' ? 'yes' : 'no',
     tradeYear:      getVal('i-trade-year'),
@@ -1319,7 +1339,7 @@ async function saveToCRM() {
   } catch(e) {}
 
   try {
-    await crmSend(params);
+    await crmCall(params);
     showCRMStatus('success', '✦ Saved — ' + currentCustomerId + ' logged in CRM and Drive.');
     btn.textContent      = '✓ Saved to CRM';
     btn.style.background = '#4caf7d';
