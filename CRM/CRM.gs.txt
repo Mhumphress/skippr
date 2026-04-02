@@ -1959,12 +1959,15 @@ function doOptions(e) {
 }
 
 function doPost(e) {
-  // For file uploads, merge JSON body into parameters
-  if (e.postData && e.postData.type === 'application/json') {
-    try {
-      const body = JSON.parse(e.postData.contents);
-      e.parameter = Object.assign({}, e.parameter || {}, body);
-    } catch(err) {}
+  // Merge POST body into parameters (supports JSON and form-data)
+  if (e.postData) {
+    if (e.postData.type === 'application/json') {
+      try {
+        const body = JSON.parse(e.postData.contents);
+        e.parameter = Object.assign({}, e.parameter || {}, body);
+      } catch(err) {}
+    }
+    // For FormData, parameters are already in e.parameter
   }
   return doGet(e);
 }

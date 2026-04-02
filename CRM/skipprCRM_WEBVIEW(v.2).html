@@ -1300,6 +1300,7 @@ function renderCustomerDetail(id) {
         <button class="action-btn" onclick="openNoteModal('${escAttr(c.id)}','${escAttr(c.name)}')">✦ Add Note</button>
         <button class="action-btn primary" onclick="openInvoiceModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.discount)}')">$ Create Invoice</button>
         ${c.id.startsWith('SKC') && c.status !== 'Closed' && c.status !== 'Lost' && c.status !== 'Converted' ? `<button class="action-btn" onclick="openConvertModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.phone)}','${escAttr(c.email)}','${escAttr(c.zip)}','${escAttr(c.vehicle)}','${escAttr(c.rep)}')" style="border-color:var(--green);color:var(--green);">↑ Convert to Purchase</button>` : ''}
+        ${c.id.startsWith('SKP') && !['Closed','Lost'].includes(c.status) ? `<button class="action-btn" onclick="openSkpChecklist('${escAttr(c.id)}')" style="border-color:var(--gold);color:var(--gold);">◈ Open Checklist</button>` : ''}
       </div>
     </div>
 
@@ -2483,39 +2484,53 @@ async function submitConvert() {
       platformFees: document.getElementById('conv-processing').value,
     });
 
-    toast('Converted! Opening checklist for ' + skpId + '...', 'success');
+    toast('Converted! New ID: ' + skpId, 'success');
     await loadAll();
-
-    // Open checklist with pre-filled customer data
-    const c = DB.customers.find(x => x.id === convertData.id) || {};
-    try {
-      window.parent.postMessage({
-        type: 'skippr-open-checklist',
-        params: {
-          skpId: skpId,
-          originalId: convertData.id,
-          name: convertData.name,
-          phone: document.getElementById('conv-phone').value,
-          email: document.getElementById('conv-email').value,
-          zip: document.getElementById('conv-zip').value,
-          tier: tier,
-          rep: rep,
-          year: c.year || '',
-          make: c.make || '',
-          model: c.model || '',
-          trim: c.trim || '',
-          extColor: c.extColor || '',
-          discount: getConvDiscountValue(),
-          tradeInVehicle: c.tradeInVehicle || '',
-          tradeInVin: c.tradeInVin || '',
-          tradeInValue: c.tradeInValue || '',
-        }
-      }, '*');
-    } catch(e) {
-      openCustomer(skpId);
-    }
+    // Return to dashboard
+    nav('dashboard');
+    try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'convert' }, '*'); } catch(e) {}
   } catch(e) {
     toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── OPEN SKP CHECKLIST ────────────────────────────────────────
+function openSkpChecklist(id) {
+  const c = DB.customers.find(x => x.id === id) || {};
+  try {
+    window.parent.postMessage({
+      type: 'skippr-open-checklist',
+      params: {
+        skpId: id,
+        originalId: c.originalId || '',
+        name: c.name || '',
+        phone: c.phone || '',
+        email: c.email || '',
+        city: c.city || '',
+        state: c.state || '',
+        zip: c.zip || '',
+        tier: c.tier || '',
+        rep: c.rep || '',
+        year: c.year || '',
+        make: c.make || '',
+        model: c.model || '',
+        trim: c.trim || '',
+        extColor: c.extColor || '',
+        discount: c.discount || 'None',
+        tradeInVehicle: c.tradeInVehicle || '',
+        tradeInVin: c.tradeInVin || '',
+        tradeInValue: c.tradeInValue || '',
+        budgetRange: c.budgetRange || '',
+        timeline: c.timeline || '',
+        financingType: c.financingType || '',
+        urgency: c.urgency || '',
+        leadSource: c.leadSource || '',
+        commPref: c.commPref || '',
+        notes: c.notes || '',
+      }
+    }, '*');
+  } catch(e) {
+    toast('Could not open checklist', 'error');
   }
 }
 
@@ -2531,24 +2546,32 @@ function handleFileSelect(files, customerId) {
 
 async function uploadFiles(files, customerId) {
   const statusEl = document.getElementById('upload-status-' + customerId);
+  // First ensure the folder exists
+  try {
+    await crmCall({ action: 'getOrCreateFolder', customerId: customerId });
+  } catch(e) {}
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
+    if (file.size > 5 * 1024 * 1024) {
+      statusEl.innerHTML = '<span style="color:var(--red);font-size:0.78rem;">' + esc(file.name) + ' is too large (max 5MB)</span>';
+      continue;
+    }
     statusEl.innerHTML = '<span style="color:var(--amber);font-size:0.78rem;">Uploading ' + esc(file.name) + ' (' + (i+1) + '/' + files.length + ')...</span>';
     try {
       const base64 = await fileToBase64(file);
-      await fetch(PROXY_URL + '?target=' + encodeURIComponent(APPS_SCRIPT_URL), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'uploadFile',
-          customerId: customerId,
-          fileName: file.name,
-          fileData: base64,
-          mimeType: file.type || 'application/octet-stream',
-        })
-      }).then(r => r.json());
+      // Send directly to Apps Script (proxy may not forward POST bodies)
+      const form = new FormData();
+      form.append('action', 'uploadFile');
+      form.append('customerId', customerId);
+      form.append('fileName', file.name);
+      form.append('fileData', base64);
+      form.append('mimeType', file.type || 'application/octet-stream');
+      await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form, mode: 'no-cors' });
+      // no-cors means we can't read the response, wait for write to complete
+      await new Promise(r => setTimeout(r, 2000));
     } catch(err) {
-      statusEl.innerHTML = '<span style="color:var(--red);font-size:0.78rem;">Failed to upload ' + esc(file.name) + ': ' + err.message + '</span>';
+      statusEl.innerHTML = '<span style="color:var(--red);font-size:0.78rem;">Failed to upload ' + esc(file.name) + '</span>';
       return;
     }
   }

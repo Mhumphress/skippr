@@ -1450,58 +1450,83 @@ if (window !== window.parent || new URLSearchParams(window.location.search).has(
   currentWorkflow    = 'purchase';
   originalCustomerId = params.get('originalId') || '';
 
-  // Fill customer fields
+  // Helper to set form values
   const setVal = (id, key) => { const el = document.getElementById(id); if (el && params.get(key)) el.value = params.get(key); };
+  const clickTog = (groupId, val) => { const t = document.querySelector('#' + groupId + ' .tog[data-val="' + val + '"]'); if (t) t.click(); };
+
+  // Customer contact
   setVal('i-name',  'name');
   setVal('i-phone', 'phone');
   setVal('i-email', 'email');
   setVal('i-zip',   'zip');
-  setVal('i-year',  'year');
-  setVal('i-make',  'make');
   setVal('i-tier',  'tier');
   setVal('i-rep',   'rep');
+  setVal('i-color', 'extColor');
 
-  // Fill model/trim after dropdowns populate
+  // City & state
+  if (params.get('city'))  { const el = document.getElementById('i-ccity'); if (el) el.value = params.get('city'); }
+  if (params.get('state')) { const el = document.getElementById('i-cstate'); if (el) el.value = params.get('state'); }
+
+  // Vehicle — make/model/trim need cascading dropdown fill
   setTimeout(() => {
+    if (params.get('year')) document.getElementById('i-year').value = params.get('year');
     if (params.get('make')) { document.getElementById('i-make').value = params.get('make'); fillModels(); }
     setTimeout(() => {
       if (params.get('model')) document.getElementById('i-model').value = params.get('model');
       setTimeout(() => {
         if (params.get('trim')) { fillTrims(); document.getElementById('i-trim').value = params.get('trim'); }
-      }, 100);
-    }, 100);
-  }, 100);
+      }, 150);
+    }, 150);
+  }, 150);
 
-  setVal('i-color', 'extColor');
-
-  // Fill trade-in if present
+  // Trade-in
   if (params.get('tradeInVehicle')) {
-    // Activate the trade toggle
-    const tradeToggle = document.querySelector('#tg-trade .tog[data-val="yes"]');
-    if (tradeToggle) { tradeToggle.click(); }
-    // Parse trade vehicle "2020 Honda Civic EX-L" into fields
+    clickTog('tg-trade', 'yes');
     const tv = (params.get('tradeInVehicle') || '').split(' ');
     if (tv[0]) document.getElementById('i-trade-year').value = tv[0];
     if (tv[1]) document.getElementById('i-trade-make').value = tv[1];
-    if (tv[2]) document.getElementById('i-trade-model').value = tv.slice(2).join(' ');
+    if (tv.length > 2) document.getElementById('i-trade-model').value = tv.slice(2).join(' ');
     setVal('i-trade-vin',   'tradeInVin');
     setVal('i-trade-value', 'tradeInValue');
   }
 
-  // Set discount toggle if present
-  const discountParam = params.get('discount') || '';
-  if (discountParam && discountParam !== 'None') {
+  // Discount toggle
+  const disc = params.get('discount') || '';
+  if (disc && disc !== 'None') {
     const dMap = { 'Military 15%': 'military', 'First Responder 15%': 'firstresponder', 'Student 5%': 'student' };
-    const dVal = dMap[discountParam];
-    if (dVal) {
-      const discTog = document.querySelector('#tg-discount .tog[data-val="' + dVal + '"]');
-      if (discTog) discTog.click();
+    if (dMap[disc]) {
+      clickTog('tg-discount', dMap[disc]);
+    } else if (disc.startsWith('Other')) {
+      clickTog('tg-discount', 'other');
+      const reasonMatch = disc.match(/\(([^)]+)\)/);
+      if (reasonMatch) { const el = document.getElementById('i-discount-reason'); if (el) el.value = reasonMatch[1]; }
+      const valMatch = disc.match(/:\s*\$?(\d+\.?\d*)(%)?/);
+      if (valMatch) {
+        const el = document.getElementById('i-discount-type'); if (el) el.value = valMatch[2] ? 'percent' : 'dollar';
+        const el2 = document.getElementById('i-discount-amount'); if (el2) el2.value = valMatch[1];
+      }
     }
+  }
+
+  // Financing toggle
+  const fin = params.get('financingType') || '';
+  if (fin) {
+    const fMap = { 'Finance': 'finance', 'Cash': 'cash', 'Lease': 'lease' };
+    if (fMap[fin]) clickTog('tg-payment', fMap[fin]);
+  }
+
+  // Shipping — default to TBD for conversions
+  clickTog('tg-ship', 'tbd');
+
+  // Urgency
+  const urg = params.get('urgency') || '';
+  if (urg) {
+    // No direct toggle for urgency in purchase conditions, but it carries in the save params
   }
 
   // Show ID and skip to Phase 1 (purchase workflow)
   document.getElementById('id-display-value').textContent = skpId;
-  document.getElementById('id-display-type').textContent  = 'Purchase Order — converted from ' + (params.get('originalId') || '');
+  document.getElementById('id-display-type').textContent  = 'Purchase Order' + (params.get('originalId') ? ' — converted from ' + params.get('originalId') : '');
   document.getElementById('id-display-box').style.display = 'block';
   document.getElementById('id-display-box').style.borderColor = 'rgba(76,175,125,0.5)';
   document.getElementById('id-display-type').style.color      = '#4caf7d';
