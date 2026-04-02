@@ -1842,7 +1842,8 @@ function getActiveCustomers(ss, filter) {
     const regStatus = String(row[12] || '').trim();
 
     if (!custId || !name) return;
-    if (['Converted','Closed','Lost'].includes(regStatus)) return;
+    // Only exclude inactive customers when not requesting all
+    if (filter !== 'includeInactive' && ['Converted','Closed','Lost'].includes(regStatus)) return;
     if (filter === 'SKC'          && !custId.startsWith('SKC')) return;
     if (filter === 'SKP'          && !custId.startsWith('SKP')) return;
     if (filter === 'consultation' && !custId.startsWith('SKC')) return;

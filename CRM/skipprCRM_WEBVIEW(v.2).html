@@ -115,7 +115,8 @@ tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:backgro
 tbody tr:hover{background:rgba(255,255,255,0.02);}
 tbody tr.t2-row{background:var(--gold-glow);}
 tbody tr.t2-row:hover{background:rgba(201,168,76,0.08);}
-tbody tr.closed-row{opacity:0.3;}
+tbody tr.closed-row{opacity:0.45;}
+tbody tr.closed-row:hover{opacity:0.7;}
 tbody td{padding:11px 16px;font-size:0.82rem;color:rgba(255,255,255,0.7);vertical-align:middle;}
 tbody td.name-cell{color:var(--white);font-weight:500;}
 .priority-star{color:var(--gold);font-size:0.9rem;}
@@ -128,6 +129,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
 .badge-new        {background:var(--blue-dim);color:var(--blue);}
 .badge-closed     {background:rgba(52,211,153,0.06);color:#2a7a5a;}
 .badge-lost       {background:var(--red-dim);color:#b05050;}
+.badge-converted  {background:var(--amber-dim);color:var(--amber);}
 .badge-t1         {background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-size:0.58rem;}
 .badge-t2         {background:var(--gold-dim);color:var(--gold);font-size:0.58rem;}
 .overdue-txt      {color:var(--red) !important;}
@@ -241,7 +243,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <span class="ico">◈</span> Dashboard
     </div>
     <div class="nav-item" onclick="nav('customers')" id="nav-customers">
-      <span class="ico">◻</span> Active Customers
+      <span class="ico">◻</span> Customers
       <span class="nav-badge gold" id="badge-customers">—</span>
     </div>
     <div class="nav-item" onclick="nav('followups')" id="nav-followups">
@@ -288,15 +290,17 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
 
     <!-- CUSTOMERS -->
     <div class="view" id="view-customers">
-      <h1 class="view-title">Active <em>Customers</em></h1>
+      <h1 class="view-title">All <em>Customers</em></h1>
       <div class="gold-rule"></div>
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
           <input class="tbl-search" id="cust-search" placeholder="Search by name, ID, vehicle, rep..." oninput="filterCustomers()"/>
-          <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+          <button class="filter-btn active" onclick="setFilter('active',this)">Active</button>
           <button class="filter-btn" onclick="setFilter('Tier 2',this)">Tier 2</button>
           <button class="filter-btn" onclick="setFilter('Tier 1',this)">Tier 1</button>
           <button class="filter-btn" onclick="setFilter('overdue',this)">Overdue</button>
+          <button class="filter-btn" onclick="setFilter('closed',this)">Closed / Lost</button>
+          <button class="filter-btn" onclick="setFilter('all',this)">All</button>
           <button class="filter-btn" onclick="openAddCustomerModal()" style="margin-left:auto;border-color:var(--gold);color:var(--gold);">+ Add Customer</button>
         </div>
         <div id="cust-table-wrap">
@@ -734,7 +738,7 @@ const PROXY_URL       = 'https://frosty-boat-6a06.xvzvf8rnsk.workers.dev';
 let DB = { customers: [], followUps: [], activity: [], stats: {}, dealers: [], financials: { records: [], summary: {} }, notes: {} };
 const REPS = ['M. Humphress', 'T. Williams'];
 let currentCustomerId    = null;
-let custFilter           = 'all';
+let custFilter           = 'active';
 let fuFilter             = 'open';
 let currentModalCustomer = null;
 
@@ -802,7 +806,7 @@ async function loadAll() {
     // dealer, workflow, originalId, driveUrl,
     // dateAdded, lastContact, followUp,
     // finalPrice, savings, serviceFee, discount, notes
-    const custData = await crmCall({ action: 'getCustomers' });
+    const custData = await crmCall({ action: 'getCustomers', filterType: 'includeInactive' });
     if (custData.success && Array.isArray(custData.customers)) {
       DB.customers = custData.customers;
     }
@@ -851,7 +855,7 @@ async function loadAll() {
 // ── STATS ─────────────────────────────────────────────────────
 function computeStats() {
   const custs   = DB.customers;
-  const active  = custs.filter(c => !['Closed','Lost'].includes(c.status));
+  const active  = custs.filter(c => !['Closed','Lost','Converted'].includes(c.status));
   const t2      = active.filter(c => c.tier === 'Tier 2');
   const today   = new Date(); today.setHours(0,0,0,0);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -975,7 +979,7 @@ function renderCustomerTable() {
       <th>Vehicle</th><th>Rep</th><th>Follow-Up</th><th>Phone</th>
     </tr></thead>
     <tbody>${customers.map(c => {
-      const closed = ['Closed','Lost'].includes(c.status);
+      const closed = ['Closed','Lost','Converted'].includes(c.status);
       return `<tr
         class="${c.tier==='Tier 2'&&!closed?'t2-row':''} ${closed?'closed-row':''}"
         onclick="openCustomer('${esc(c.id)}')">
@@ -995,6 +999,11 @@ function renderCustomerTable() {
 
 function sortCustomers(arr) {
   return arr.sort((a, b) => {
+    // Push inactive customers to bottom
+    const aClosed = ['Closed','Lost','Converted'].includes(a.status) ? 1 : 0;
+    const bClosed = ['Closed','Lost','Converted'].includes(b.status) ? 1 : 0;
+    if (aClosed !== bClosed) return aClosed - bClosed;
+    // Then sort by tier (Tier 2 first)
     const at = a.tier === 'Tier 2' ? 0 : 1;
     const bt = b.tier === 'Tier 2' ? 0 : 1;
     if (at !== bt) return at - bt;
@@ -1018,13 +1027,15 @@ function setFilter(f, btn) {
 function filterCustomers() { renderCustomerTable(); }
 
 function applyFilter(arr) {
-  if (custFilter === 'all')     return arr.filter(c => !['Closed','Lost'].includes(c.status));
-  if (custFilter === 'Tier 2')  return arr.filter(c => c.tier === 'Tier 2' && !['Closed','Lost'].includes(c.status));
-  if (custFilter === 'Tier 1')  return arr.filter(c => c.tier === 'Tier 1' && !['Closed','Lost'].includes(c.status));
+  if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost','Converted'].includes(c.status));
+  if (custFilter === 'Tier 2')  return arr.filter(c => c.tier === 'Tier 2' && !['Closed','Lost','Converted'].includes(c.status));
+  if (custFilter === 'Tier 1')  return arr.filter(c => c.tier === 'Tier 1' && !['Closed','Lost','Converted'].includes(c.status));
   if (custFilter === 'overdue') {
     const today = new Date(); today.setHours(0,0,0,0);
-    return arr.filter(c => c.followUp && new Date(c.followUp) < today && !['Closed','Lost'].includes(c.status));
+    return arr.filter(c => c.followUp && new Date(c.followUp) < today && !['Closed','Lost','Converted'].includes(c.status));
   }
+  if (custFilter === 'closed')  return arr.filter(c => ['Closed','Lost','Converted'].includes(c.status));
+  if (custFilter === 'all')     return arr;
   return arr;
 }
 
@@ -1037,7 +1048,9 @@ function applySearch(arr, q) {
     (c.vehicle || '').toLowerCase().includes(s) ||
     (c.rep     || '').toLowerCase().includes(s) ||
     (c.phone   || '').includes(s) ||
-    (c.type    || '').toLowerCase().includes(s)
+    (c.type    || '').toLowerCase().includes(s) ||
+    (c.status  || '').toLowerCase().includes(s) ||
+    (c.email   || '').toLowerCase().includes(s)
   );
 }
 
@@ -1131,6 +1144,12 @@ function renderCustomerDetail(id) {
     </div>` : ''}
 
     <div class="section-hd">
+      <h3>Transactions</h3><div class="line"></div>
+      <span class="count">${getCustomerTransactions(c.id).length}</span>
+    </div>
+    ${renderCustomerTransactions(c.id)}
+
+    <div class="section-hd">
       <h3>Follow-Ups</h3><div class="line"></div>
       <span class="count">${fuList.length}</span>
     </div>
@@ -1171,6 +1190,79 @@ function infoRow(label, value) {
     <span class="info-label">${label}</span>
     <span class="info-value">${value}</span>
   </div>`;
+}
+
+// ── CUSTOMER TRANSACTIONS ─────────────────────────────────────
+function getCustomerTransactions(customerId) {
+  return (DB.financials.records || []).filter(r =>
+    r.customerId === customerId
+  );
+}
+
+function renderCustomerTransactions(customerId) {
+  const txns = getCustomerTransactions(customerId);
+  if (!txns.length) {
+    return '<div class="empty-state" style="padding:28px;"><p>No transactions recorded</p></div>';
+  }
+
+  const statusColor = s => ({
+    Paid:'var(--green)', Pending:'var(--amber)', Overdue:'var(--red)',
+    Partial:'var(--amber)', Refunded:'var(--red)'
+  }[s] || 'var(--gray)');
+
+  const profitColor = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray)';
+
+  // Summary row
+  const totalFees = txns.reduce((s, r) => s + (r.serviceFee || 0), 0);
+  const totalNet  = txns.reduce((s, r) => s + (r.netServiceFee || 0), 0);
+  const totalExp  = txns.reduce((s, r) => s + (r.platformFees||0) + (r.tax||0) + (r.otherExpenses||0), 0);
+  const totalProfit = txns.reduce((s, r) => s + (r.netProfit || 0), 0);
+  const paid = txns.filter(r => r.invoiceStatus === 'Paid').length;
+  const pending = txns.filter(r => r.invoiceStatus === 'Pending' || r.invoiceStatus === 'Partial').length;
+  const refunded = txns.filter(r => r.invoiceStatus === 'Refunded').length;
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+    <div class="stat-card" style="padding:14px;">
+      <div class="stat-label">Total Fees</div>
+      <div class="stat-value gold" style="font-size:1.4rem;">$${totalFees.toLocaleString()}</div>
+    </div>
+    <div class="stat-card" style="padding:14px;">
+      <div class="stat-label">Net Revenue</div>
+      <div class="stat-value white" style="font-size:1.4rem;">$${totalNet.toLocaleString()}</div>
+    </div>
+    <div class="stat-card" style="padding:14px;">
+      <div class="stat-label">Expenses</div>
+      <div class="stat-value red" style="font-size:1.4rem;">${totalExp ? '-$' + totalExp.toLocaleString() : '$0'}</div>
+    </div>
+    <div class="stat-card" style="padding:14px;">
+      <div class="stat-label">Net Profit</div>
+      <div class="stat-value" style="font-size:1.4rem;color:${profitColor(totalProfit)}">$${totalProfit.toLocaleString()}</div>
+    </div>
+  </div>`;
+
+  html += `<div class="tbl-wrap" style="margin-bottom:28px;"><table>
+    <thead><tr>
+      <th>Date</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th>
+      <th>Expenses</th><th>Net Profit</th><th>Status</th><th>Method</th><th></th>
+    </tr></thead>
+    <tbody>${txns.map(r => {
+      const expenses = (r.platformFees || 0) + (r.tax || 0) + (r.otherExpenses || 0);
+      return `<tr>
+        <td style="font-family:monospace;font-size:0.75rem;color:var(--gray)">${formatDate(r.paymentDate)}</td>
+        <td style="color:var(--gold)">$${(r.serviceFee||0).toLocaleString()}</td>
+        <td style="color:var(--gray);font-size:0.75rem">${esc(r.discount || 'None')}</td>
+        <td style="color:var(--white);font-weight:500">$${(r.netServiceFee||0).toLocaleString()}</td>
+        <td style="color:var(--red);font-size:0.78rem">${expenses ? '-$' + expenses.toLocaleString() : '—'}</td>
+        <td style="color:${profitColor(r.netProfit)};font-weight:600">$${(r.netProfit||0).toLocaleString()}</td>
+        <td><span style="color:${statusColor(r.invoiceStatus)}">${esc(r.invoiceStatus || '—')}</span></td>
+        <td style="color:var(--gray);font-size:0.75rem">${esc(r.paymentMethod || '—')}</td>
+        <td>${r.invoiceStatus !== 'Refunded'
+          ? '<button class="fu-done-btn" onclick="openRefundModal(' + r.rowIndex + ',\'' + esc(r.customerId) + '\',\'' + esc(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>'
+          : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+
+  return html;
 }
 
 // ── FOLLOW-UPS ────────────────────────────────────────────────
@@ -1402,7 +1494,7 @@ function esc(s) {
 function statusBadge(s) {
   const map = {
     'Searching':'searching','Deal Found':'deal-found','Pending':'pending',
-    'On Hold':'on-hold','New':'new','Closed':'closed','Lost':'lost'
+    'On Hold':'on-hold','New':'new','Closed':'closed','Lost':'lost','Converted':'converted'
   };
   const cls = map[s] || 'new';
   return `<span class="badge badge-${cls}">${esc(s||'—')}</span>`;
