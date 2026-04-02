@@ -2234,9 +2234,37 @@ async function submitConvert() {
       platformFees: document.getElementById('conv-processing').value,
     });
 
-    toast('Converted! New ID: ' + skpId, 'success');
+    toast('Converted! Opening checklist for ' + skpId + '...', 'success');
     await loadAll();
-    openCustomer(skpId);
+
+    // Open checklist with pre-filled customer data
+    const c = DB.customers.find(x => x.id === convertData.id) || {};
+    try {
+      window.parent.postMessage({
+        type: 'skippr-open-checklist',
+        params: {
+          skpId: skpId,
+          originalId: convertData.id,
+          name: convertData.name,
+          phone: document.getElementById('conv-phone').value,
+          email: document.getElementById('conv-email').value,
+          zip: document.getElementById('conv-zip').value,
+          tier: tier,
+          rep: rep,
+          year: c.year || '',
+          make: c.make || '',
+          model: c.model || '',
+          trim: c.trim || '',
+          extColor: c.extColor || '',
+          discount: convertData.discount || 'None',
+          tradeInVehicle: c.tradeInVehicle || '',
+          tradeInVin: c.tradeInVin || '',
+          tradeInValue: c.tradeInValue || '',
+        }
+      }, '*');
+    } catch(e) {
+      openCustomer(skpId);
+    }
   } catch(e) {
     toast('Error: ' + e.message, 'error');
   }

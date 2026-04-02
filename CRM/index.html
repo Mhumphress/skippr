@@ -130,8 +130,21 @@ function switchTab(tab) {
   document.getElementById('frame-' + tab).classList.remove('hidden');
 }
 
+// Open checklist with pre-filled data (used for conversions)
+function openChecklistWithData(data) {
+  var params = new URLSearchParams(data);
+  params.set('embed', '1');
+  var frame = document.getElementById('frame-checklist');
+  frame.src = 'NEW_skippr_call_checklist v1.html?' + params.toString();
+  switchTab('checklist');
+}
+
 // Listen for CRM refresh requests from iframes (checklist saves, etc.)
 window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'skippr-open-checklist') {
+    openChecklistWithData(e.data.params || {});
+    return;
+  }
   if (e.data && e.data.type === 'skippr-crm-refresh') {
     // Switch to dashboard tab immediately so user sees it
     switchTab('dashboard');

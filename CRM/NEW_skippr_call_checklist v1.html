@@ -1066,6 +1066,8 @@ async function submitConvert() {
       document.getElementById('card-purchase-conditions').style.display = '';
       document.getElementById('card-consult-save').style.display        = 'none';
       document.getElementById('checklist-btn').style.display            = 'block';
+      document.getElementById('dealer-location-toggle').style.display   = '';
+      document.getElementById('testdrive-toggle').style.display         = '';
 
       document.getElementById('phase0').style.display = 'none';
       document.getElementById('intake').style.display = 'block';
@@ -1418,6 +1420,85 @@ initRep();
 if (window !== window.parent || new URLSearchParams(window.location.search).has('embed')) {
   document.body.classList.add('embedded');
 }
+
+// Auto-fill from URL params (used when converting from dashboard)
+(function checkPrefill() {
+  const params = new URLSearchParams(window.location.search);
+  const skpId = params.get('skpId');
+  if (!skpId) return;
+
+  // Set state
+  currentCustomerId  = skpId;
+  currentWorkflow    = 'purchase';
+  originalCustomerId = params.get('originalId') || '';
+
+  // Fill customer fields
+  const setVal = (id, key) => { const el = document.getElementById(id); if (el && params.get(key)) el.value = params.get(key); };
+  setVal('i-name',  'name');
+  setVal('i-phone', 'phone');
+  setVal('i-email', 'email');
+  setVal('i-zip',   'zip');
+  setVal('i-year',  'year');
+  setVal('i-make',  'make');
+  setVal('i-tier',  'tier');
+  setVal('i-rep',   'rep');
+
+  // Fill model/trim after dropdowns populate
+  setTimeout(() => {
+    if (params.get('make')) { document.getElementById('i-make').value = params.get('make'); fillModels(); }
+    setTimeout(() => {
+      if (params.get('model')) document.getElementById('i-model').value = params.get('model');
+      setTimeout(() => {
+        if (params.get('trim')) { fillTrims(); document.getElementById('i-trim').value = params.get('trim'); }
+      }, 100);
+    }, 100);
+  }, 100);
+
+  setVal('i-color', 'extColor');
+
+  // Fill trade-in if present
+  if (params.get('tradeInVehicle')) {
+    // Activate the trade toggle
+    const tradeToggle = document.querySelector('#tg-trade .tog[data-val="yes"]');
+    if (tradeToggle) { tradeToggle.click(); }
+    // Parse trade vehicle "2020 Honda Civic EX-L" into fields
+    const tv = (params.get('tradeInVehicle') || '').split(' ');
+    if (tv[0]) document.getElementById('i-trade-year').value = tv[0];
+    if (tv[1]) document.getElementById('i-trade-make').value = tv[1];
+    if (tv[2]) document.getElementById('i-trade-model').value = tv.slice(2).join(' ');
+    setVal('i-trade-vin',   'tradeInVin');
+    setVal('i-trade-value', 'tradeInValue');
+  }
+
+  // Set discount toggle if present
+  const discountParam = params.get('discount') || '';
+  if (discountParam && discountParam !== 'None') {
+    const dMap = { 'Military 15%': 'military', 'First Responder 15%': 'firstresponder', 'Student 5%': 'student' };
+    const dVal = dMap[discountParam];
+    if (dVal) {
+      const discTog = document.querySelector('#tg-discount .tog[data-val="' + dVal + '"]');
+      if (discTog) discTog.click();
+    }
+  }
+
+  // Show ID and skip to Phase 1 (purchase workflow)
+  document.getElementById('id-display-value').textContent = skpId;
+  document.getElementById('id-display-type').textContent  = 'Purchase Order — converted from ' + (params.get('originalId') || '');
+  document.getElementById('id-display-box').style.display = 'block';
+  document.getElementById('id-display-box').style.borderColor = 'rgba(76,175,125,0.5)';
+  document.getElementById('id-display-type').style.color      = '#4caf7d';
+
+  document.getElementById('phase0').style.display              = 'none';
+  document.getElementById('intake').style.display              = 'block';
+  document.getElementById('tab0').classList.remove('active');
+  document.getElementById('tab1').classList.add('active');
+  document.getElementById('card-dealer').style.display             = '';
+  document.getElementById('card-purchase-conditions').style.display = '';
+  document.getElementById('card-consult-save').style.display        = 'none';
+  document.getElementById('dealer-location-toggle').style.display   = '';
+  document.getElementById('testdrive-toggle').style.display         = '';
+  document.getElementById('checklist-btn').style.display            = 'block';
+})();
 </script>
 </body>
 </html>
