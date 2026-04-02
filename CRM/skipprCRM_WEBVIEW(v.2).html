@@ -263,6 +263,9 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     <div class="nav-item" onclick="nav('financials')" id="nav-financials">
       <span class="ico">◈</span> Financials
     </div>
+    <div class="nav-item" onclick="nav('reports')" id="nav-reports">
+      <span class="ico">◈</span> Reports
+    </div>
     <div class="sidebar-spacer"></div>
     <div class="sidebar-footer">
       <label style="font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gray2);margin-bottom:4px;display:block;">Active Rep</label>
@@ -382,6 +385,66 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         </div>
         <div id="financial-table-wrap">
           <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <h1 class="view-title">Export <em>Reports</em></h1>
+      <div class="gold-rule"></div>
+
+      <div class="info-grid" style="grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:32px;">
+        <!-- Data Type -->
+        <div class="info-card">
+          <div class="info-card-title">Data to Export</div>
+          <div class="form-field" style="margin-bottom:0;">
+            <select id="rpt-data" style="width:100%;background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:var(--font-b);font-size:0.88rem;outline:none;border-radius:var(--radius);">
+              <option value="financials">Financial Records</option>
+              <option value="customers">Customer Records</option>
+              <option value="both">Financials + Customers</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Date Range -->
+        <div class="info-card">
+          <div class="info-card-title">Date Range</div>
+          <div class="form-field" style="margin-bottom:0;">
+            <select id="rpt-range" onchange="updateReportDates()" style="width:100%;background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:var(--font-b);font-size:0.88rem;outline:none;border-radius:var(--radius);">
+              <option value="today">Today</option>
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+              <option value="365">Last 12 Months</option>
+              <option value="all">All Time</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          <div id="rpt-custom-dates" style="display:none;margin-top:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <input type="date" id="rpt-start" style="background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:8px 10px;font-family:var(--font-b);font-size:0.82rem;outline:none;border-radius:var(--radius);"/>
+              <input type="date" id="rpt-end" style="background:var(--dark2);border:1px solid var(--border);color:var(--white);padding:8px 10px;font-family:var(--font-b);font-size:0.82rem;outline:none;border-radius:var(--radius);"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Format -->
+        <div class="info-card">
+          <div class="info-card-title">Export Format</div>
+          <div style="display:flex;gap:10px;">
+            <button class="action-btn primary" onclick="exportReport('csv')" style="flex:1;text-align:center;">CSV</button>
+            <button class="action-btn primary" onclick="exportReport('pdf')" style="flex:1;text-align:center;">PDF</button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--gray);margin-top:10px;">CSV for spreadsheets, PDF for filing</div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="section-hd"><h3>Preview</h3><div class="line"></div><span class="count" id="rpt-count">0 records</span></div>
+      <div class="tbl-wrap">
+        <div id="report-preview">
+          <div class="empty-state"><p>Select options above and click CSV or PDF to export</p></div>
         </div>
       </div>
     </div>
@@ -2377,6 +2440,162 @@ async function submitConvert() {
   } catch(e) {
     toast('Error: ' + e.message, 'error');
   }
+}
+
+// ── REPORTS / EXPORT ──────────────────────────────────────────
+function updateReportDates() {
+  const v = document.getElementById('rpt-range').value;
+  document.getElementById('rpt-custom-dates').style.display = v === 'custom' ? 'block' : 'none';
+}
+
+function getReportDateRange() {
+  const v = document.getElementById('rpt-range').value;
+  const now = new Date(); now.setHours(23,59,59,999);
+  const start = new Date(); start.setHours(0,0,0,0);
+  if (v === 'today') { /* start = today */ }
+  else if (v === 'custom') {
+    const s = document.getElementById('rpt-start').value;
+    const e = document.getElementById('rpt-end').value;
+    if (s) start.setTime(new Date(s).getTime());
+    if (e) now.setTime(new Date(e + 'T23:59:59').getTime());
+  }
+  else if (v === 'all') { start.setFullYear(2020); }
+  else { start.setDate(start.getDate() - parseInt(v)); }
+  return { start, end: now };
+}
+
+function getReportData() {
+  const type = document.getElementById('rpt-data').value;
+  const { start, end } = getReportDateRange();
+  const result = { financials: [], customers: [] };
+
+  if (type === 'financials' || type === 'both') {
+    result.financials = (DB.financials.records || []).filter(r => {
+      const d = r.paymentDate ? new Date(r.paymentDate) : null;
+      return d && d >= start && d <= end;
+    });
+  }
+  if (type === 'customers' || type === 'both') {
+    result.customers = DB.customers.filter(c => {
+      const d = c.dateAdded ? new Date(c.dateAdded) : null;
+      return d && d >= start && d <= end;
+    });
+  }
+  return result;
+}
+
+function exportReport(format) {
+  const data = getReportData();
+  const type = document.getElementById('rpt-data').value;
+  const total = data.financials.length + data.customers.length;
+  document.getElementById('rpt-count').textContent = total + ' records';
+
+  // Show preview
+  renderReportPreview(data, type);
+
+  if (format === 'csv') exportCSV(data, type);
+  else if (format === 'pdf') exportPDF(data, type);
+}
+
+function renderReportPreview(data, type) {
+  const wrap = document.getElementById('report-preview');
+  let html = '';
+  if ((type === 'financials' || type === 'both') && data.financials.length) {
+    html += '<table><thead><tr><th>Customer</th><th>ID</th><th>Invoice #</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th><th>Processing</th><th>Tax</th><th>Net Profit</th><th>Status</th><th>Method</th><th>Date</th></tr></thead><tbody>';
+    data.financials.forEach(r => {
+      html += '<tr><td>' + esc(r.customerName) + '</td><td style="font-family:monospace;color:var(--gold);font-size:0.75rem">' + esc(r.customerId) + '</td><td style="color:var(--gray);font-size:0.75rem">' + esc(r.invoiceNumber||'') + '</td><td>$' + (r.serviceFee||0).toLocaleString() + '</td><td style="color:var(--gray)">' + esc(r.discount||'None') + '</td><td style="font-weight:500">$' + (r.netServiceFee||0).toLocaleString() + '</td><td style="color:var(--red)">' + (r.platformFees ? '-$'+r.platformFees : '—') + '</td><td style="color:var(--red)">' + (r.tax ? '-$'+r.tax : '—') + '</td><td style="font-weight:600;color:' + (r.netProfit>0?'var(--green)':'var(--red)') + '">$' + (r.netProfit||0).toLocaleString() + '</td><td>' + esc(r.invoiceStatus||'') + '</td><td style="color:var(--gray)">' + esc(r.paymentMethod||'') + '</td><td style="color:var(--gray)">' + formatDate(r.paymentDate) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  if ((type === 'customers' || type === 'both') && data.customers.length) {
+    if (html) html += '<div style="margin:20px 0;border-top:1px solid var(--border)"></div>';
+    html += '<table><thead><tr><th>Name</th><th>ID</th><th>Tier</th><th>Status</th><th>Vehicle</th><th>Rep</th><th>Phone</th><th>Email</th><th>Date Added</th></tr></thead><tbody>';
+    data.customers.forEach(c => {
+      html += '<tr><td class="name-cell">' + esc(c.name) + '</td><td style="font-family:monospace;color:var(--gold);font-size:0.75rem">' + esc(c.id) + '</td><td>' + esc(c.tier) + '</td><td>' + esc(c.status) + '</td><td style="color:var(--gray)">' + esc(c.vehicle) + '</td><td style="color:var(--gray)">' + esc(c.rep) + '</td><td style="color:var(--gray)">' + esc(c.phone) + '</td><td style="color:var(--gray)">' + esc(c.email) + '</td><td style="color:var(--gray)">' + formatDate(c.dateAdded) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  if (!html) html = '<div class="empty-state"><p>No records found for this date range</p></div>';
+  wrap.innerHTML = html;
+}
+
+function exportCSV(data, type) {
+  let csv = '';
+  if ((type === 'financials' || type === 'both') && data.financials.length) {
+    csv += 'FINANCIAL RECORDS\n';
+    csv += 'Customer,Customer ID,Invoice #,Service Fee,Discount,Net Fee,Processing Fees,Tax,Other Expenses,Net Profit,Status,Payment Method,Date\n';
+    data.financials.forEach(r => {
+      csv += [r.customerName, r.customerId, r.invoiceNumber||'', r.serviceFee||0, r.discount||'None', r.netServiceFee||0, r.platformFees||0, r.tax||0, r.otherExpenses||0, r.netProfit||0, r.invoiceStatus||'', r.paymentMethod||'', r.paymentDate||''].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',') + '\n';
+    });
+    csv += '\n';
+  }
+  if ((type === 'customers' || type === 'both') && data.customers.length) {
+    csv += 'CUSTOMER RECORDS\n';
+    csv += 'Name,Customer ID,Tier,Status,Vehicle,Rep,Phone,Email,City,State,Zip,Date Added,Trade-In,Trade-In VIN,Trade-In Value\n';
+    data.customers.forEach(c => {
+      csv += [c.name, c.id, c.tier, c.status, c.vehicle, c.rep, c.phone, c.email, c.city, c.state, c.zip, c.dateAdded||'', c.tradeInVehicle||'', c.tradeInVin||'', c.tradeInValue||''].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',') + '\n';
+    });
+  }
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const range = document.getElementById('rpt-range').value;
+  a.href = url;
+  a.download = 'Skippr_' + type + '_' + range + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported ✓', 'success');
+}
+
+function exportPDF(data, type) {
+  const { start, end } = getReportDateRange();
+  const range = document.getElementById('rpt-range').value;
+  let html = '<!DOCTYPE html><html><head><title>Skippr Report</title><style>';
+  html += 'body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:40px;}';
+  html += 'h1{font-size:22px;color:#C9A84C;margin:0 0 4px;}';
+  html += 'h2{font-size:14px;color:#555;margin:20px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;}';
+  html += '.meta{color:#888;font-size:10px;margin-bottom:20px;}';
+  html += 'table{width:100%;border-collapse:collapse;margin-bottom:20px;}';
+  html += 'th{background:#f5f3ee;color:#333;text-align:left;padding:6px 8px;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #C9A84C;}';
+  html += 'td{padding:5px 8px;border-bottom:1px solid #eee;font-size:10px;}';
+  html += '.gold{color:#C9A84C;font-weight:bold;} .green{color:#2a7a5a;} .red{color:#c05050;}';
+  html += '.summary{background:#f9f7f2;border:1px solid #e8e4db;border-radius:4px;padding:12px 16px;margin-bottom:16px;display:flex;gap:24px;}';
+  html += '.summary-item{} .summary-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;} .summary-value{font-size:16px;font-weight:bold;margin-top:2px;}';
+  html += '</style></head><body>';
+  html += '<h1>Skippr — ' + (type === 'both' ? 'Financial & Customer' : type === 'financials' ? 'Financial' : 'Customer') + ' Report</h1>';
+  html += '<div class="meta">Generated: ' + new Date().toLocaleDateString() + ' · Period: ' + start.toLocaleDateString() + ' — ' + end.toLocaleDateString() + '</div>';
+
+  if ((type === 'financials' || type === 'both') && data.financials.length) {
+    const totFees = data.financials.reduce((s,r) => s + (r.netServiceFee||0), 0);
+    const totExp = data.financials.reduce((s,r) => s + (r.platformFees||0) + (r.tax||0) + (r.otherExpenses||0), 0);
+    const totProfit = data.financials.reduce((s,r) => s + (r.netProfit||0), 0);
+    html += '<h2>Financial Summary</h2>';
+    html += '<div class="summary"><div class="summary-item"><div class="summary-label">Net Revenue</div><div class="summary-value gold">$' + totFees.toLocaleString() + '</div></div>';
+    html += '<div class="summary-item"><div class="summary-label">Expenses</div><div class="summary-value red">$' + totExp.toLocaleString() + '</div></div>';
+    html += '<div class="summary-item"><div class="summary-label">Net Profit</div><div class="summary-value green">$' + totProfit.toLocaleString() + '</div></div>';
+    html += '<div class="summary-item"><div class="summary-label">Transactions</div><div class="summary-value">' + data.financials.length + '</div></div></div>';
+    html += '<table><tr><th>Customer</th><th>ID</th><th>Invoice</th><th>Fee</th><th>Discount</th><th>Net</th><th>Processing</th><th>Tax</th><th>Profit</th><th>Status</th><th>Method</th><th>Date</th></tr>';
+    data.financials.forEach(r => {
+      html += '<tr><td>' + (r.customerName||'') + '</td><td class="gold">' + (r.customerId||'') + '</td><td>' + (r.invoiceNumber||'') + '</td><td>$' + (r.serviceFee||0).toLocaleString() + '</td><td>' + (r.discount||'None') + '</td><td><strong>$' + (r.netServiceFee||0).toLocaleString() + '</strong></td><td class="red">' + (r.platformFees?'-$'+r.platformFees:'—') + '</td><td class="red">' + (r.tax?'-$'+r.tax:'—') + '</td><td class="green"><strong>$' + (r.netProfit||0).toLocaleString() + '</strong></td><td>' + (r.invoiceStatus||'') + '</td><td>' + (r.paymentMethod||'') + '</td><td>' + (r.paymentDate||'') + '</td></tr>';
+    });
+    html += '</table>';
+  }
+  if ((type === 'customers' || type === 'both') && data.customers.length) {
+    html += '<h2>Customer Records (' + data.customers.length + ')</h2>';
+    html += '<table><tr><th>Name</th><th>ID</th><th>Tier</th><th>Status</th><th>Vehicle</th><th>Rep</th><th>Phone</th><th>Email</th><th>Date Added</th></tr>';
+    data.customers.forEach(c => {
+      html += '<tr><td><strong>' + (c.name||'') + '</strong></td><td class="gold">' + (c.id||'') + '</td><td>' + (c.tier||'') + '</td><td>' + (c.status||'') + '</td><td>' + (c.vehicle||'') + '</td><td>' + (c.rep||'') + '</td><td>' + (c.phone||'') + '</td><td>' + (c.email||'') + '</td><td>' + (c.dateAdded||'') + '</td></tr>';
+    });
+    html += '</table>';
+  }
+  html += '<div style="margin-top:30px;border-top:1px solid #ddd;padding-top:8px;color:#aaa;font-size:9px;">Skippr CRM · Confidential · Generated ' + new Date().toLocaleString() + '</div>';
+  html += '</body></html>';
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 500);
+  toast('PDF opened for printing ✓', 'success');
 }
 
 // ── REFRESH LISTENER ──────────────────────────────────────────
