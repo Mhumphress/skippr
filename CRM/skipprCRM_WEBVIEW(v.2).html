@@ -1045,22 +1045,32 @@ let finFilter            = 'all';
 
 // ── API CALLS ─────────────────────────────────────────────────
 // Primary: route through CORS proxy so the browser doesn't get blocked
+const SYNC_MIN_MS = 14000; // minimum overlay display time for writes
+
 async function crmCall(params) {
   const isRead = READ_ACTIONS.has(params.action);
   const overlay = document.getElementById('sync-overlay');
+  const startTime = Date.now();
   if (!isRead && overlay) {
     const txt = document.getElementById('sync-text');
     txt.textContent = 'Syncing with Google Sheets...';
     overlay.classList.add('active');
   }
   try {
-    return await _crmFetch(params);
+    const result = await _crmFetch(params);
+    // Ensure overlay stays visible for minimum time on writes
+    if (!isRead) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < SYNC_MIN_MS) await new Promise(r => setTimeout(r, SYNC_MIN_MS - elapsed));
+    }
+    return result;
   } catch(e) {
     if (isRead) throw e;
     // Fallback for writes: fire-and-forget
     const url = APPS_SCRIPT_URL + '?' + buildQS(params);
     fetch(url, { mode: 'no-cors' }).catch(() => {});
-    await new Promise(r => setTimeout(r, 14000));
+    const elapsed = Date.now() - startTime;
+    if (elapsed < SYNC_MIN_MS) await new Promise(r => setTimeout(r, SYNC_MIN_MS - elapsed));
     return { success: true };
   } finally {
     if (!isRead && overlay) overlay.classList.remove('active');
