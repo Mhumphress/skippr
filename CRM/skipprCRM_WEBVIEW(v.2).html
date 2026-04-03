@@ -201,6 +201,11 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
 .tile-edit-btn{float:right;cursor:pointer;font-size:0.72rem;color:var(--gray);padding:2px 6px;border-radius:4px;transition:all 0.15s;opacity:0.5;}
 .tile-edit-btn:hover{opacity:1;color:var(--gold);background:var(--gold-dim);}
 
+#sync-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+#sync-overlay.active{display:flex;}
+#sync-overlay .sync-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;}
+#sync-overlay .sync-text{font-family:var(--font-b);font-size:0.85rem;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;}
+
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border-2);padding:32px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;border-radius:var(--radius-lg);box-shadow:0 24px 64px rgba(0,0,0,0.5);}
@@ -1020,6 +1025,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
   </div>
 </div>
 
+<div id="sync-overlay"><div class="sync-spinner"></div><div class="sync-text" id="sync-text">Syncing with Google Sheets...</div></div>
 <div id="toast"></div>
 
 <script>
@@ -1040,6 +1046,33 @@ let finFilter            = 'all';
 // ── API CALLS ─────────────────────────────────────────────────
 // Primary: route through CORS proxy so the browser doesn't get blocked
 async function crmCall(params) {
+  const isRead = READ_ACTIONS.has(params.action);
+  const overlay = document.getElementById('sync-overlay');
+  if (!isRead && overlay) {
+    const txt = document.getElementById('sync-text');
+    txt.textContent = 'Syncing with Google Sheets...';
+    overlay.classList.add('active');
+  }
+  try {
+    return await _crmFetch(params);
+  } catch(e) {
+    if (isRead) throw e;
+    // Fallback for writes: fire-and-forget
+    const url = APPS_SCRIPT_URL + '?' + buildQS(params);
+    fetch(url, { mode: 'no-cors' }).catch(() => {});
+    await new Promise(r => setTimeout(r, 1500));
+    return { success: true };
+  } finally {
+    if (!isRead && overlay) overlay.classList.remove('active');
+  }
+}
+
+
+// Read-only actions that should NOT show the blocking overlay
+const READ_ACTIONS = new Set(['getCustomers','getFollowUps','getActivity','getDealers','getFinancials','getNotes','getFiles','nextId','getOrCreateFolder']);
+
+// Original fetch — no overlay
+async function _crmFetch(params) {
   const qs  = buildQS(params);
   const url = PROXY_URL + '?target=' + encodeURIComponent(APPS_SCRIPT_URL) + '&' + qs;
   const resp = await fetch(url);
@@ -1048,19 +1081,6 @@ async function crmCall(params) {
     throw new Error('Apps Script returned HTML — check deployment (Execute as: Me, Access: Anyone)');
   }
   return JSON.parse(text);
-}
-
-// Fallback write: fire-and-forget when proxy fails for mutations
-async function crmSend(params) {
-  try {
-    return await crmCall(params);
-  } catch(e) {
-    // Fallback: direct no-cors request (write-only, no response)
-    const url = APPS_SCRIPT_URL + '?' + buildQS(params);
-    fetch(url, { mode: 'no-cors' }).catch(() => {});
-    await new Promise(r => setTimeout(r, 1500));
-    return { success: true };
-  }
 }
 
 function buildQS(params) {
