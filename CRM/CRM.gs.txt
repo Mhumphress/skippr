@@ -2310,7 +2310,7 @@ function getActiveCustomers(ss, filter) {
         trim:        String(row[9]  || ''),
         extColor:    String(row[10] || ''),
         dateAdded:   row[12] ? Utilities.formatDate(new Date(row[12]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
-        lastContact: row[13] ? Utilities.formatDate(new Date(row[13]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        lastContact: row[13] ? Utilities.formatDate(new Date(row[13]), Session.getScriptTimeZone(), 'yyyy-MM-dd\'T\'HH:mm:ss') : '',
         followUp:    row[14] ? Utilities.formatDate(new Date(row[14]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
         finalPrice:  String(row[15] || ''),
         savings:     String(row[16] || ''),
