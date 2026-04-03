@@ -1081,6 +1081,13 @@ function doGet(e) {
         });
       }
 
+      // Resolve conversion payment variables BEFORE using them
+      const convDiscount = p.discount || 'None';
+      const convInvStatus = p.invoiceStatus || 'Pending';
+      const convMethod = p.paymentMethod || '';
+      const convDeposit = parseFloat(p.deposit) || 0;
+      const convPlatformFees = parseFloat(p.platformFees) || 0;
+
       if (reg) {
         reg.appendRow([
           skpId, 'Purchase', p.tier || '', p.customerName || '',
@@ -1119,11 +1126,6 @@ function doGet(e) {
 
       // Update draft invoice: change SKC ID → SKP ID, apply payment info
       const finSheet = ss.getSheetByName('Financials');
-      const convDiscount = p.discount || 'None';
-      const convInvStatus = p.invoiceStatus || 'Pending';
-      const convMethod = p.paymentMethod || '';
-      const convDeposit = parseFloat(p.deposit) || 0;
-      const convPlatformFees = parseFloat(p.platformFees) || 0;
       if (finSheet) {
         const finRows = finSheet.getDataRange().getValues();
         let invoiceUpdated = false;
@@ -1455,7 +1457,7 @@ function doGet(e) {
     // ── Add new customer ────────────────────────────────────
     if (p.action === 'addCustomer') {
       const today = new Date();
-      const idType = p.tier === 'Tier 2' ? 'SKC' : 'SKC';
+      const idType = 'SKC';
       const tierCode = p.tier === 'Tier 2' ? 'T2' : 'T1';
       const newId = reserveNextId(ss, idType, tierCode);
 

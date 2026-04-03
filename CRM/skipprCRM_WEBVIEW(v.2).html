@@ -93,6 +93,7 @@ html,body{height:100%;background:var(--black);color:var(--white);font-family:var
 .stat-value.amber{color:var(--amber);}
 .stat-value.red{color:var(--red);}
 .stat-value.white{color:var(--white);}
+.stat-value.blue{color:var(--blue);}
 .stat-sub{font-size:0.65rem;color:var(--gray2);margin-top:8px;font-weight:400;}
 
 .section-hd{display:flex;align-items:center;gap:12px;margin-bottom:16px;margin-top:32px;}
@@ -375,18 +376,18 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <h1 class="view-title">Financial <em>Summary</em></h1>
       <div class="gold-rule"></div>
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px;">
-        <div class="stat-card" onclick="finCardFilter('paid')" style="cursor:pointer"><div class="stat-label">Revenue Collected</div><div class="stat-value gold" id="stat-total-fees">$0</div><div class="stat-sub">Paid invoices →</div></div>
-        <div class="stat-card" onclick="finCardFilter('discounted')" style="cursor:pointer"><div class="stat-label">After Discounts</div><div class="stat-value white" id="stat-net-fees">$0</div><div class="stat-sub">View discounted →</div></div>
-        <div class="stat-card" onclick="finCardFilter('expenses')" style="cursor:pointer"><div class="stat-label">Taxes & Overhead</div><div class="stat-value red" id="stat-expenses">$0</div><div class="stat-sub">View with expenses →</div></div>
-        <div class="stat-card" onclick="finCardFilter('paid')" style="cursor:pointer"><div class="stat-label">Net Profit</div><div class="stat-value green" id="stat-net-profit">$0</div><div class="stat-sub">Paid deals →</div></div>
-        <div class="stat-card" onclick="finCardFilter('outstanding')" style="cursor:pointer"><div class="stat-label">Outstanding</div><div class="stat-value amber" id="stat-outstanding">$0</div><div class="stat-sub">Unpaid invoices →</div></div>
+        <div class="stat-card" onclick="finCardFilter('paid',this)" style="cursor:pointer"><div class="stat-label">Revenue Collected</div><div class="stat-value gold" id="stat-total-fees">$0</div><div class="stat-sub">Paid invoices →</div></div>
+        <div class="stat-card" onclick="finCardFilter('discounted',this)" style="cursor:pointer"><div class="stat-label">After Discounts</div><div class="stat-value white" id="stat-net-fees">$0</div><div class="stat-sub">View discounted →</div></div>
+        <div class="stat-card" onclick="finCardFilter('expenses',this)" style="cursor:pointer"><div class="stat-label">Taxes & Overhead</div><div class="stat-value red" id="stat-expenses">$0</div><div class="stat-sub">View with expenses →</div></div>
+        <div class="stat-card" onclick="finCardFilter('paid',this)" style="cursor:pointer"><div class="stat-label">Net Profit</div><div class="stat-value green" id="stat-net-profit">$0</div><div class="stat-sub">Paid deals →</div></div>
+        <div class="stat-card" onclick="finCardFilter('outstanding',this)" style="cursor:pointer"><div class="stat-label">Outstanding</div><div class="stat-value amber" id="stat-outstanding">$0</div><div class="stat-sub">Unpaid invoices →</div></div>
       </div>
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px;">
-        <div class="stat-card" onclick="finCardFilter('all')" style="cursor:pointer"><div class="stat-label">Transaction Count</div><div class="stat-value white" id="stat-txn-count">0</div><div class="stat-sub">View all →</div></div>
-        <div class="stat-card" onclick="finCardFilter('paid')" style="cursor:pointer"><div class="stat-label">Avg Deal Value</div><div class="stat-value gold" id="stat-avg-deal">$0</div><div class="stat-sub">Paid invoices →</div></div>
-        <div class="stat-card" onclick="finCardFilter('discounted')" style="cursor:pointer"><div class="stat-label">Total Discounts</div><div class="stat-value amber" id="stat-total-discounts">$0</div><div class="stat-sub">View discounted →</div></div>
-        <div class="stat-card" onclick="finCardFilter('refunded')" style="cursor:pointer"><div class="stat-label">Refunds</div><div class="stat-value red" id="stat-refunds">0 ($0)</div><div class="stat-sub">View refunded →</div></div>
-        <div class="stat-card" onclick="finCardFilter('tier-split')" style="cursor:pointer"><div class="stat-label">Tier Split</div><div class="stat-value white" id="stat-tier-split" style="font-size:1.4rem">T1: $0<br><span style="color:var(--gold)">T2: $0</span></div><div class="stat-sub">View by tier →</div></div>
+        <div class="stat-card" onclick="finCardFilter('all',this)" style="cursor:pointer"><div class="stat-label">Transaction Count</div><div class="stat-value white" id="stat-txn-count">0</div><div class="stat-sub">View all →</div></div>
+        <div class="stat-card" onclick="finCardFilter('paid',this)" style="cursor:pointer"><div class="stat-label">Avg Deal Value</div><div class="stat-value gold" id="stat-avg-deal">$0</div><div class="stat-sub">Paid invoices →</div></div>
+        <div class="stat-card" onclick="finCardFilter('discounted',this)" style="cursor:pointer"><div class="stat-label">Total Discounts</div><div class="stat-value amber" id="stat-total-discounts">$0</div><div class="stat-sub">View discounted →</div></div>
+        <div class="stat-card" onclick="finCardFilter('refunded',this)" style="cursor:pointer"><div class="stat-label">Refunds</div><div class="stat-value red" id="stat-refunds">0 ($0)</div><div class="stat-sub">View refunded →</div></div>
+        <div class="stat-card" onclick="finCardFilter('tier-split',this)" style="cursor:pointer"><div class="stat-label">Tier Split</div><div class="stat-value white" id="stat-tier-split" style="font-size:1.4rem">T1: $0<br><span style="color:var(--gold)">T2: $0</span></div><div class="stat-sub">View by tier →</div></div>
       </div>
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
@@ -2124,13 +2125,13 @@ function setFinFilter(f, btn) {
   renderFinancials();
 }
 
-function finCardFilter(f) {
+function finCardFilter(f, el) {
   finFilter = f;
   // Clear toolbar button highlights
   document.querySelectorAll('#view-financials .filter-btn').forEach(b => b.classList.remove('active'));
-  // Highlight the clicked card briefly
+  // Highlight the clicked card
   document.querySelectorAll('#view-financials .stat-card').forEach(c => c.style.outline = '');
-  if (event && event.currentTarget) event.currentTarget.style.outline = '1px solid var(--gold)';
+  if (el) el.style.outline = '1px solid var(--gold)';
   renderFinancials();
 }
 
@@ -2295,7 +2296,10 @@ function openTileEdit(customerId, section) {
     html += '<div class="form-row"><div class="form-field"><label>Assigned Rep</label><select id="te-rep">' + REPS.map(r => `<option${r===c.rep?' selected':''}>${r}</option>`).join('') + '</select></div></div>';
   } else if (section === 'deal') {
     html += '<div class="form-row">' + tileSelect('Tier','te-tier',['Tier 1','Tier 2'],c.tier) + tileSelect('Status','te-status',['New','Searching','Deal Found','Pending','On Hold','Closed','Lost'],c.status) + '</div>';
-    html += '<div class="form-row">' + tileSelect('Discount','te-discount',['None','Military 15%','First Responder 15%','Student 5%'],c.discount || 'None') + '</div>';
+    const discOpts = ['None','Military 15%','First Responder 15%','Student 5%'];
+    const curDisc = c.discount || 'None';
+    if (curDisc && !discOpts.includes(curDisc)) discOpts.push(curDisc);
+    html += '<div class="form-row">' + tileSelect('Discount','te-discount',discOpts,curDisc) + '</div>';
     html += '<div class="form-row"><div class="form-field"><label>Follow-Up Date</label><input type="datetime-local" id="te-followup" value="' + (c.followUp ? toDatetimeLocal(c.followUp) : '') + '"/></div></div>';
   } else if (section === 'vehicle') {
     html += '<div class="form-row">' + tileField('Year','te-year',c.year) + tileField('Make','te-make',c.make) + '</div>';
@@ -2554,7 +2558,7 @@ function openEditActivityModal(rowIndex) {
 }
 
 async function submitEditActivity() {
-  if (!editActivityRowIndex) return;
+  if (editActivityRowIndex == null) return;
   closeModal('edit-activity-modal');
   toast('Saving changes...', 'success');
   try {
@@ -2694,7 +2698,7 @@ function openEditInvoiceModal(rowIndex, customerId, customerName, serviceFee, di
 }
 
 async function submitEditInvoice() {
-  if (!editInvoiceTarget.rowIndex) return;
+  if (editInvoiceTarget.rowIndex == null) return;
   closeModal('edit-invoice-modal');
   toast('Updating invoice...', 'success');
   const discount = buildCustomDiscount('ei-discount','ei-discount-reason','ei-discount-type','ei-discount-amount');
