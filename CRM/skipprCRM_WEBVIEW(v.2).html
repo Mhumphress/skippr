@@ -284,8 +284,8 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <h1 class="view-title">Good <em id="greeting-time">morning</em></h1>
       <div class="gold-rule"></div>
       <div class="stats-grid">
-        <div class="stat-card" onclick="drillDown('active')"><div class="stat-label">Active Deals</div><div class="stat-value white" id="stat-active">—</div><div class="stat-sub">View all →</div></div>
-        <div class="stat-card" onclick="drillDown('tier2')"><div class="stat-label">Tier 2 Active</div><div class="stat-value gold" id="stat-t2">—</div><div class="stat-sub">Priority customers →</div></div>
+        <div class="stat-card" onclick="drillDown('active')"><div class="stat-label">Active Deals</div><div class="stat-value white" id="stat-active">—</div><div class="stat-sub">Purchases only →</div></div>
+        <div class="stat-card" onclick="drillDown('leads')"><div class="stat-label">Active Leads</div><div class="stat-value blue" id="stat-leads">—</div><div class="stat-sub">Consultations →</div></div>
         <div class="stat-card" onclick="drillDown('closed')"><div class="stat-label">Deals Closed</div><div class="stat-value green" id="stat-closed">—</div><div class="stat-sub">This month →</div></div>
         <div class="stat-card" onclick="drillDown('overdue')"><div class="stat-label">Overdue Follow-Ups</div><div class="stat-value red" id="stat-overdue">—</div><div class="stat-sub">View overdue →</div></div>
         <div class="stat-card" onclick="drillDown('savings')"><div class="stat-label">Savings Delivered</div><div class="stat-value gold" id="stat-savings">$0</div><div class="stat-sub">View financials →</div></div>
@@ -1134,14 +1134,16 @@ async function loadAll() {
 function computeStats() {
   const custs   = DB.customers;
   const active  = custs.filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
-  const t2      = active.filter(c => c.tier === 'Tier 2');
+  const activeDeals = active.filter(c => c.id.startsWith('SKP'));
+  const activeLeads = active.filter(c => c.id.startsWith('SKC'));
   const today   = new Date(); today.setHours(0,0,0,0);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  // "Closed this month" — deals actually completed (exclude converted SKCs)
+  // "Closed this month" — purchases closed (SKP only, exclude converted SKCs)
   const closed  = custs.filter(c => {
     if (c.status !== 'Closed') return false;
-    if (c.workflow === 'Converted') return false;  // SKC→SKP conversions are not "closings"
+    if (c.workflow === 'Converted') return false;
+    if (!c.id.startsWith('SKP')) return false;
     const d = new Date(c.lastContact);
     return !isNaN(d) && d >= monthStart;
   });
@@ -1163,14 +1165,14 @@ function computeStats() {
   }, 0);
 
   DB.stats = {
-    active:  active.length,
-    t2:      t2.length,
+    active:  activeDeals.length,
+    leads:   activeLeads.length,
     closed:  closed.length,
     overdue: overdue.length,
     savings
   };
 
-  document.getElementById('badge-customers').textContent = active.length;
+  document.getElementById('badge-customers').textContent = activeDeals.length + activeLeads.length;
   const openFus = DB.followUps.filter(f => f.status === 'Open').length;
   document.getElementById('badge-followups').textContent = overdue.length || openFus;
 }
@@ -1190,7 +1192,7 @@ function renderAll() {
 function renderStats() {
   const s = DB.stats;
   document.getElementById('stat-active').textContent  = s.active  ?? '—';
-  document.getElementById('stat-t2').textContent      = s.t2      ?? '—';
+  document.getElementById('stat-leads').textContent   = s.leads   ?? '—';
   document.getElementById('stat-closed').textContent  = s.closed  ?? '—';
   document.getElementById('stat-overdue').textContent = s.overdue ?? '—';
   document.getElementById('stat-savings').textContent = s.savings
@@ -1383,6 +1385,8 @@ function filterCustomers() { renderCustomerTable(); }
 
 function applyFilter(arr) {
   if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
+  if (custFilter === 'purchases') return arr.filter(c => c.id.startsWith('SKP') && !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
+  if (custFilter === 'consultations') return arr.filter(c => c.id.startsWith('SKC') && !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
   if (custFilter === 'Tier 2')  return arr.filter(c => c.tier === 'Tier 2' && !['Closed','Lost'].includes(c.status));
   if (custFilter === 'Tier 1')  return arr.filter(c => c.tier === 'Tier 1' && !['Closed','Lost'].includes(c.status));
   if (custFilter === 'overdue') {
@@ -1952,9 +1956,13 @@ function nav(view) {
 function drillDown(type) {
   if (type === 'active') {
     nav('customers');
-    custFilter = 'active';
+    custFilter = 'purchases';
     document.querySelectorAll('#view-customers .filter-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('#view-customers .filter-btn')?.classList.add('active');
+    renderCustomerTable();
+  } else if (type === 'leads') {
+    nav('customers');
+    custFilter = 'consultations';
+    document.querySelectorAll('#view-customers .filter-btn').forEach(b => b.classList.remove('active'));
     renderCustomerTable();
   } else if (type === 'tier2') {
     nav('customers');
