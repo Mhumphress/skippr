@@ -1060,7 +1060,7 @@ async function crmCall(params) {
     // Fallback for writes: fire-and-forget
     const url = APPS_SCRIPT_URL + '?' + buildQS(params);
     fetch(url, { mode: 'no-cors' }).catch(() => {});
-    await new Promise(r => setTimeout(r, 7000));
+    await new Promise(r => setTimeout(r, 14000));
     return { success: true };
   } finally {
     if (!isRead && overlay) overlay.classList.remove('active');
