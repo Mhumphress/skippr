@@ -1134,7 +1134,8 @@ function doGet(e) {
             const newFee = p.tier === 'Tier 2' ? 2000 : 750;
             const discountMult = calcDiscountMultiplier(convDiscount, newFee);
             const netFee = Math.round(newFee * discountMult * 100) / 100;
-            const netProfit = netFee - convPlatformFees;
+            const taxHeld = Math.round(netFee * 0.60 * 100) / 100;
+            const netProfit = netFee - convPlatformFees - taxHeld;
             finSheet.getRange(r, 1).setValue(skpId);               // Update Customer ID
             finSheet.getRange(r, 2).setValue(p.customerName || ''); // Customer Name
             finSheet.getRange(r, 3).setValue(newFee);               // Service Fee
@@ -1145,6 +1146,7 @@ function doGet(e) {
             finSheet.getRange(r, 8).setValue(today);                // Payment Date
             finSheet.getRange(r, 9).setValue(convInvStatus);        // Invoice Status
             finSheet.getRange(r, 10).setValue(convPlatformFees);    // Processing Fees
+            finSheet.getRange(r, 11).setValue(taxHeld);             // Tax Withheld (60%)
             finSheet.getRange(r, 14).setValue(netProfit);           // Net Profit
             // Set invoice number if not already set
             if (!String(row[14] || '').trim()) {
@@ -1159,12 +1161,13 @@ function doGet(e) {
           const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
           const discountMult2 = calcDiscountMultiplier(convDiscount, serviceFee);
           const netFee2 = Math.round(serviceFee * discountMult2 * 100) / 100;
-          const netProfit2 = netFee2 - convPlatformFees;
+          const taxHeld2 = Math.round(netFee2 * 0.60 * 100) / 100;
+          const netProfit2 = netFee2 - convPlatformFees - taxHeld2;
           const newInvoiceNum = reserveNextInvoiceNumber(ss);
           finSheet.appendRow([
             skpId, p.customerName || '', serviceFee, convDiscount, netFee2,
             convDeposit, convMethod, today, convInvStatus,
-            convPlatformFees, 0, 0, '', netProfit2, newInvoiceNum,
+            convPlatformFees, taxHeld2, 0, '', netProfit2, newInvoiceNum,
           ]);
         }
       }
@@ -1753,6 +1756,11 @@ function doGet(e) {
 
       const invoiceNum = reserveNextInvoiceNumber(ss);
 
+      const invPlatformFees = parseFloat(p.platformFees) || 0;
+      const invTax = p.tax ? parseFloat(p.tax) : Math.round(netFee * 0.60 * 100) / 100;
+      const invOtherExp = parseFloat(p.otherExpenses) || 0;
+      const invNetProfit = netFee - invPlatformFees - invTax - invOtherExp;
+
       if (existingDraftRow > 0) {
         sh.getRange(existingDraftRow, 2).setValue(p.customerName || '');
         sh.getRange(existingDraftRow, 3).setValue(serviceFee);
@@ -1762,11 +1770,11 @@ function doGet(e) {
         sh.getRange(existingDraftRow, 7).setValue(p.paymentMethod || '');
         sh.getRange(existingDraftRow, 8).setValue(p.paymentDate ? new Date(p.paymentDate) : today);
         sh.getRange(existingDraftRow, 9).setValue(p.invoiceStatus || 'Pending');
-        sh.getRange(existingDraftRow, 10).setValue(parseFloat(p.platformFees) || 0);
-        sh.getRange(existingDraftRow, 11).setValue(parseFloat(p.tax) || 0);
-        sh.getRange(existingDraftRow, 12).setValue(parseFloat(p.otherExpenses) || 0);
+        sh.getRange(existingDraftRow, 10).setValue(invPlatformFees);
+        sh.getRange(existingDraftRow, 11).setValue(invTax);
+        sh.getRange(existingDraftRow, 12).setValue(invOtherExp);
         sh.getRange(existingDraftRow, 13).setValue(p.expenseNotes || '');
-        sh.getRange(existingDraftRow, 14).setValue(netFee - (parseFloat(p.platformFees) || 0) - (parseFloat(p.tax) || 0) - (parseFloat(p.otherExpenses) || 0));
+        sh.getRange(existingDraftRow, 14).setValue(invNetProfit);
         sh.getRange(existingDraftRow, 15).setValue(invoiceNum);
       } else {
         sh.appendRow([
@@ -1779,11 +1787,11 @@ function doGet(e) {
           p.paymentMethod || '',
           p.paymentDate ? new Date(p.paymentDate) : today,
           p.invoiceStatus || 'Pending',
-          parseFloat(p.platformFees) || 0,
-          parseFloat(p.tax) || 0,
-          parseFloat(p.otherExpenses) || 0,
+          invPlatformFees,
+          invTax,
+          invOtherExp,
           p.expenseNotes || '',
-          netFee - (parseFloat(p.platformFees) || 0) - (parseFloat(p.tax) || 0) - (parseFloat(p.otherExpenses) || 0),
+          invNetProfit,
           invoiceNum,
         ]);
       }
@@ -1876,9 +1884,10 @@ function doGet(e) {
         const netFee = Math.round(newFee * mult * 100) / 100;
         sh.getRange(row, 5).setValue(netFee);  // Net Service Fee
 
-        // Recalculate net profit
+        // Recalculate tax (default 60% of new net) and net profit
         const pFees = parseFloat(p.platformFees || sh.getRange(row, 10).getValue()) || 0;
-        const pTax = parseFloat(p.tax || sh.getRange(row, 11).getValue()) || 0;
+        const pTax = p.tax ? parseFloat(p.tax) : Math.round(netFee * 0.60 * 100) / 100;
+        sh.getRange(row, 11).setValue(pTax);  // Update tax
         const pOther = parseFloat(p.otherExpenses || sh.getRange(row, 12).getValue()) || 0;
         sh.getRange(row, 14).setValue(netFee - pFees - pTax - pOther);  // Net Profit
       }
@@ -2115,8 +2124,8 @@ function doGet(e) {
               invStatus === 'Paid' ? pick(['Credit Card','ACH/Bank Transfer','Zelle/Venmo']) : '',
               invStatus === 'Paid' ? today : '',
               invStatus,
-              processingFee, 0, 0, '',
-              netFee - processingFee,
+              processingFee, Math.round(netFee * 0.60 * 100) / 100, 0, '',
+              netFee - processingFee - Math.round(netFee * 0.60 * 100) / 100,
               invNum,
             ]);
           }
