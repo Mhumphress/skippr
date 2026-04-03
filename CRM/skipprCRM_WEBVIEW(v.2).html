@@ -1213,8 +1213,11 @@ function renderPriorityQueue() {
     return sortByFollowUp(a, b);
   });
 
-  // SKC — leads, ordered oldest to most recent (oldest first = longest waiting)
+  // SKC — leads, Tier 2 first then oldest to most recent within each tier
   const skcs = active.filter(c => c.id.startsWith('SKC')).sort((a, b) => {
+    const at = a.tier === 'Tier 2' ? 0 : 1;
+    const bt = b.tier === 'Tier 2' ? 0 : 1;
+    if (at !== bt) return at - bt;
     const da = a.dateAdded ? new Date(a.dateAdded) : new Date('9999-12-31');
     const db = b.dateAdded ? new Date(b.dateAdded) : new Date('9999-12-31');
     return da - db;
