@@ -290,8 +290,10 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <div class="stat-card" onclick="drillDown('overdue')"><div class="stat-label">Overdue Follow-Ups</div><div class="stat-value red" id="stat-overdue">—</div><div class="stat-sub">View overdue →</div></div>
         <div class="stat-card" onclick="drillDown('savings')"><div class="stat-label">Savings Delivered</div><div class="stat-value gold" id="stat-savings">$0</div><div class="stat-sub">View financials →</div></div>
       </div>
-      <div class="section-hd"><h3>Priority Queue — Active Customers</h3><div class="line"></div></div>
-      <div id="priority-queue"></div>
+      <div class="section-hd"><h3>Active Purchases</h3><div class="line"></div><span class="count" id="skp-count" style="color:var(--green)">0</span></div>
+      <div id="skp-queue"></div>
+      <div class="section-hd" style="margin-top:28px;"><h3>Leads — Consultations</h3><div class="line"></div><span class="count" id="skc-count">0</span></div>
+      <div id="skc-queue"></div>
       <div class="section-hd"><h3>Recent Activity</h3><div class="line"></div></div>
       <div id="recent-activity"></div>
     </div>
@@ -1197,33 +1199,60 @@ function renderStats() {
 
 // ── DASHBOARD ─────────────────────────────────────────────────
 function renderPriorityQueue() {
-  const t2 = DB.customers
-    .filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted')
-    .sort((a, b) => {
-      const at = a.tier === 'Tier 2' ? 0 : 1;
-      const bt = b.tier === 'Tier 2' ? 0 : 1;
-      if (at !== bt) return at - bt;
-      return sortByFollowUp(a, b);
-    });
-  const el = document.getElementById('priority-queue');
-  if (!t2.length) {
-    el.innerHTML = '<div class="empty-state"><div class="ico">★</div><p>No active customers</p></div>';
-    return;
+  const active = DB.customers.filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
+  const now = new Date();
+  const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+
+  // SKP — purchases, absolute priority. Tier 2 first, then by follow-up soonest
+  const skps = active.filter(c => c.id.startsWith('SKP')).sort((a, b) => {
+    const at = a.tier === 'Tier 2' ? 0 : 1;
+    const bt = b.tier === 'Tier 2' ? 0 : 1;
+    if (at !== bt) return at - bt;
+    return sortByFollowUp(a, b);
+  });
+
+  // SKC — leads, ordered oldest to most recent (oldest first = longest waiting)
+  const skcs = active.filter(c => c.id.startsWith('SKC')).sort((a, b) => {
+    const da = a.dateAdded ? new Date(a.dateAdded) : new Date('9999-12-31');
+    const db = b.dateAdded ? new Date(b.dateAdded) : new Date('9999-12-31');
+    return da - db;
+  });
+
+  document.getElementById('skp-count').textContent = skps.length;
+  document.getElementById('skc-count').textContent = skcs.length;
+
+  // Check if last contact is older than 12 hours → needs attention
+  function needsAttention(c) {
+    if (!c.lastContact) return true;
+    const lc = new Date(c.lastContact);
+    return !isNaN(lc) && lc < twelveHoursAgo;
   }
-  el.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>ID</th><th>Customer</th><th>Vehicle</th><th>Status</th><th>Rep</th><th>Follow-Up</th>
-    </tr></thead>
-    <tbody>${t2.slice(0, 8).map(c => `
-      <tr class="${c.tier==='Tier 2'?'t2-row':''}" onclick="openCustomer('${escAttr(c.id)}')">
-        <td><span style="font-family:monospace;color:var(--gold);font-size:0.8rem;">${esc(c.id)}</span></td>
-        <td class="name-cell">${esc(c.name)}</td>
-        <td style="color:var(--gray)">${esc(c.vehicle)}</td>
-        <td>${statusBadge(c.status)}</td>
-        <td style="color:var(--gray)">${esc(c.rep)}</td>
-        <td class="${fuClass(c.followUp)}">${formatDate(c.followUp)}</td>
-      </tr>`).join('')}
-    </tbody></table></div>`;
+
+  function renderQueueTable(customers, maxRows) {
+    if (!customers.length) return '<div class="empty-state" style="padding:20px;"><p>None</p></div>';
+    return `<div class="tbl-wrap"><table>
+      <thead><tr>
+        <th></th><th>ID</th><th>Customer</th><th>Vehicle</th><th>Status</th><th>Rep</th><th>Follow-Up</th><th>Last Contact</th>
+      </tr></thead>
+      <tbody>${customers.slice(0, maxRows).map(c => {
+        const urgent = needsAttention(c);
+        const urgentStyle = urgent ? 'background:rgba(248,113,113,0.06);border-left:3px solid var(--red);' : '';
+        return `<tr style="${urgentStyle}" class="${c.tier==='Tier 2'?'t2-row':''}" onclick="openCustomer('${escAttr(c.id)}')">
+          <td style="text-align:center;width:24px">${urgent ? '<span style="color:var(--red);font-size:0.7rem;" title="No contact in 12+ hours">⚠</span>' : ''}</td>
+          <td><span style="font-family:monospace;color:var(--gold);font-size:0.8rem;">${esc(c.id)}</span></td>
+          <td class="name-cell">${esc(c.name)}</td>
+          <td style="color:var(--gray)">${esc(c.vehicle)}</td>
+          <td>${statusBadge(c.status)}</td>
+          <td style="color:var(--gray)">${esc(c.rep)}</td>
+          <td class="${fuClass(c.followUp)}">${formatDate(c.followUp)}</td>
+          <td style="font-size:0.78rem;${urgent?'color:var(--red);font-weight:600':'color:var(--gray)'}">${c.lastContact ? formatDate(c.lastContact) : 'Never'}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table></div>`;
+  }
+
+  document.getElementById('skp-queue').innerHTML = renderQueueTable(skps, 10);
+  document.getElementById('skc-queue').innerHTML = renderQueueTable(skcs, 10);
 }
 
 function renderRecentActivity() {
