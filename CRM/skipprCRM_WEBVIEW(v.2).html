@@ -388,12 +388,12 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
           <input class="tbl-search" id="fin-search" placeholder="Search by name, ID, invoice #..." oninput="renderFinancials()"/>
+          <button class="filter-btn active" onclick="setFinFilter('all',this)">All</button>
+          <button class="filter-btn" onclick="setFinFilter('skp',this)">Purchases</button>
           <button class="filter-btn" onclick="setFinFilter('skc',this)">Consultations</button>
-          <button class="filter-btn" onclick="setFinFilter('skp',this)">Purchases (SKP)</button>
-          <button class="filter-btn active" onclick="setFinFilter('purchases',this)">Purchases</button>
           <button class="filter-btn" onclick="setFinFilter('pending',this)">Pending</button>
-          <button class="filter-btn" onclick="setFinFilter('drafts',this)">Drafts</button>
-          <button class="filter-btn" onclick="setFinFilter('all',this)">All</button>
+          <button class="filter-btn" onclick="setFinFilter('paid',this)">Paid</button>
+          <button class="filter-btn" onclick="setFinFilter('refunded',this)">Refunded</button>
         </div>
         <div id="financial-table-wrap">
           <div class="loading"><div class="spinner"></div></div>
@@ -1018,7 +1018,7 @@ let currentCustomerId    = null;
 let custFilter           = 'active';
 let fuFilter             = 'open';
 let currentModalCustomer = null;
-let finFilter            = 'purchases';
+let finFilter            = 'all';
 
 // ── API CALLS ─────────────────────────────────────────────────
 // Primary: route through CORS proxy so the browser doesn't get blocked
