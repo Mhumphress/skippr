@@ -1973,6 +1973,199 @@ function doGet(e) {
       }
     }
 
+    // ── Seed test customers ──────────────────────────────────
+    if (p.action === 'seedTestData') {
+      const today = new Date();
+      const reps = buildRepList();
+
+      const firstNames = ['James','Olivia','Marcus','Sophia','Darius','Ava','Terrence','Isabella','Malik','Camille','Devon','Natasha','Andre','Priya','Carlos','Megan','Tyrone','Lena','Brandon','Aisha','Kevin','Rachel','Jordan','Brianna','Ethan','Jasmine','Derek','Kayla','Xavier','Nicole','Aaron','Destiny','Hassan','Morgan','Elijah','Tiffany','Owen','Diamond','Wesley','Savannah'];
+      const lastNames = ['Washington','Patel','Rodriguez','Kim','O\'Brien','Nguyen','Jackson','Foster','Ramirez','Thompson','Williams','Garcia','Brown','Chen','Davis','Martinez','Johnson','Lee','Wilson','Anderson','Thomas','Taylor','Moore','Clark','Harris','Lewis','Robinson','Walker','Young','Allen','King','Wright','Scott','Hill','Green','Adams','Baker','Nelson','Carter','Mitchell'];
+      const cities = ['Indianapolis','Fishers','Carmel','Noblesville','Greenwood','Plainfield','Brownsburg','Avon','Zionsville','Westfield','Chicago','Louisville','Cincinnati','Columbus','Detroit','Nashville','St. Louis','Atlanta','Tampa','Phoenix'];
+      const states = ['IN','IN','IN','IN','IN','IN','IN','IN','IN','IN','IL','KY','OH','OH','MI','TN','MO','GA','FL','AZ'];
+      const makes = ['Toyota','Honda','Ford','Chevrolet','BMW','Mercedes-Benz','Lexus','Hyundai','Kia','Jeep','Subaru','Mazda','Audi','Volkswagen','Nissan','Ram','GMC','Acura','Volvo','Porsche'];
+      const modelMap = {
+        'Toyota':['4Runner','Camry','RAV4','Tacoma','Highlander','Tundra','Corolla','GR86','Supra'],
+        'Honda':['Civic','Accord','CR-V','Pilot','HR-V','Ridgeline','Odyssey'],
+        'Ford':['F-150','Bronco','Explorer','Mustang','Maverick','Escape','Edge'],
+        'Chevrolet':['Silverado','Tahoe','Equinox','Camaro','Corvette','Traverse','Blazer'],
+        'BMW':['3 Series','5 Series','X3','X5','M3','M4','X1','iX'],
+        'Mercedes-Benz':['C-Class','E-Class','GLC','GLE','A-Class','S-Class','AMG GT'],
+        'Lexus':['RX','ES','NX','IS','GX','TX','LC'],
+        'Hyundai':['Tucson','Santa Fe','Palisade','Elantra','Sonata','Ioniq 5','Kona'],
+        'Kia':['Telluride','Sportage','K5','Forte','Sorento','EV6','Carnival'],
+        'Jeep':['Wrangler','Grand Cherokee','Gladiator','Compass','Cherokee','Wagoneer'],
+        'Subaru':['Outback','Forester','Crosstrek','WRX','Impreza','Ascent'],
+        'Mazda':['CX-5','CX-50','Mazda3','CX-90','MX-5 Miata','CX-30'],
+        'Audi':['A4','Q5','A6','Q7','e-tron','RS 5','TT'],
+        'Volkswagen':['Jetta','Tiguan','Atlas','ID.4','Golf GTI','Taos'],
+        'Nissan':['Altima','Rogue','Pathfinder','Frontier','Sentra','Z'],
+        'Ram':['1500','2500','3500'],
+        'GMC':['Sierra','Yukon','Terrain','Canyon','Acadia'],
+        'Acura':['MDX','RDX','TLX','Integra'],
+        'Volvo':['XC90','XC60','S60','XC40','C40'],
+        'Porsche':['Cayenne','Macan','911','Taycan','Panamera']
+      };
+      const trims = ['Base','Sport','Limited','Premium','SE','SEL','XLE','TRD Pro','Platinum','Denali','Titanium','ST','GT','Touring','EX-L','Trailhawk','Overland','M Sport','AMG Line','S-Line','R-Line','Autobahn'];
+      const colors = ['White','Black','Silver','Gray','Blue','Red','Green','Pearl White','Midnight Black','Lunar Silver','Sonic Gray','Rapid Blue','Rapid Red','Ice White','Obsidian Black','Celestial Silver','Barcelona Red','Cavalry Blue','Carbonized Gray','Alpine White'];
+      const years = ['2024','2025','2026'];
+      const sources = ['Referral','Website','Social Media','Phone','Other'];
+      const urgencies = ['High','Medium','Low'];
+      const financings = ['Cash','Finance','Lease'];
+      const discounts = ['None','None','None','None','Military 15%','First Responder 15%','Student 5%'];
+      const tradeInMakes = ['Honda','Toyota','Ford','Chevrolet','Hyundai','Kia','Nissan','Subaru','Mazda','Volkswagen'];
+      const tradeInModels = ['Civic','Camry','F-150','Malibu','Elantra','Forte','Altima','Outback','CX-5','Jetta','Accord','Corolla','Escape','Equinox','Tucson','Sportage','Rogue','Forester','Mazda3','Tiguan'];
+      const tradeInYears = ['2018','2019','2020','2021','2022'];
+
+      function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+      function randBetween(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+      function randPhone() { return '(' + randBetween(200,999) + ') ' + randBetween(200,999) + '-' + String(randBetween(1000,9999)); }
+      function randZip() { return String(randBetween(46001,46999)); }
+      function randVin() { var s = ''; var chars = '0123456789ABCDEFGHJKLMNPRSTUVWXYZ'; for (var i = 0; i < 17; i++) s += chars[Math.floor(Math.random()*chars.length)]; return s; }
+
+      // Generate 5 customers: mix of SKC and SKP
+      // Pattern: [SKC-T1, SKC-T2, SKP-T1 with trade-in, SKP-T2 with trade-in, SKC or SKP random]
+      var templates = [
+        { type: 'SKC', tierCode: 'T1', tier: 'Tier 1', status: 'New',       workflow: 'Consultation', hasTrade: false, hasInvoice: false },
+        { type: 'SKC', tierCode: 'T2', tier: 'Tier 2', status: 'Searching', workflow: 'Consultation', hasTrade: false, hasInvoice: false },
+        { type: 'SKP', tierCode: 'T1', tier: 'Tier 1', status: 'Searching', workflow: 'Purchase',     hasTrade: true,  hasInvoice: true },
+        { type: 'SKP', tierCode: 'T2', tier: 'Tier 2', status: 'Deal Found',workflow: 'Purchase',     hasTrade: true,  hasInvoice: true },
+        { type: pick(['SKC','SKP']), tierCode: pick(['T1','T2']), tier: '', status: '', workflow: '', hasTrade: Math.random() > 0.5, hasInvoice: false },
+      ];
+      // Fill in random fields for slot 5
+      templates[4].tier = templates[4].tierCode === 'T2' ? 'Tier 2' : 'Tier 1';
+      templates[4].workflow = templates[4].type === 'SKP' ? 'Purchase' : 'Consultation';
+      templates[4].status = pick(['New','Searching','Deal Found','Pending']);
+      templates[4].hasInvoice = templates[4].type === 'SKP';
+
+      var createdIds = [];
+
+      templates.forEach(function(tmpl) {
+        var newId = reserveNextId(ss, tmpl.type, tmpl.tierCode);
+        var firstName = pick(firstNames);
+        var lastName = pick(lastNames);
+        var name = firstName + ' ' + lastName;
+        var cityIdx = randBetween(0, cities.length - 1);
+        var city = cities[cityIdx];
+        var state = states[cityIdx];
+        var phone = randPhone();
+        var email = firstName.toLowerCase() + '.' + lastName.toLowerCase().replace(/'/g,'') + '@' + pick(['gmail.com','yahoo.com','outlook.com','icloud.com','hotmail.com']);
+        var zip = randZip();
+        var rep = pick(reps);
+        var make = pick(makes);
+        var models = modelMap[make] || ['Base'];
+        var model = pick(models);
+        var trim = pick(trims);
+        var year = pick(years);
+        var color = pick(colors);
+        var discount = pick(discounts);
+        var source = pick(sources);
+        var urgency = pick(urgencies);
+        var financing = pick(financings);
+        var vehicle = year + ' ' + make + ' ' + model + ' ' + trim;
+        var budget = '$' + (randBetween(25,65) * 1000).toLocaleString() + ' - $' + (randBetween(35,85) * 1000).toLocaleString();
+        var timeline = pick(['ASAP','1 week','2 weeks','1 month','2-3 months','No rush']);
+
+        var tradeVehicle = '', tradeVin = '', tradeValue = '', initialPrice = '';
+        if (tmpl.hasTrade) {
+          tradeVehicle = pick(tradeInYears) + ' ' + pick(tradeInMakes) + ' ' + pick(tradeInModels);
+          tradeVin = randVin();
+          tradeValue = randBetween(8, 28) * 1000;
+          initialPrice = randBetween(32, 72) * 1000;
+        }
+
+        // Registry
+        var reg = ss.getSheetByName('Registry');
+        if (reg) {
+          reg.appendRow([
+            newId, tmpl.workflow, tmpl.tier, name,
+            phone, email, city, state, zip,
+            vehicle, rep, today, 'Active', '', '',
+          ]);
+        }
+
+        // Pipeline
+        var pipeline = ss.getSheetByName('Pipeline');
+        if (pipeline) {
+          var followUp = new Date(today);
+          followUp.setDate(followUp.getDate() + randBetween(1, 14));
+          pipeline.appendRow([
+            newId, name, city + ', ' + state,
+            tmpl.tier, rep, tmpl.status,
+            year, make, model, trim, color, '',
+            today, today, followUp,
+            '', '', '', discount, '', tmpl.workflow, '', '',
+            phone, email, zip,
+            'Test customer — auto-generated',
+            budget, timeline, financing, source, pick(['Phone','Text','Email']), urgency,
+            tradeVehicle, tradeVin, tradeValue || '', initialPrice || '',
+          ]);
+        }
+
+        // Rep Activity
+        var repActivity = ss.getSheetByName('Rep Activity');
+        if (repActivity) {
+          repActivity.appendRow([
+            today, rep, '[' + newId + '] ' + name,
+            'Customer Added', 'Info Only', tmpl.tier, '',
+            'Test customer seeded via CRM',
+          ]);
+        }
+
+        // Follow-Up
+        var fuSheet = ss.getSheetByName('Follow-Ups');
+        if (fuSheet) {
+          var fuDate = new Date(today);
+          fuDate.setDate(fuDate.getDate() + randBetween(0, 7));
+          fuSheet.appendRow([
+            today, rep, '[' + newId + '] ' + name,
+            vehicle, fuDate, 'Open', pick(['High','Medium','Low']),
+            'Initial follow-up — test data', '', 'Callback',
+          ]);
+        }
+
+        // Financials (invoice)
+        if (tmpl.hasInvoice) {
+          var finSheet = ss.getSheetByName('Financials');
+          if (finSheet) {
+            var serviceFee = tmpl.tier === 'Tier 2' ? 2000 : 750;
+            var discMult = calcDiscountMultiplier(discount, serviceFee);
+            var netFee = Math.round(serviceFee * discMult * 100) / 100;
+            var processingFee = pick([0, 0, 25, 30, 45]);
+            var invStatus = pick(['Paid','Pending','Paid']);
+            var invNum = reserveNextInvoiceNumber(ss);
+            finSheet.appendRow([
+              newId, name, serviceFee, discount, netFee,
+              invStatus === 'Paid' ? netFee : 0,
+              invStatus === 'Paid' ? pick(['Credit Card','ACH/Bank Transfer','Zelle/Venmo']) : '',
+              invStatus === 'Paid' ? today : '',
+              invStatus,
+              processingFee, 0, 0, '',
+              netFee - processingFee,
+              invNum,
+            ]);
+          }
+        } else {
+          // Draft invoice for SKC
+          var finSheet2 = ss.getSheetByName('Financials');
+          if (finSheet2) {
+            var sFee = tmpl.tier === 'Tier 2' ? 2000 : 750;
+            var dMult = calcDiscountMultiplier(discount, sFee);
+            var nFee = Math.round(sFee * dMult * 100) / 100;
+            var draftInvNum = reserveNextInvoiceNumber(ss);
+            finSheet2.appendRow([
+              newId, name, sFee, discount, nFee,
+              0, '', '', 'Draft', 0, 0, 0, '', nFee, draftInvNum,
+            ]);
+          }
+        }
+
+        createdIds.push(newId);
+      });
+
+      SpreadsheetApp.flush();
+      return json({ success: true, ids: createdIds, count: createdIds.length }, cb);
+    }
+
     return json({ status: 'Unknown action.' }, cb);
 
   } catch(err) {

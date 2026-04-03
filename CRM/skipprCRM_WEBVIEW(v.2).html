@@ -273,6 +273,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <option value="">Select Rep...</option>
       </select>
       <div class="rep-role" style="margin-top:4px;">Skippr Rep</div>
+      <button onclick="seedTestData()" style="margin-top:10px;width:100%;padding:7px 10px;background:var(--dark2);border:1px solid var(--border);color:var(--gray);font-family:var(--font-b);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:var(--radius);transition:all 0.2s;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--gray)'">+ Seed 5 Test Customers</button>
     </div>
   </nav>
 
@@ -2150,6 +2151,23 @@ async function submitAddCustomer() {
     await loadAll();
   } catch(e) {
     toast('Error creating customer: ' + e.message, 'error');
+  }
+}
+
+// ── SEED TEST DATA ──────────────────────────────────────────
+async function seedTestData() {
+  if (!confirm('This will create 5 randomized test customers (mix of SKC/SKP, trade-ins, tiers). Continue?')) return;
+  toast('Seeding 5 test customers...', 'success');
+  try {
+    const result = await crmCall({ action: 'seedTestData' });
+    if (result.success) {
+      toast('Created ' + result.count + ' test customers: ' + result.ids.join(', '), 'success');
+      await loadAll();
+    } else {
+      toast('Seed failed: ' + (result.message || 'Unknown error'), 'error');
+    }
+  } catch(e) {
+    toast('Error seeding: ' + e.message, 'error');
   }
 }
 
