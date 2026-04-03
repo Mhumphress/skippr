@@ -1221,14 +1221,24 @@ function renderPriorityQueue() {
   document.getElementById('skp-count').textContent = skps.length;
   document.getElementById('skc-count').textContent = skcs.length;
 
-  // Check if last contact is older than 12 hours → needs attention
+  // Only Tier 1 SKP gets 12-hour highlight
   function needsAttention(c) {
+    if (c.tier === 'Tier 2') return false;
+    if (!c.id.startsWith('SKP')) return false;
     if (!c.lastContact) return true;
     const lc = new Date(c.lastContact);
     return !isNaN(lc) && lc < twelveHoursAgo;
   }
 
-  function renderQueueTable(customers, maxRows) {
+  function snoozeButtons(c) {
+    return `<div style="display:inline-flex;gap:3px;margin-left:6px;" onclick="event.stopPropagation()">
+      <button class="fu-done-btn" onclick="snoozeContact('${escAttr(c.id)}','${escAttr(c.name)}',0)" title="Mark as just contacted" style="font-size:0.55rem;padding:2px 6px;color:var(--green);border-color:rgba(52,211,153,0.3)">✓ Now</button>
+      <button class="fu-done-btn" onclick="snoozeContact('${escAttr(c.id)}','${escAttr(c.name)}',48)" title="Snooze 48 hours" style="font-size:0.55rem;padding:2px 6px">48h</button>
+      <button class="fu-done-btn" onclick="snoozeContact('${escAttr(c.id)}','${escAttr(c.name)}',168)" title="Snooze 1 week" style="font-size:0.55rem;padding:2px 6px">1w</button>
+    </div>`;
+  }
+
+  function renderQueueTable(customers, maxRows, showSnooze) {
     if (!customers.length) return '<div class="empty-state" style="padding:20px;"><p>None</p></div>';
     return `<div class="tbl-wrap"><table>
       <thead><tr>
@@ -1245,14 +1255,45 @@ function renderPriorityQueue() {
           <td>${statusBadge(c.status)}</td>
           <td style="color:var(--gray)">${esc(c.rep)}</td>
           <td class="${fuClass(c.followUp)}">${formatDate(c.followUp)}</td>
-          <td style="font-size:0.78rem;${urgent?'color:var(--red);font-weight:600':'color:var(--gray)'}">${c.lastContact ? formatDate(c.lastContact) : 'Never'}</td>
+          <td style="font-size:0.78rem;${urgent?'color:var(--red);font-weight:600':'color:var(--gray)'}">${c.lastContact ? formatDate(c.lastContact) : 'Never'}${showSnooze && c.tier === 'Tier 1' ? snoozeButtons(c) : ''}</td>
         </tr>`;
       }).join('')}
       </tbody></table></div>`;
   }
 
-  document.getElementById('skp-queue').innerHTML = renderQueueTable(skps, 10);
-  document.getElementById('skc-queue').innerHTML = renderQueueTable(skcs, 10);
+  document.getElementById('skp-queue').innerHTML = renderQueueTable(skps, 10, true);
+  document.getElementById('skc-queue').innerHTML = renderQueueTable(skcs, 10, false);
+}
+
+// Snooze / reset the 12-hour contact clock
+// hoursOffset=0 means "just contacted now", 48 means "don't alert for 48h", 168 = 1 week
+async function snoozeContact(customerId, customerName, hoursOffset) {
+  const snoozeTime = new Date();
+  if (hoursOffset > 0) {
+    // Push lastContact forward so 12h clock won't fire until offset expires
+    // e.g. 48h snooze: set lastContact to now + 36h (36h + 12h window = 48h from now)
+    snoozeTime.setTime(snoozeTime.getTime() + (hoursOffset - 12) * 60 * 60 * 1000);
+  }
+  const label = hoursOffset === 0 ? 'Contacted' : hoursOffset === 48 ? 'Snoozed 48h' : 'Snoozed 1 week';
+
+  // Optimistic local update
+  const idx = DB.customers.findIndex(c => c.id === customerId);
+  if (idx >= 0) DB.customers[idx].lastContact = snoozeTime.toISOString();
+  renderPriorityQueue();
+  toast(customerName + ' — ' + label, 'success');
+
+  try {
+    await crmCall({
+      action: 'updateCustomer',
+      customerId: customerId,
+      customerName: customerName,
+      lastContact: snoozeTime.toISOString(),
+      rep: localStorage.getItem('skippr_rep') || '',
+      notes: label + ' via dashboard',
+    });
+  } catch(e) {
+    console.error('snoozeContact error:', e);
+  }
 }
 
 function renderRecentActivity() {

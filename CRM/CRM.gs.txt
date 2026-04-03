@@ -1009,7 +1009,7 @@ function doGet(e) {
           if (String(row[0]).trim() === p.customerId ||
               row[1].toString().toLowerCase() === (p.customerName || '').toLowerCase()) {
             if (p.customerStatus) pipeline.getRange(i+1, 6).setValue(p.customerStatus);
-            pipeline.getRange(i+1, 14).setValue(today);
+            pipeline.getRange(i+1, 14).setValue(p.lastContact ? new Date(p.lastContact) : today);
             if (p.followUpDate) pipeline.getRange(i+1, 15).setValue(new Date(p.followUpDate));
           }
         });
