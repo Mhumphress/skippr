@@ -197,6 +197,9 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
 #toast.success{border-color:rgba(52,211,153,0.3);color:var(--green);}
 #toast.error{border-color:rgba(248,113,113,0.3);color:var(--red);}
 
+.tile-edit-btn{float:right;cursor:pointer;font-size:0.72rem;color:var(--gray);padding:2px 6px;border-radius:4px;transition:all 0.15s;opacity:0.5;}
+.tile-edit-btn:hover{opacity:1;color:var(--gold);background:var(--gold-dim);}
+
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border-2);padding:32px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;border-radius:var(--radius-lg);box-shadow:0 24px 64px rgba(0,0,0,0.5);}
@@ -1003,6 +1006,19 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
   </div>
 </div>
 
+<!-- QUICK TILE EDIT MODAL -->
+<div class="modal-overlay" id="tile-edit-modal">
+  <div class="modal" style="width:480px;">
+    <div class="modal-title" id="tile-edit-title">Edit</div>
+    <div class="modal-sub" id="tile-edit-sub"></div>
+    <div id="tile-edit-fields"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('tile-edit-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="submitTileEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1468,14 +1484,14 @@ function renderCustomerDetail(id) {
 
     <div class="info-grid">
       <div class="info-card">
-        <div class="info-card-title">Contact Information</div>
+        <div class="info-card-title">Contact Information <span class="tile-edit-btn" onclick="openTileEdit('${escAttr(c.id)}','contact')">✎</span></div>
         ${infoRow('Phone',   c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '—')}
         ${infoRow('Email',   c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '—')}
         ${infoRow('Location', [c.city, c.state, c.zip].filter(Boolean).join(', ') || '—')}
         ${infoRow('Assigned Rep', c.rep || '—')}
       </div>
       <div class="info-card">
-        <div class="info-card-title">Deal Information</div>
+        <div class="info-card-title">Deal Information <span class="tile-edit-btn" onclick="openTileEdit('${escAttr(c.id)}','deal')">✎</span></div>
         ${infoRow('Tier',         c.tier    || '—')}
         ${infoRow('Status',       c.status  || '—')}
         ${infoRow('Discount',     c.discount || 'None')}
@@ -1484,7 +1500,7 @@ function renderCustomerDetail(id) {
         ${infoRow('Follow-Up',    `<span class="${fuClass(c.followUp)}">${formatDate(c.followUp) || '—'}</span>`)}
       </div>
       <div class="info-card">
-        <div class="info-card-title">Vehicle Details</div>
+        <div class="info-card-title">Vehicle Details <span class="tile-edit-btn" onclick="openTileEdit('${escAttr(c.id)}','vehicle')">✎</span></div>
         ${infoRow('Year',   c.year     || '—')}
         ${infoRow('Make',   c.make     || '—')}
         ${infoRow('Model',  c.model    || '—')}
@@ -1493,7 +1509,7 @@ function renderCustomerDetail(id) {
         ${infoRow('Dealer', c.dealer   || '—')}
       </div>
       <div class="info-card">
-        <div class="info-card-title">Deal Pricing</div>
+        <div class="info-card-title">Deal Pricing <span class="tile-edit-btn" onclick="openTileEdit('${escAttr(c.id)}','pricing')">✎</span></div>
         ${infoRow('Initial Price', c.initialPrice ? '$' + parseMoney(c.initialPrice).toLocaleString() : '—')}
         ${infoRow('Final Price',   c.finalPrice   ? '$' + parseMoney(c.finalPrice).toLocaleString()   : '—')}
         ${(() => {
@@ -2246,6 +2262,93 @@ async function submitAddCustomer() {
     await loadAll();
   } catch(e) {
     toast('Error creating customer: ' + e.message, 'error');
+  }
+}
+
+// ── TILE QUICK EDIT ──────────────────────────────────────────
+let tileEditCustomerId = null;
+let tileEditSection = null;
+
+function tileField(label, id, value, type) {
+  if (type === 'select') return ''; // handled separately
+  return `<div class="form-field"><label>${label}</label><input id="${id}" value="${escAttr(value || '')}"/></div>`;
+}
+
+function tileSelect(label, id, options, current) {
+  return `<div class="form-field"><label>${label}</label><select id="${id}">${options.map(o => `<option${o===current?' selected':''}>${o}</option>`).join('')}</select></div>`;
+}
+
+function openTileEdit(customerId, section) {
+  const c = DB.customers.find(x => x.id === customerId);
+  if (!c) return;
+  tileEditCustomerId = customerId;
+  tileEditSection = section;
+  const wrap = document.getElementById('tile-edit-fields');
+  const titles = { contact:'Contact Information', deal:'Deal Information', vehicle:'Vehicle Details', pricing:'Deal Pricing' };
+  document.getElementById('tile-edit-title').textContent = 'Edit ' + titles[section];
+  document.getElementById('tile-edit-sub').textContent = c.name + ' · ' + c.id;
+
+  let html = '';
+  if (section === 'contact') {
+    html += '<div class="form-row">' + tileField('Phone','te-phone',c.phone) + tileField('Email','te-email',c.email) + '</div>';
+    html += '<div class="form-row">' + tileField('Zip','te-zip',c.zip) + '</div>';
+    html += '<div class="form-row"><div class="form-field"><label>Assigned Rep</label><select id="te-rep">' + REPS.map(r => `<option${r===c.rep?' selected':''}>${r}</option>`).join('') + '</select></div></div>';
+  } else if (section === 'deal') {
+    html += '<div class="form-row">' + tileSelect('Tier','te-tier',['Tier 1','Tier 2'],c.tier) + tileSelect('Status','te-status',['New','Searching','Deal Found','Pending','On Hold','Closed','Lost'],c.status) + '</div>';
+    html += '<div class="form-row">' + tileSelect('Discount','te-discount',['None','Military 15%','First Responder 15%','Student 5%'],c.discount || 'None') + '</div>';
+    html += '<div class="form-row"><div class="form-field"><label>Follow-Up Date</label><input type="datetime-local" id="te-followup" value="' + (c.followUp ? toDatetimeLocal(c.followUp) : '') + '"/></div></div>';
+  } else if (section === 'vehicle') {
+    html += '<div class="form-row">' + tileField('Year','te-year',c.year) + tileField('Make','te-make',c.make) + '</div>';
+    html += '<div class="form-row">' + tileField('Model','te-model',c.model) + tileField('Trim','te-trim',c.trim) + '</div>';
+    html += '<div class="form-row">' + tileField('Ext Color','te-color',c.extColor) + '</div>';
+  } else if (section === 'pricing') {
+    html += '<div class="form-row">' + tileField('Initial Price ($)','te-initial',c.initialPrice) + tileField('Final Price ($)','te-final',c.finalPrice) + '</div>';
+  }
+  wrap.innerHTML = html;
+  document.getElementById('tile-edit-modal').classList.add('open');
+}
+
+async function submitTileEdit() {
+  if (!tileEditCustomerId || !tileEditSection) return;
+  closeModal('tile-edit-modal');
+  toast('Saving...', 'success');
+
+  const params = { action: 'editCustomer', customerId: tileEditCustomerId, rep: localStorage.getItem('skippr_rep') || '' };
+  const c = DB.customers.find(x => x.id === tileEditCustomerId);
+
+  if (tileEditSection === 'contact') {
+    params.phone = document.getElementById('te-phone').value.trim();
+    params.email = document.getElementById('te-email').value.trim();
+    params.zip = document.getElementById('te-zip').value.trim();
+    params.rep = document.getElementById('te-rep').value;
+    if (c) params.customerName = c.name;
+  } else if (tileEditSection === 'deal') {
+    params.tier = document.getElementById('te-tier').value;
+    params.customerStatus = document.getElementById('te-status').value;
+    params.discount = document.getElementById('te-discount').value;
+    const fu = document.getElementById('te-followup').value;
+    if (fu) params.followUpDate = fu;
+    if (c) params.customerName = c.name;
+  } else if (tileEditSection === 'vehicle') {
+    params.year = document.getElementById('te-year').value.trim();
+    params.make = document.getElementById('te-make').value.trim();
+    params.model = document.getElementById('te-model').value.trim();
+    params.trim = document.getElementById('te-trim').value.trim();
+    params.extColor = document.getElementById('te-color').value.trim();
+    if (c) params.customerName = c.name;
+  } else if (tileEditSection === 'pricing') {
+    params.initialPrice = document.getElementById('te-initial').value.trim();
+    params.finalPrice = document.getElementById('te-final').value.trim();
+    if (c) params.customerName = c.name;
+  }
+
+  try {
+    await crmCall(params);
+    toast('Updated ✓', 'success');
+    await loadAll();
+    if (currentCustomerId) renderCustomerDetail(currentCustomerId);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
   }
 }
 

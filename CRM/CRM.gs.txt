@@ -1540,6 +1540,8 @@ function doGet(e) {
             if (p.tradeInVin)     pipeline.getRange(r, 35).setValue(p.tradeInVin);
             if (p.tradeInValue)   pipeline.getRange(r, 36).setValue(p.tradeInValue);
             if (p.initialPrice)   pipeline.getRange(r, 37).setValue(p.initialPrice);
+            if (p.finalPrice)     pipeline.getRange(r, 16).setValue(p.finalPrice);
+            if (p.followUpDate)   pipeline.getRange(r, 15).setValue(new Date(p.followUpDate));
             pipeline.getRange(r, 14).setValue(today);
           }
         });
