@@ -1492,32 +1492,6 @@ function doGet(e) {
         ]);
       }
 
-      // Auto-create draft invoice based on tier
-      const finSheet = ss.getSheetByName('Financials');
-      if (finSheet) {
-        const serviceFee = p.tier === 'Tier 2' ? 2000 : 750;
-        const discountMult = calcDiscountMultiplier(p.discount || 'None', serviceFee);
-        const netFee = Math.round(serviceFee * discountMult * 100) / 100;
-        const draftInvoiceNum = reserveNextInvoiceNumber(ss);
-        finSheet.appendRow([
-          newId,                       // Customer ID
-          p.customerName || '',        // Customer Name
-          serviceFee,                  // Service Fee
-          p.discount || 'None',        // Discount Applied
-          netFee,                      // Net Service Fee
-          0,                           // Deposit Collected
-          '',                          // Payment Method
-          '',                          // Payment Date
-          'Draft',                     // Invoice Status
-          0,                           // Platform/Processing Fees
-          0,                           // Tax Withheld
-          0,                           // Other Expenses
-          '',                          // Expense Notes
-          netFee,                      // Net Profit
-          draftInvoiceNum,             // Invoice Number
-        ]);
-      }
-
       SpreadsheetApp.flush();
       return json({ success: true, customerId: newId }, cb);
     }
@@ -2142,19 +2116,6 @@ function doGet(e) {
               processingFee, 0, 0, '',
               netFee - processingFee,
               invNum,
-            ]);
-          }
-        } else {
-          // Draft invoice for SKC
-          var finSheet2 = ss.getSheetByName('Financials');
-          if (finSheet2) {
-            var sFee = tmpl.tier === 'Tier 2' ? 2000 : 750;
-            var dMult = calcDiscountMultiplier(discount, sFee);
-            var nFee = Math.round(sFee * dMult * 100) / 100;
-            var draftInvNum = reserveNextInvoiceNumber(ss);
-            finSheet2.appendRow([
-              newId, name, sFee, discount, nFee,
-              0, '', '', 'Draft', 0, 0, 0, '', nFee, draftInvNum,
             ]);
           }
         }
