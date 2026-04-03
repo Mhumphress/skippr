@@ -1723,9 +1723,19 @@ function doGet(e) {
           netProfit: netProfit,
           invoiceNumber: String(row[14] || ''),
           rowIndex: i + 1,
+          workflowType: String(row[0] || '').startsWith('SKP') ? 'Purchase' : 'Consultation',
+          tier: String(row[0] || '').includes('-T2-') ? 'Tier 2' : 'Tier 1',
         });
       });
-      return json({ success: true, financials: financials, summary: { totalServiceFees, totalNetFees, totalExpenses, totalNetProfit, outstanding } }, cb);
+      const txnCount = financials.filter(r => r.invoiceStatus !== 'Refunded').length;
+      const paidRecords = financials.filter(r => r.invoiceStatus === 'Paid');
+      const avgDealValue = paidRecords.length ? Math.round(paidRecords.reduce((s,r) => s + r.netServiceFee, 0) / paidRecords.length) : 0;
+      const totalDiscounts = financials.filter(r => r.invoiceStatus !== 'Refunded').reduce((s,r) => s + (r.serviceFee - r.netServiceFee), 0);
+      const refundCount = financials.filter(r => r.invoiceStatus === 'Refunded').length;
+      const refundTotal = financials.filter(r => r.invoiceStatus === 'Refunded').reduce((s,r) => s + r.netServiceFee, 0);
+      const t1Revenue = financials.filter(r => r.tier === 'Tier 1' && r.invoiceStatus !== 'Refunded').reduce((s,r) => s + r.netServiceFee, 0);
+      const t2Revenue = financials.filter(r => r.tier === 'Tier 2' && r.invoiceStatus !== 'Refunded').reduce((s,r) => s + r.netServiceFee, 0);
+      return json({ success: true, financials: financials, summary: { totalServiceFees, totalNetFees, totalExpenses, totalNetProfit, outstanding, txnCount, avgDealValue, totalDiscounts, refundCount, refundTotal, t1Revenue, t2Revenue } }, cb);
     }
 
     // ── Edit activity log entry ─────────────────────────────
@@ -1877,6 +1887,34 @@ function doGet(e) {
       if (p.tax)           sh.getRange(row, 11).setValue(parseFloat(p.tax));
       if (p.otherExpenses) sh.getRange(row, 12).setValue(parseFloat(p.otherExpenses));
       if (p.expenseNotes)  sh.getRange(row, 13).setValue(p.expenseNotes);
+
+      // Handle service fee and discount updates (for post-conversion edits)
+      if (p.serviceFee) {
+        const newFee = parseFloat(p.serviceFee) || 0;
+        sh.getRange(row, 3).setValue(newFee);  // Service Fee col
+
+        const discStr = p.discount || String(sh.getRange(row, 4).getValue() || 'None');
+        if (p.discount) sh.getRange(row, 4).setValue(discStr);  // Discount col
+
+        const mult = calcDiscountMultiplier(discStr, newFee);
+        const netFee = Math.round(newFee * mult * 100) / 100;
+        sh.getRange(row, 5).setValue(netFee);  // Net Service Fee
+
+        // Recalculate net profit
+        const pFees = parseFloat(p.platformFees || sh.getRange(row, 10).getValue()) || 0;
+        const pTax = parseFloat(p.tax || sh.getRange(row, 11).getValue()) || 0;
+        const pOther = parseFloat(p.otherExpenses || sh.getRange(row, 12).getValue()) || 0;
+        sh.getRange(row, 14).setValue(netFee - pFees - pTax - pOther);  // Net Profit
+      }
+
+      // Recalculate net profit when only expenses change
+      if (!p.serviceFee && (p.platformFees || p.tax || p.otherExpenses)) {
+        const curNetFee = parseFloat(String(sh.getRange(row, 5).getValue()).replace(/[^0-9.-]/g, '')) || 0;
+        const newPFees = parseFloat(p.platformFees || sh.getRange(row, 10).getValue()) || 0;
+        const newTax = parseFloat(p.tax || sh.getRange(row, 11).getValue()) || 0;
+        const newOther = parseFloat(p.otherExpenses || sh.getRange(row, 12).getValue()) || 0;
+        sh.getRange(row, 14).setValue(curNetFee - newPFees - newTax - newOther);
+      }
 
       // Log
       const repActivity = ss.getSheetByName('Rep Activity');

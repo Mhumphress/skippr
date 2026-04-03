@@ -375,9 +375,18 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-value green" id="stat-net-profit">$0</div><div class="stat-sub">Take-home</div></div>
         <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value amber" id="stat-outstanding">$0</div><div class="stat-sub">Unpaid invoices</div></div>
       </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px;">
+        <div class="stat-card"><div class="stat-label">Transaction Count</div><div class="stat-value white" id="stat-txn-count">0</div><div class="stat-sub">Non-refunded records</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Deal Value</div><div class="stat-value gold" id="stat-avg-deal">$0</div><div class="stat-sub">Paid invoices avg</div></div>
+        <div class="stat-card"><div class="stat-label">Total Discounts</div><div class="stat-value amber" id="stat-total-discounts">$0</div><div class="stat-sub">All applied discounts</div></div>
+        <div class="stat-card"><div class="stat-label">Refunds</div><div class="stat-value red" id="stat-refunds">0 ($0)</div><div class="stat-sub">Count & total</div></div>
+        <div class="stat-card"><div class="stat-label">Tier Split</div><div class="stat-value white" id="stat-tier-split" style="font-size:1.4rem">T1: $0<br><span style="color:var(--gold)">T2: $0</span></div><div class="stat-sub">Revenue by tier</div></div>
+      </div>
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
           <input class="tbl-search" id="fin-search" placeholder="Search by name, ID, invoice #..." oninput="renderFinancials()"/>
+          <button class="filter-btn" onclick="setFinFilter('skc',this)">Consultations</button>
+          <button class="filter-btn" onclick="setFinFilter('skp',this)">Purchases (SKP)</button>
           <button class="filter-btn active" onclick="setFinFilter('purchases',this)">Purchases</button>
           <button class="filter-btn" onclick="setFinFilter('pending',this)">Pending</button>
           <button class="filter-btn" onclick="setFinFilter('drafts',this)">Drafts</button>
@@ -790,6 +799,81 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     <div class="modal-actions">
       <button class="modal-btn" onclick="closeModal('refund-modal')">Cancel</button>
       <button class="modal-btn danger" onclick="submitRefund()">Confirm Refund</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT INVOICE MODAL -->
+<div class="modal-overlay" id="edit-invoice-modal">
+  <div class="modal" style="width:520px;">
+    <div class="modal-title">Edit Invoice</div>
+    <div class="modal-sub" id="edit-invoice-sub"></div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Service Fee ($)</label>
+        <input id="ei-fee" type="text"/>
+      </div>
+      <div class="form-field">
+        <label>Discount</label>
+        <select id="ei-discount" onchange="document.getElementById('ei-custom-discount').style.display=this.value==='Other'?'block':'none'">
+          <option value="None">None</option>
+          <option value="Military 15%">Military 15%</option>
+          <option value="First Responder 15%">First Responder 15%</option>
+          <option value="Student 5%">Student 5%</option>
+          <option value="Other">Other (custom)</option>
+        </select>
+      </div>
+    </div>
+    <div id="ei-custom-discount" style="display:none;">
+      <div class="form-row">
+        <div class="form-field"><label>Reason</label><select id="ei-discount-reason"><option>Customer Satisfaction</option><option>Promotional</option><option>Referral</option><option>Override</option><option>Other</option></select></div>
+        <div class="form-field"><label>Type</label><select id="ei-discount-type"><option value="dollar">Dollar ($)</option><option value="percent">Percentage (%)</option></select></div>
+      </div>
+      <div class="form-field"><label>Amount</label><input id="ei-discount-amount" type="text" placeholder="e.g. 100 or 10"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Processing Fees ($)</label>
+        <input id="ei-processing" type="text"/>
+      </div>
+      <div class="form-field">
+        <label>Tax ($)</label>
+        <input id="ei-tax" type="text"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Other Expenses ($)</label>
+        <input id="ei-other" type="text"/>
+      </div>
+      <div class="form-field">
+        <label>Expense Notes</label>
+        <input id="ei-expense-notes" type="text"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Invoice Status</label>
+        <select id="ei-status">
+          <option>Draft</option><option>Pending</option><option>Paid</option><option>Partial</option><option>Overdue</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Payment Method</label>
+        <select id="ei-method">
+          <option value="">—</option><option>Credit Card</option><option>ACH/Bank Transfer</option><option>Check</option><option>Cash</option><option>Zelle/Venmo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Deposit ($)</label>
+        <input id="ei-deposit" type="text"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('edit-invoice-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="submitEditInvoice()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1951,6 +2035,8 @@ function renderFinancials() {
 
   // Apply filter
   if (finFilter === 'purchases') records = records.filter(r => r.customerId.startsWith('SKP') && r.invoiceStatus !== 'Draft');
+  else if (finFilter === 'skc') records = records.filter(r => r.customerId.startsWith('SKC'));
+  else if (finFilter === 'skp') records = records.filter(r => r.customerId.startsWith('SKP'));
   else if (finFilter === 'pending') records = records.filter(r => r.invoiceStatus === 'Pending' || r.invoiceStatus === 'Partial' || r.invoiceStatus === 'Overdue');
   else if (finFilter === 'drafts') records = records.filter(r => r.invoiceStatus === 'Draft');
 
@@ -1978,6 +2064,24 @@ function renderFinancials() {
   if (el('stat-net-profit'))  el('stat-net-profit').textContent  = '$' + Math.round(totalProfit).toLocaleString();
   if (el('stat-outstanding')) el('stat-outstanding').textContent = '$' + Math.round(outstanding).toLocaleString();
 
+  // Second row stats
+  const txnCount = records.filter(r => r.invoiceStatus !== 'Refunded').length;
+  const paidRecords = records.filter(r => r.invoiceStatus === 'Paid' && r.invoiceStatus !== 'Refunded');
+  const avgDeal = paidRecords.length ? Math.round(paidRecords.reduce((s,r) => s + (r.netServiceFee||0), 0) / paidRecords.length) : 0;
+  const totalDiscounts = records.filter(r => r.invoiceStatus !== 'Refunded').reduce((s,r) => s + ((r.serviceFee||0) - (r.netServiceFee||0)), 0);
+  const refundedRecords = records.filter(r => r.invoiceStatus === 'Refunded');
+  const refundCount = refundedRecords.length;
+  const refundTotal = refundedRecords.reduce((s,r) => s + (r.netServiceFee||0), 0);
+  const t1Revenue = records.filter(r => r.customerId.includes('-T1-') && r.invoiceStatus !== 'Refunded').reduce((s,r) => s + (r.netServiceFee||0), 0);
+  const t2Revenue = records.filter(r => r.customerId.includes('-T2-') && r.invoiceStatus !== 'Refunded').reduce((s,r) => s + (r.netServiceFee||0), 0);
+
+  const el2 = id => document.getElementById(id);
+  if (el2('stat-txn-count')) el2('stat-txn-count').textContent = txnCount;
+  if (el2('stat-avg-deal')) el2('stat-avg-deal').textContent = '$' + avgDeal.toLocaleString();
+  if (el2('stat-total-discounts')) el2('stat-total-discounts').textContent = totalDiscounts ? '-$' + Math.round(totalDiscounts).toLocaleString() : '$0';
+  if (el2('stat-refunds')) el2('stat-refunds').textContent = refundCount + ' ($' + Math.round(refundTotal).toLocaleString() + ')';
+  if (el2('stat-tier-split')) el2('stat-tier-split').innerHTML = 'T1: $' + Math.round(t1Revenue).toLocaleString() + '<br><span style="color:var(--gold)">T2: $' + Math.round(t2Revenue).toLocaleString() + '</span>';
+
   if (!records.length) {
     wrap.innerHTML = '<div class="empty-state"><p>No financial records match this filter</p></div>';
     return;
@@ -1986,13 +2090,14 @@ function renderFinancials() {
   const profitColor = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray)';
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th>Customer</th><th>Invoice #</th><th>Customer Paid</th><th>Discount</th>
+      <th>Customer</th><th>Type</th><th>Invoice #</th><th>Customer Paid</th><th>Discount</th>
       <th>Processing</th><th>Tax</th><th>Other</th><th>Net Profit</th>
       <th>Status</th><th>Method</th><th>Date</th><th></th>
     </tr></thead>
     <tbody>${records.map(r => {
       return `<tr onclick="openCustomer('${escAttr(r.customerId)}')" style="cursor:pointer">
       <td class="name-cell">${esc(r.customerName)}<br><span style="font-family:monospace;color:var(--gold);font-size:0.72rem">${esc(r.customerId)}</span></td>
+      <td><span class="badge badge-${r.customerId.startsWith('SKP') ? 'deal-found' : 'searching'}" style="font-size:0.6rem">${r.customerId.startsWith('SKP') ? 'Purchase' : 'Consultation'}</span></td>
       <td style="font-family:monospace;font-size:0.75rem;color:var(--gray)">${esc(r.invoiceNumber || '—')}</td>
       <td style="color:var(--gold);font-weight:600">$${(r.netServiceFee||0).toLocaleString()}</td>
       <td style="color:var(--amber);font-size:0.78rem">${r.discount && r.discount !== 'None' ? esc(r.discount) : '—'}</td>
@@ -2003,7 +2108,7 @@ function renderFinancials() {
       <td><span style="color:${statusColor(r.invoiceStatus)};font-weight:500">${esc(r.invoiceStatus || '—')}</span></td>
       <td style="color:var(--gray);font-size:0.78rem">${esc(r.paymentMethod || '—')}</td>
       <td style="color:var(--gray);font-size:0.78rem">${formatDate(r.paymentDate)}</td>
-      <td>${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="event.stopPropagation();openRefundModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
+      <td>${r.invoiceStatus !== 'Paid' && r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="event.stopPropagation();openEditInvoiceModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.serviceFee||0) + ',\'' + escAttr(r.discount||'None') + '\',' + (r.platformFees||0) + ',' + (r.tax||0) + ',' + (r.otherExpenses||0) + ',\'' + escAttr(r.invoiceStatus||'') + '\',\'' + escAttr(r.paymentMethod||'') + '\')" style="font-size:0.55rem;margin-right:4px">Edit</button>' : ''}${r.invoiceStatus !== 'Refunded' ? '<button class="fu-done-btn" onclick="event.stopPropagation();openRefundModal(' + r.rowIndex + ',\'' + escAttr(r.customerId) + '\',\'' + escAttr(r.customerName) + '\',' + (r.netServiceFee||0) + ')" style="font-size:0.55rem;color:var(--red);border-color:rgba(248,113,113,0.2)">Refund</button>' : '<span style="font-size:0.6rem;color:var(--red)">Refunded</span>'}</td>
     </tr>`;}).join('')}</tbody></table>`;
 }
 
@@ -2335,6 +2440,66 @@ async function submitInvoice() {
       rep: localStorage.getItem('skippr_rep') || '',
     });
     toast('Invoice created ✓', 'success');
+    await loadAll();
+    if (currentCustomerId) renderCustomerDetail(currentCustomerId);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── EDIT INVOICE ────────────────────────────────────────────
+let editInvoiceTarget = {};
+function openEditInvoiceModal(rowIndex, customerId, customerName, serviceFee, discount, platformFees, tax, otherExpenses, invoiceStatus, paymentMethod) {
+  editInvoiceTarget = { rowIndex, customerId, customerName };
+  document.getElementById('edit-invoice-sub').textContent = customerName + ' · ' + customerId;
+  document.getElementById('ei-fee').value = serviceFee || '';
+  document.getElementById('ei-processing').value = platformFees || '0';
+  document.getElementById('ei-tax').value = tax || '0';
+  document.getElementById('ei-other').value = otherExpenses || '0';
+  document.getElementById('ei-expense-notes').value = '';
+  document.getElementById('ei-status').value = invoiceStatus || 'Pending';
+  document.getElementById('ei-method').value = paymentMethod || '';
+  document.getElementById('ei-deposit').value = '0';
+  if (discount && discount.startsWith('Other')) {
+    document.getElementById('ei-discount').value = 'Other';
+    document.getElementById('ei-custom-discount').style.display = 'block';
+    const reasonMatch = discount.match(/\(([^)]+)\)/);
+    if (reasonMatch) document.getElementById('ei-discount-reason').value = reasonMatch[1];
+    const valMatch = discount.match(/:\s*\$?(\d+\.?\d*)(%)?/);
+    if (valMatch) {
+      document.getElementById('ei-discount-type').value = valMatch[2] ? 'percent' : 'dollar';
+      document.getElementById('ei-discount-amount').value = valMatch[1];
+    }
+  } else {
+    document.getElementById('ei-discount').value = discount || 'None';
+    document.getElementById('ei-custom-discount').style.display = 'none';
+  }
+  document.getElementById('edit-invoice-modal').classList.add('open');
+}
+
+async function submitEditInvoice() {
+  if (!editInvoiceTarget.rowIndex) return;
+  closeModal('edit-invoice-modal');
+  toast('Updating invoice...', 'success');
+  const discount = buildCustomDiscount('ei-discount','ei-discount-reason','ei-discount-type','ei-discount-amount');
+  try {
+    await crmCall({
+      action: 'updateInvoiceStatus',
+      rowIndex: editInvoiceTarget.rowIndex,
+      customerId: editInvoiceTarget.customerId,
+      customerName: editInvoiceTarget.customerName,
+      invoiceStatus: document.getElementById('ei-status').value,
+      paymentMethod: document.getElementById('ei-method').value,
+      deposit: document.getElementById('ei-deposit').value,
+      platformFees: document.getElementById('ei-processing').value,
+      tax: document.getElementById('ei-tax').value,
+      otherExpenses: document.getElementById('ei-other').value,
+      expenseNotes: document.getElementById('ei-expense-notes').value,
+      discount: discount,
+      serviceFee: document.getElementById('ei-fee').value,
+      rep: localStorage.getItem('skippr_rep') || '',
+    });
+    toast('Invoice updated ✓', 'success');
     await loadAll();
     if (currentCustomerId) renderCustomerDetail(currentCustomerId);
   } catch(e) {
@@ -2680,6 +2845,21 @@ function renderReportPreview(data, type) {
   const wrap = document.getElementById('report-preview');
   let html = '';
   if ((type === 'financials' || type === 'both') && data.financials.length) {
+    const rptTotFees = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netServiceFee||0), 0);
+    const rptTotExp = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.platformFees||0)+(r.tax||0)+(r.otherExpenses||0), 0);
+    const rptTotProfit = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netProfit||0), 0);
+    const rptTxnCount = data.financials.filter(r => r.invoiceStatus !== 'Refunded').length;
+    const rptPaid = data.financials.filter(r => r.invoiceStatus === 'Paid');
+    const rptAvgDeal = rptPaid.length ? Math.round(rptPaid.reduce((s,r) => s + (r.netServiceFee||0), 0) / rptPaid.length) : 0;
+    const rptDiscounts = data.financials.filter(r => r.invoiceStatus !== 'Refunded').reduce((s,r) => s + ((r.serviceFee||0)-(r.netServiceFee||0)), 0);
+    html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;padding:16px;">';
+    html += '<div class="stat-card" style="padding:12px"><div class="stat-label">Revenue</div><div class="stat-value gold" style="font-size:1.2rem">$' + Math.round(rptTotFees).toLocaleString() + '</div></div>';
+    html += '<div class="stat-card" style="padding:12px"><div class="stat-label">Expenses</div><div class="stat-value red" style="font-size:1.2rem">$' + Math.round(rptTotExp).toLocaleString() + '</div></div>';
+    html += '<div class="stat-card" style="padding:12px"><div class="stat-label">Net Profit</div><div class="stat-value green" style="font-size:1.2rem">$' + Math.round(rptTotProfit).toLocaleString() + '</div></div>';
+    html += '<div class="stat-card" style="padding:12px"><div class="stat-label">Transactions</div><div class="stat-value white" style="font-size:1.2rem">' + rptTxnCount + '</div></div>';
+    html += '<div class="stat-card" style="padding:12px"><div class="stat-label">Avg Deal</div><div class="stat-value white" style="font-size:1.2rem">$' + rptAvgDeal.toLocaleString() + '</div></div>';
+    html += '<div class="stat-card" style="padding:12px"><div class="stat-label">Discounts</div><div class="stat-value amber" style="font-size:1.2rem">' + (rptDiscounts ? '-$' + Math.round(rptDiscounts).toLocaleString() : '$0') + '</div></div>';
+    html += '</div>';
     html += '<table><thead><tr><th>Customer</th><th>ID</th><th>Invoice #</th><th>Service Fee</th><th>Discount</th><th>Net Fee</th><th>Processing</th><th>Tax</th><th>Net Profit</th><th>Status</th><th>Method</th><th>Date</th></tr></thead><tbody>';
     data.financials.forEach(r => {
       html += '<tr><td>' + esc(r.customerName) + '</td><td style="font-family:monospace;color:var(--gold);font-size:0.75rem">' + esc(r.customerId) + '</td><td style="color:var(--gray);font-size:0.75rem">' + esc(r.invoiceNumber||'') + '</td><td>$' + (r.serviceFee||0).toLocaleString() + '</td><td style="color:var(--gray)">' + esc(r.discount||'None') + '</td><td style="font-weight:500">$' + (r.netServiceFee||0).toLocaleString() + '</td><td style="color:var(--red)">' + (r.platformFees ? '-$'+r.platformFees : '—') + '</td><td style="color:var(--red)">' + (r.tax ? '-$'+r.tax : '—') + '</td><td style="font-weight:600;color:' + (r.netProfit>0?'var(--green)':'var(--red)') + '">$' + (r.netProfit||0).toLocaleString() + '</td><td>' + esc(r.invoiceStatus||'') + '</td><td style="color:var(--gray)">' + esc(r.paymentMethod||'') + '</td><td style="color:var(--gray)">' + formatDate(r.paymentDate) + '</td></tr>';
@@ -2702,6 +2882,13 @@ function exportCSV(data, type) {
   let csv = '';
   if ((type === 'financials' || type === 'both') && data.financials.length) {
     csv += 'FINANCIAL RECORDS\n';
+    const csvTotFees = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netServiceFee||0), 0);
+    const csvTotExp = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.platformFees||0)+(r.tax||0)+(r.otherExpenses||0), 0);
+    const csvTotProfit = data.financials.reduce((s,r) => r.invoiceStatus === 'Refunded' ? s : s + (r.netProfit||0), 0);
+    const csvTxnCount = data.financials.filter(r => r.invoiceStatus !== 'Refunded').length;
+    const csvDiscounts = data.financials.filter(r => r.invoiceStatus !== 'Refunded').reduce((s,r) => s + ((r.serviceFee||0)-(r.netServiceFee||0)), 0);
+    csv += 'Summary\n';
+    csv += 'Total Revenue,$' + csvTotFees + ',Total Expenses,$' + csvTotExp + ',Net Profit,$' + csvTotProfit + ',Transactions,' + csvTxnCount + ',Total Discounts,$' + csvDiscounts + '\n\n';
     csv += 'Customer,Customer ID,Invoice #,Service Fee,Discount,Net Fee,Processing Fees,Tax,Other Expenses,Net Profit,Status,Payment Method,Date\n';
     data.financials.forEach(r => {
       csv += [r.customerName, r.customerId, r.invoiceNumber||'', r.serviceFee||0, r.discount||'None', r.netServiceFee||0, r.platformFees||0, r.tax||0, r.otherExpenses||0, r.netProfit||0, r.invoiceStatus||'', r.paymentMethod||'', r.paymentDate||''].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',') + '\n';
@@ -2752,7 +2939,10 @@ function exportPDF(data, type) {
     html += '<div class="summary"><div class="summary-item"><div class="summary-label">Net Revenue</div><div class="summary-value gold">$' + totFees.toLocaleString() + '</div></div>';
     html += '<div class="summary-item"><div class="summary-label">Expenses</div><div class="summary-value red">$' + totExp.toLocaleString() + '</div></div>';
     html += '<div class="summary-item"><div class="summary-label">Net Profit</div><div class="summary-value green">$' + totProfit.toLocaleString() + '</div></div>';
-    html += '<div class="summary-item"><div class="summary-label">Transactions</div><div class="summary-value">' + data.financials.length + '</div></div></div>';
+    html += '<div class="summary-item"><div class="summary-label">Transactions</div><div class="summary-value">' + data.financials.length + '</div></div>';
+    html += '<div class="summary-item"><div class="summary-label">Avg Deal</div><div class="summary-value">$' + (totFees && data.financials.filter(r=>r.invoiceStatus==='Paid').length ? Math.round(totFees/data.financials.filter(r=>r.invoiceStatus==='Paid').length) : 0).toLocaleString() + '</div></div>';
+    const pdfDiscounts = data.financials.filter(r => r.invoiceStatus !== 'Refunded').reduce((s,r) => s + ((r.serviceFee||0)-(r.netServiceFee||0)), 0);
+    html += '<div class="summary-item"><div class="summary-label">Discounts</div><div class="summary-value red">-$' + Math.round(pdfDiscounts).toLocaleString() + '</div></div></div>';
     html += '<table><tr><th>Customer</th><th>ID</th><th>Invoice</th><th>Fee</th><th>Discount</th><th>Net</th><th>Processing</th><th>Tax</th><th>Profit</th><th>Status</th><th>Method</th><th>Date</th></tr>';
     data.financials.forEach(r => {
       html += '<tr><td>' + (r.customerName||'') + '</td><td class="gold">' + (r.customerId||'') + '</td><td>' + (r.invoiceNumber||'') + '</td><td>$' + (r.serviceFee||0).toLocaleString() + '</td><td>' + (r.discount||'None') + '</td><td><strong>$' + (r.netServiceFee||0).toLocaleString() + '</strong></td><td class="red">' + (r.platformFees?'-$'+r.platformFees:'—') + '</td><td class="red">' + (r.tax?'-$'+r.tax:'—') + '</td><td class="green"><strong>$' + (r.netProfit||0).toLocaleString() + '</strong></td><td>' + (r.invoiceStatus||'') + '</td><td>' + (r.paymentMethod||'') + '</td><td>' + (r.paymentDate||'') + '</td></tr>';
