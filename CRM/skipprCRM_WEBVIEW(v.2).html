@@ -1460,7 +1460,7 @@ function renderCustomerDetail(id) {
         ${c.driveUrl ? `<button class="action-btn" onclick="window.open('${escAttr(c.driveUrl)}','_blank')">↗ Drive File</button>` : ''}
         <button class="action-btn" onclick="openEditModal('${escAttr(c.id)}')">✎ Edit Details</button>
         <button class="action-btn" onclick="openNoteModal('${escAttr(c.id)}','${escAttr(c.name)}')">✦ Add Note</button>
-        <button class="action-btn primary" onclick="openInvoiceModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.discount)}')">$ Create Invoice</button>
+        ${c.id.startsWith('SKP') ? `<button class="action-btn primary" onclick="openInvoiceModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.discount)}')">$ Create Invoice</button>` : ''}
         ${c.id.startsWith('SKC') && c.status !== 'Closed' && c.status !== 'Lost' && c.status !== 'Converted' ? `<button class="action-btn" onclick="openConvertModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.phone)}','${escAttr(c.email)}','${escAttr(c.zip)}','${escAttr(c.vehicle)}','${escAttr(c.rep)}')" style="border-color:var(--green);color:var(--green);">↑ Convert to Purchase</button>` : ''}
         ${c.id.startsWith('SKP') && !['Closed','Lost'].includes(c.status) ? `<button class="action-btn" onclick="openSkpChecklist('${escAttr(c.id)}')" style="border-color:var(--gold);color:var(--gold);">◈ Open Checklist</button>` : ''}
       </div>
@@ -1508,13 +1508,12 @@ function renderCustomerDetail(id) {
     </div>
 
     <div class="info-grid">
-      <div class="info-card">
+      ${c.id.startsWith('SKP') ? `<div class="info-card">
         <div class="info-card-title">Invoice Breakdown</div>
         ${(() => {
           const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2000 : 750);
           const discountAmt = calcDiscountAmount(c.discount, fee);
           const netFee = fee - discountAmt;
-          const isConsultation = c.id.startsWith('SKC') || c.workflow === 'Consultation';
           const txns = getCustomerTransactions(c.id);
           const hasPaidInvoice = txns.some(t => t.invoiceStatus === 'Paid');
           let html = infoRow('Service Tier', c.tier || '—');
@@ -1525,10 +1524,7 @@ function renderCustomerDetail(id) {
             html += infoRow('Discount', 'None');
           }
           html += '<div class="info-row" style="border-top:1px solid var(--gold-border);padding-top:10px;margin-top:4px;">';
-          if (isConsultation) {
-            html += '<span class="info-label" style="color:var(--amber);font-weight:600;">Amount Owed</span>';
-            html += '<span class="info-value" style="color:var(--amber);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
-          } else if (hasPaidInvoice) {
+          if (hasPaidInvoice) {
             html += '<span class="info-label" style="color:var(--green);font-weight:600;">Paid</span>';
             html += '<span class="info-value" style="color:var(--green);font-weight:700;font-size:1rem;">$' + netFee.toLocaleString() + '</span>';
           } else {
@@ -1538,7 +1534,7 @@ function renderCustomerDetail(id) {
           html += '</div>';
           return html;
         })()}
-      </div>
+      </div>` : ''}
       <div class="info-card">
         <div class="info-card-title">Trade-In</div>
         ${c.tradeInVehicle ? `
@@ -1577,11 +1573,11 @@ function renderCustomerDetail(id) {
       <div style="font-size:0.82rem;color:rgba(255,255,255,0.65);padding-top:6px;line-height:1.6;">${esc(c.notes)}</div>
     </div>` : ''}
 
-    <div class="section-hd">
+    ${c.id.startsWith('SKP') ? `<div class="section-hd">
       <h3>Transactions</h3><div class="line"></div>
       <span class="count">${getCustomerTransactions(c.id).length}</span>
     </div>
-    ${renderCustomerTransactions(c.id)}
+    ${renderCustomerTransactions(c.id)}` : ''}
 
     <div class="section-hd">
       <h3>Follow-Ups</h3><div class="line"></div>
