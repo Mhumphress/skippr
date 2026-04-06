@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/png" href="logo1.png">
   <title>New Car Concierge - Skippr</title>
-  <meta name="description" content="Skippr is your new car concierge and dealer negotiation service. We advocate on your behalf to get the best price, starting at $750.">
+  <meta name="description" content="Skippr is your new car concierge and dealer negotiation service. We advocate on your behalf to get the best price, starting at $750 (regularly $1,000).">
   <!-- Open Graph -->
   <meta property="og:title" content="New Car Concierge - Skippr">
-  <meta property="og:description" content="Skippr is your new car concierge and dealer negotiation service. We advocate on your behalf to get the best price, starting at $750.">
+  <meta property="og:description" content="Skippr is your new car concierge and dealer negotiation service. We advocate on your behalf to get the best price, starting at $750 (regularly $1,000).">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://skippr.us/">
   <meta property="og:image" content="https://skippr.us/logo1.png">
@@ -17,7 +17,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@skipprUS">
   <meta name="twitter:title" content="New Car Concierge - Skippr">
-  <meta name="twitter:description" content="Skippr is your new car concierge and dealer negotiation service. We advocate on your behalf to get the best price, starting at $750.">
+  <meta name="twitter:description" content="Skippr is your new car concierge and dealer negotiation service. We advocate on your behalf to get the best price, starting at $750 (regularly $1,000).">
   <meta name="twitter:image" content="https://skippr.us/logo1.png">
   <!-- Canonical -->
   <link rel="canonical" href="https://skippr.us/">
@@ -385,6 +385,22 @@
       color: var(--gold);
       margin-bottom: 0.5rem;
     }
+    .tier-price-original {
+      font-family: var(--font-number);
+      font-size: 1.6rem;
+      color: rgba(255,255,255,0.35);
+      text-decoration: line-through;
+      font-weight: 300;
+      margin-bottom: 0.2rem;
+    }
+    .tier-price-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 0.1rem;
+    }
     .tier-price {
       font-family: var(--font-number);
       font-size: 3.5rem;
@@ -731,6 +747,8 @@
     <div class="tiers">
       <div class="tier" onclick="window.location.href='services.html#comparison'">
         <p class="tier-name">Tier 1 - Expert Advocate</p>
+        <div class="tier-price-original"><sup>$</sup>1,000</div>
+        <div class="tier-price-label">Limited Offer</div>
         <div class="tier-price"><sup>$</sup>750</div>
         <p class="tier-desc">New Car Concierge</p>
         <ul class="tier-features">
@@ -812,7 +830,7 @@
           <label>Package Interest</label>
           <select name="package">
             <option value="">Select a package...</option>
-            <option>Tier 1 - Expert Advocate ($750)</option>
+            <option>Tier 1 - Expert Advocate ($750 — Limited Offer)</option>
             <option>Tier 2 - White Glove Concierge ($2,000)</option>
             <option>Not sure yet - just exploring</option>
           </select>

@@ -693,7 +693,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field">
         <label>Tier / Service Fee</label>
         <select id="inv-tier" onchange="updateInvoiceCalc()">
-          <option value="750">Tier 1 — Expert Advocate ($750)</option>
+          <option value="1000">Tier 1 — Expert Advocate ($1,000)</option>
           <option value="2000">Tier 2 — White Glove Concierge ($2,000)</option>
         </select>
       </div>
@@ -736,7 +736,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
         <span style="font-size:0.75rem;color:var(--gray);">Service Fee</span>
-        <span style="font-size:0.9rem;color:var(--white);" id="inv-fee-display">$750</span>
+        <span style="font-size:0.9rem;color:var(--white);" id="inv-fee-display">$1,000</span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;" id="inv-discount-row" hidden>
         <span style="font-size:0.75rem;color:var(--amber);" id="inv-discount-label">Discount</span>
@@ -744,7 +744,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;">
         <span style="font-size:0.78rem;color:var(--gold);font-weight:600;">Total Due</span>
-        <span style="font-size:1.2rem;color:var(--gold);font-weight:700;" id="inv-total-display">$750</span>
+        <span style="font-size:1.2rem;color:var(--gold);font-weight:700;" id="inv-total-display">$1,000</span>
       </div>
     </div>
     <div class="form-row">
@@ -963,7 +963,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
         <span style="font-size:0.75rem;color:var(--gray);">Service Fee</span>
-        <span style="font-size:0.9rem;color:var(--white);" id="conv-fee-display">$750</span>
+        <span style="font-size:0.9rem;color:var(--white);" id="conv-fee-display">$1,000</span>
       </div>
       <div style="display:flex;justify-content:space-between;" id="conv-discount-row" hidden>
         <span style="font-size:0.75rem;color:var(--amber);" id="conv-discount-label">Discount</span>
@@ -971,7 +971,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       </div>
       <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;">
         <span style="font-size:0.78rem;color:var(--gold);font-weight:600;">Total Due</span>
-        <span style="font-size:1.2rem;color:var(--gold);font-weight:700;" id="conv-total-display">$750</span>
+        <span style="font-size:1.2rem;color:var(--gold);font-weight:700;" id="conv-total-display">$1,000</span>
       </div>
     </div>
     <div class="form-row">
@@ -1558,7 +1558,7 @@ function renderCustomerDetail(id) {
       ${c.id.startsWith('SKP') ? `<div class="info-card">
         <div class="info-card-title">Invoice Breakdown</div>
         ${(() => {
-          const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2000 : 750);
+          const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2000 : 1000);
           const discountAmt = calcDiscountAmount(c.discount, fee);
           const netFee = fee - discountAmt;
           const txns = getCustomerTransactions(c.id);
@@ -2613,7 +2613,7 @@ let invoiceCustomer = {};
 function openInvoiceModal(id, name, tier, discount) {
   invoiceCustomer = { id, name, tier, discount };
   document.getElementById('invoice-modal-sub').textContent = name + ' · ' + id;
-  document.getElementById('inv-tier').value = tier === 'Tier 2' ? '2000' : '750';
+  document.getElementById('inv-tier').value = tier === 'Tier 2' ? '2000' : '1000';
   document.getElementById('inv-discount').value = discount && discount !== 'None' ? discount : 'None';
   document.getElementById('inv-method').value = '';
   document.getElementById('inv-status').value = id.startsWith('SKC') ? 'Draft' : 'Pending';
@@ -2848,7 +2848,7 @@ function getConvDiscountValue() {
 
 function updateConvertCalc() {
   const tier = document.getElementById('conv-tier').value;
-  const fee = tier === 'Tier 2' ? 2000 : 750;
+  const fee = tier === 'Tier 2' ? 2000 : 1000;
   const discount = getConvDiscountValue();
   const discountAmt = calcDiscountAmount(discount, fee);
   const total = fee - discountAmt;
