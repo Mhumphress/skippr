@@ -561,6 +561,9 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field"><label>Trim</label><input id="ac-trim" placeholder="TRD Pro"/></div>
     </div>
     <div class="form-row">
+      <div class="form-field"><label>Exterior Color</label><input id="ac-color" placeholder="e.g. Midnight Black"/></div>
+    </div>
+    <div class="form-row">
       <div class="form-field"><label>Lead Source</label><select id="ac-source"><option value="">—</option><option>Referral</option><option>Website</option><option>Social Media</option><option>Phone</option><option>Other</option></select></div>
       <div class="form-field"><label>Urgency</label><select id="ac-urgency"><option value="">—</option><option>High</option><option>Medium</option><option>Low</option></select></div>
     </div>
@@ -2289,7 +2292,7 @@ function renderFinancials() {
 
 // ── ADD CUSTOMER ─────────────────────────────────────────────
 function openAddCustomerModal() {
-  ['ac-name','ac-phone','ac-email','ac-zip','ac-year','ac-make','ac-model','ac-trim'].forEach(id => {
+  ['ac-name','ac-phone','ac-email','ac-zip','ac-year','ac-make','ac-model','ac-trim','ac-color'].forEach(id => {
     document.getElementById(id).value = '';
   });
   const repSelect = document.getElementById('ac-rep');
@@ -2318,6 +2321,7 @@ async function submitAddCustomer() {
       make: document.getElementById('ac-make').value.trim(),
       model: document.getElementById('ac-model').value.trim(),
       trim: document.getElementById('ac-trim').value.trim(),
+      extColor: document.getElementById('ac-color').value.trim(),
       leadSource: document.getElementById('ac-source').value,
       urgency: document.getElementById('ac-urgency').value,
     });
