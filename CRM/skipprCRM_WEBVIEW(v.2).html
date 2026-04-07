@@ -1811,6 +1811,7 @@ function renderCustomerDetail(id) {
         ${c.id.startsWith('SKP') ? `<button class="action-btn primary" onclick="openInvoiceModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.discount)}')">$ Create Invoice</button>` : ''}
         ${c.id.startsWith('SKC') && c.status !== 'Closed' && c.status !== 'Lost' && c.status !== 'Converted' ? `<button class="action-btn" onclick="openConvertModal('${escAttr(c.id)}','${escAttr(c.name)}','${escAttr(c.tier)}','${escAttr(c.phone)}','${escAttr(c.email)}','${escAttr(c.zip)}','${escAttr(c.vehicle)}','${escAttr(c.rep)}')" style="border-color:var(--green);color:var(--green);">↑ Convert to Purchase</button>` : ''}
         ${c.id.startsWith('SKP') && !['Closed','Lost'].includes(c.status) ? `<button class="action-btn" onclick="openSkpChecklist('${escAttr(c.id)}')" style="border-color:var(--gold);color:var(--gold);">◈ Open Checklist</button>` : ''}
+        <button class="action-btn" onclick="deleteCustomer('${escAttr(c.id)}','${escAttr(c.name)}')" style="border-color:#e74c3c;color:#e74c3c;">✕ Delete Customer</button>
       </div>
     </div>
 
@@ -2809,6 +2810,27 @@ async function submitEditCustomer() {
     if (currentCustomerId === editCustomerId) renderCustomerDetail(editCustomerId);
   } catch(e) {
     toast('Error saving: ' + e.message, 'error');
+  }
+}
+
+// ── DELETE CUSTOMER ──────────────────────────────────────────
+async function deleteCustomer(id, name) {
+  if (!confirm('Are you sure you want to permanently delete ' + name + ' (' + id + ')?\n\nThis will remove ALL data including invoices, follow-ups, notes, and activity records. This cannot be undone.')) return;
+  if (!confirm('FINAL CONFIRMATION: Delete ' + id + ' and all associated records?')) return;
+  toast('Deleting ' + id + '...', 'success');
+  try {
+    await crmCall({
+      action: 'deleteCustomer',
+      customerId: id,
+      customerName: name,
+      rep: localStorage.getItem('skippr_rep') || '',
+    });
+    toast('Customer ' + id + ' deleted', 'success');
+    currentCustomerId = null;
+    nav('customers');
+    await quickRefresh({ activity: true, financials: true });
+  } catch(e) {
+    toast('Error deleting: ' + e.message, 'error');
   }
 }
 

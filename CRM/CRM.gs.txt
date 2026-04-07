@@ -1600,6 +1600,63 @@ function doGet(e) {
       return json({ success: true }, cb);
     }
 
+    // ── Delete customer ──────────────────────────────────────
+    if (p.action === 'deleteCustomer') {
+      const custId = (p.customerId || '').trim();
+      if (!custId) return json({ success: false, message: 'Missing customerId' }, cb);
+
+      // Helper: delete all rows matching custId in column 1 (works bottom-up to preserve indices)
+      function deleteMatchingRows(sheet) {
+        if (!sheet) return;
+        const rows = sheet.getDataRange().getValues();
+        for (var i = rows.length - 1; i > 0; i--) {
+          if (String(rows[i][0] || '').trim() === custId) {
+            sheet.deleteRow(i + 1);
+          }
+        }
+      }
+
+      // Delete from Pipeline
+      deleteMatchingRows(ss.getSheetByName('Pipeline'));
+
+      // Delete from Registry
+      deleteMatchingRows(ss.getSheetByName('Registry'));
+
+      // Delete from Follow-Ups (column 1 is row ID, column 4 is customer ref — match on customer name/ID in col 4)
+      var fuSheet = ss.getSheetByName('Follow-Ups');
+      if (fuSheet) {
+        var fuRows = fuSheet.getDataRange().getValues();
+        for (var fi = fuRows.length - 1; fi > 0; fi--) {
+          var fuCust = String(fuRows[fi][3] || '');
+          if (fuCust.indexOf(custId) !== -1) fuSheet.deleteRow(fi + 1);
+        }
+      }
+
+      // Delete from Financials
+      deleteMatchingRows(ss.getSheetByName('Financials'));
+
+      // Delete from Notes Log (customer ID in column 3)
+      var notesSheet = ss.getSheetByName('Notes Log');
+      if (notesSheet) {
+        var noteRows = notesSheet.getDataRange().getValues();
+        for (var ni = noteRows.length - 1; ni > 0; ni--) {
+          if (String(noteRows[ni][2] || '').trim() === custId) notesSheet.deleteRow(ni + 1);
+        }
+      }
+
+      // Log the deletion in Rep Activity
+      var repActivity = ss.getSheetByName('Rep Activity');
+      if (repActivity) {
+        repActivity.appendRow([
+          new Date(), p.rep || '', '[' + custId + '] ' + (p.customerName || ''),
+          'Customer Deleted', 'Deleted', '', '', 'All records removed',
+        ]);
+      }
+
+      SpreadsheetApp.flush();
+      return json({ success: true, deletedId: custId }, cb);
+    }
+
     // ── Add note ──────────────────────────────────────────────
     if (p.action === 'addNote') {
       const today = new Date();
