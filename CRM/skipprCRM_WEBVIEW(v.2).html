@@ -368,7 +368,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="gold-rule"></div>
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
-          <input class="tbl-search" id="dealer-search" placeholder="Search by name, brand, city..." oninput="renderDealerTable()"/>
+          <input class="tbl-search" id="dealer-search" placeholder="Search by name, brand, city..." oninput="debounceDealerSearch()"/>
         </div>
         <div id="dealer-table-wrap">
           <div class="loading"><div class="spinner"></div><span>Loading dealers...</span></div>
@@ -396,7 +396,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       </div>
       <div class="tbl-wrap">
         <div class="tbl-toolbar">
-          <input class="tbl-search" id="fin-search" placeholder="Search by name, ID, invoice #..." oninput="renderFinancials()"/>
+          <input class="tbl-search" id="fin-search" placeholder="Search by name, ID, invoice #..." oninput="debounceFinSearch()"/>
           <button class="filter-btn active" onclick="setFinFilter('all',this)">All</button>
           <button class="filter-btn" onclick="setFinFilter('skp',this)">Purchases</button>
           <button class="filter-btn" onclick="setFinFilter('skc',this)">Consultations</button>
@@ -1045,7 +1045,7 @@ let finFilter            = 'all';
 
 // ── API CALLS ─────────────────────────────────────────────────
 // Primary: route through CORS proxy so the browser doesn't get blocked
-const SYNC_MIN_MS = 14000; // minimum overlay display time for writes
+const SYNC_MIN_MS = 2000; // minimum overlay display time for writes
 
 async function crmCall(params) {
   const isRead = READ_ACTIONS.has(params.action);
@@ -1124,56 +1124,74 @@ function initRepPicker() {
 async function loadAll() {
   setConnStatus('loading');
   try {
-    // getCustomers — returns { success: true, customers: [...] }
-    // Each customer object from getActiveCustomers() contains:
-    // id, name, type, tier, rep, phone, email, city, state, zip,
-    // year, make, model, trim, extColor, vehicle, status,
-    // dealer, workflow, originalId, driveUrl,
-    // dateAdded, lastContact, followUp,
-    // finalPrice, savings, serviceFee, discount, notes
-    const custData = await crmCall({ action: 'getCustomers', filterType: 'includeInactive' });
+    // Fetch all data sources in parallel for fastest possible load
+    const [custData, fuData, actData, dealerData, finData] = await Promise.all([
+      crmCall({ action: 'getCustomers', filterType: 'includeInactive' }),
+      crmCall({ action: 'getFollowUps' }),
+      crmCall({ action: 'getActivity' }),
+      crmCall({ action: 'getDealers' }).catch(e => { console.warn('getDealers not available yet:', e.message); return null; }),
+      crmCall({ action: 'getFinancials' }).catch(e => { console.warn('getFinancials not available yet:', e.message); return null; }),
+    ]);
+
     if (custData.success && Array.isArray(custData.customers)) {
       DB.customers = custData.customers;
     }
-
-    // getFollowUps — returns { success: true, followUps: [...] }
-    // Each: id, date, rep, customer, vehicle, status, priority, notes
-    const fuData = await crmCall({ action: 'getFollowUps' });
     if (fuData.success && Array.isArray(fuData.followUps)) {
       DB.followUps = fuData.followUps;
     }
-
-    // getActivity — returns { success: true, activity: [...] }
-    // Each: date, rep, customer, action, outcome, tier, savings, notes
-    const actData = await crmCall({ action: 'getActivity' });
     if (actData.success && Array.isArray(actData.activity)) {
       DB.activity = actData.activity;
+    }
+    if (dealerData && dealerData.success && Array.isArray(dealerData.dealers)) {
+      DB.dealers = dealerData.dealers;
+    }
+    if (finData && finData.success) {
+      DB.financials = { records: finData.financials || [], summary: finData.summary || {} };
     }
 
     computeStats();
     setConnStatus('ok');
     renderAll();
-
-    // Non-blocking: load dealers and financials separately so core dashboard isn't blocked
-    try {
-      const dealerData = await crmCall({ action: 'getDealers' });
-      if (dealerData.success && Array.isArray(dealerData.dealers)) {
-        DB.dealers = dealerData.dealers;
-        renderDealerTable();
-      }
-    } catch(e) { console.warn('getDealers not available yet:', e.message); }
-
-    try {
-      const finData = await crmCall({ action: 'getFinancials' });
-      if (finData.success) {
-        DB.financials = { records: finData.financials || [], summary: finData.summary || {} };
-        renderFinancials();
-      }
-    } catch(e) { console.warn('getFinancials not available yet:', e.message); }
   } catch(e) {
     setConnStatus('error');
     toast('Connection failed: ' + e.message, 'error');
     console.error('loadAll error:', e);
+  }
+}
+
+// ── QUICK REFRESH (lightweight reload after edits) ────────────
+// Only re-fetches customers + follow-ups (the data that changes on edits)
+// and re-renders the core views. Much faster than full loadAll().
+async function quickRefresh(opts) {
+  opts = opts || {};
+  try {
+    const promises = [
+      crmCall({ action: 'getCustomers', filterType: 'includeInactive' }),
+      crmCall({ action: 'getFollowUps' }),
+    ];
+    // Only refetch activity/financials when the edit actually touches them
+    if (opts.activity) promises.push(crmCall({ action: 'getActivity' }));
+    if (opts.financials) promises.push(crmCall({ action: 'getFinancials' }).catch(() => null));
+
+    const results = await Promise.all(promises);
+
+    if (results[0].success && Array.isArray(results[0].customers)) DB.customers = results[0].customers;
+    if (results[1].success && Array.isArray(results[1].followUps)) DB.followUps = results[1].followUps;
+
+    let idx = 2;
+    if (opts.activity && results[idx]) {
+      if (results[idx].success && Array.isArray(results[idx].activity)) DB.activity = results[idx].activity;
+      idx++;
+    }
+    if (opts.financials && results[idx]) {
+      if (results[idx].success) DB.financials = { records: results[idx].financials || [], summary: results[idx].summary || {} };
+    }
+
+    computeStats();
+    renderAll();
+  } catch(e) {
+    console.warn('quickRefresh failed, falling back to full load:', e.message);
+    await loadAll();
   }
 }
 
@@ -1431,7 +1449,21 @@ function setFilter(f, btn) {
   renderCustomerTable();
 }
 
-function filterCustomers() { renderCustomerTable(); }
+let _custSearchTimer = null;
+function filterCustomers() {
+  clearTimeout(_custSearchTimer);
+  _custSearchTimer = setTimeout(renderCustomerTable, 150);
+}
+let _dealerSearchTimer = null;
+function debounceDealerSearch() {
+  clearTimeout(_dealerSearchTimer);
+  _dealerSearchTimer = setTimeout(renderDealerTable, 150);
+}
+let _finSearchTimer = null;
+function debounceFinSearch() {
+  clearTimeout(_finSearchTimer);
+  _finSearchTimer = setTimeout(renderFinancials, 150);
+}
 
 function applyFilter(arr) {
   if (custFilter === 'active')  return arr.filter(c => !['Closed','Lost'].includes(c.status) && c.workflow !== 'Converted');
@@ -2290,7 +2322,7 @@ async function submitAddCustomer() {
       urgency: document.getElementById('ac-urgency').value,
     });
     toast('Customer created: ' + (result.customerId || ''), 'success');
-    await loadAll();
+    await quickRefresh({ activity: true });
   } catch(e) {
     toast('Error creating customer: ' + e.message, 'error');
   }
@@ -2379,7 +2411,7 @@ async function submitTileEdit() {
   try {
     await crmCall(params);
     toast('Updated ✓', 'success');
-    await loadAll();
+    await quickRefresh();
     if (currentCustomerId) renderCustomerDetail(currentCustomerId);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
@@ -2394,7 +2426,7 @@ async function seedTestData() {
     const result = await crmCall({ action: 'seedTestData' });
     if (result.success) {
       toast('Created ' + result.count + ' test customers: ' + result.ids.join(', '), 'success');
-      await loadAll();
+      await quickRefresh({ activity: true });
     } else {
       toast('Seed failed: ' + (result.message || 'Unknown error'), 'error');
     }
@@ -2502,7 +2534,7 @@ async function submitEditCustomer() {
       initialPrice: document.getElementById('ec-initial-price').value.trim(),
     });
     toast('Customer updated ✓', 'success');
-    await loadAll();
+    await quickRefresh();
     if (currentCustomerId === editCustomerId) renderCustomerDetail(editCustomerId);
   } catch(e) {
     toast('Error saving: ' + e.message, 'error');
@@ -2602,7 +2634,7 @@ async function submitEditActivity() {
       notes: document.getElementById('ea-notes').value,
     });
     toast('Activity updated ✓', 'success');
-    await loadAll();
+    await quickRefresh({ activity: true });
   } catch(e) {
     toast('Error saving: ' + e.message, 'error');
   }
@@ -2690,7 +2722,7 @@ async function submitInvoice() {
       rep: localStorage.getItem('skippr_rep') || '',
     });
     toast('Invoice created ✓', 'success');
-    await loadAll();
+    await quickRefresh({ financials: true, activity: true });
     if (currentCustomerId) renderCustomerDetail(currentCustomerId);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
@@ -2750,7 +2782,7 @@ async function submitEditInvoice() {
       rep: localStorage.getItem('skippr_rep') || '',
     });
     toast('Invoice updated ✓', 'success');
-    await loadAll();
+    await quickRefresh({ financials: true });
     if (currentCustomerId) renderCustomerDetail(currentCustomerId);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
@@ -2783,7 +2815,7 @@ async function submitRefund() {
       rep: localStorage.getItem('skippr_rep') || '',
     });
     toast('Refund processed ✓', 'success');
-    await loadAll();
+    await quickRefresh({ financials: true, activity: true });
   } catch(e) {
     toast('Error: ' + e.message, 'error');
   }
@@ -2900,7 +2932,7 @@ async function submitConvert() {
     });
 
     toast('Converted! New ID: ' + skpId, 'success');
-    await loadAll();
+    await quickRefresh({ financials: true, activity: true });
     // Return to dashboard
     nav('dashboard');
     try { window.parent.postMessage({ type: 'skippr-crm-refresh', source: 'convert' }, '*'); } catch(e) {}
@@ -3222,7 +3254,7 @@ function exportPDF(data, type) {
 // Delay gives Apps Script time to finish writing before we read back
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'skippr-refresh') {
-    setTimeout(function() { loadAll(); }, 2500);
+    setTimeout(function() { loadAll(); }, 500);
   }
 });
 

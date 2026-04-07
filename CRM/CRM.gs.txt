@@ -1138,23 +1138,23 @@ function doGet(e) {
             const netFee = Math.round(newFee * discountMult * 100) / 100;
             const taxHeld = Math.round(netFee * 0.60 * 100) / 100;
             const netProfit = netFee - convPlatformFees - taxHeld;
-            finSheet.getRange(r, 1).setValue(skpId);               // Update Customer ID
-            finSheet.getRange(r, 2).setValue(p.customerName || ''); // Customer Name
-            finSheet.getRange(r, 3).setValue(newFee);               // Service Fee
-            finSheet.getRange(r, 4).setValue(convDiscount);         // Discount
-            finSheet.getRange(r, 5).setValue(netFee);               // Net Service Fee
-            finSheet.getRange(r, 6).setValue(convDeposit);          // Deposit
-            finSheet.getRange(r, 7).setValue(convMethod);           // Payment Method
-            finSheet.getRange(r, 8).setValue(today);                // Payment Date
-            finSheet.getRange(r, 9).setValue(convInvStatus);        // Invoice Status
-            finSheet.getRange(r, 10).setValue(convPlatformFees);    // Processing Fees
-            finSheet.getRange(r, 11).setValue(taxHeld);             // Tax Withheld (60%)
-            finSheet.getRange(r, 14).setValue(netProfit);           // Net Profit
-            // Set invoice number if not already set
-            if (!String(row[14] || '').trim()) {
-              const convInvoiceNum = reserveNextInvoiceNumber(ss);
-              finSheet.getRange(r, 15).setValue(convInvoiceNum);
-            }
+            // Batch write: update all financials columns in one call
+            var invoiceNum = String(row[14] || '').trim() ? row[14] : reserveNextInvoiceNumber(ss);
+            var rowData = finSheet.getRange(r, 1, 1, 15).getValues()[0];
+            rowData[0]  = skpId;               // Col 1: Customer ID
+            rowData[1]  = p.customerName || ''; // Col 2: Customer Name
+            rowData[2]  = newFee;               // Col 3: Service Fee
+            rowData[3]  = convDiscount;         // Col 4: Discount
+            rowData[4]  = netFee;               // Col 5: Net Service Fee
+            rowData[5]  = convDeposit;          // Col 6: Deposit
+            rowData[6]  = convMethod;           // Col 7: Payment Method
+            rowData[7]  = today;                // Col 8: Payment Date
+            rowData[8]  = convInvStatus;        // Col 9: Invoice Status
+            rowData[9]  = convPlatformFees;     // Col 10: Processing Fees
+            rowData[10] = taxHeld;              // Col 11: Tax Withheld (60%)
+            rowData[13] = netProfit;            // Col 14: Net Profit
+            rowData[14] = invoiceNum;           // Col 15: Invoice Number
+            finSheet.getRange(r, 1, 1, 15).setValues([rowData]);
             invoiceUpdated = true;
           }
         });
@@ -1521,33 +1521,37 @@ function doGet(e) {
           if (i === 0) return;
           if (String(row[0]).trim() === p.customerId) {
             const r = i + 1;
-            if (p.customerName)   pipeline.getRange(r, 2).setValue(p.customerName);
-            if (p.location)       pipeline.getRange(r, 3).setValue(p.location);
-            if (p.tier)           pipeline.getRange(r, 4).setValue(p.tier);
-            if (p.rep)            pipeline.getRange(r, 5).setValue(p.rep);
-            if (p.customerStatus) pipeline.getRange(r, 6).setValue(p.customerStatus);
-            if (p.year)           pipeline.getRange(r, 7).setValue(p.year);
-            if (p.make)           pipeline.getRange(r, 8).setValue(p.make);
-            if (p.model)          pipeline.getRange(r, 9).setValue(p.model);
-            if (p.trim)           pipeline.getRange(r, 10).setValue(p.trim);
-            if (p.extColor)       pipeline.getRange(r, 11).setValue(p.extColor);
-            if (p.phone)          pipeline.getRange(r, 24).setValue(p.phone);
-            if (p.email)          pipeline.getRange(r, 25).setValue(p.email);
-            if (p.zip)            pipeline.getRange(r, 26).setValue(p.zip);
-            if (p.budgetRange)    pipeline.getRange(r, 28).setValue(p.budgetRange);
-            if (p.timeline)       pipeline.getRange(r, 29).setValue(p.timeline);
-            if (p.financingType)  pipeline.getRange(r, 30).setValue(p.financingType);
-            if (p.leadSource)     pipeline.getRange(r, 31).setValue(p.leadSource);
-            if (p.commPref)       pipeline.getRange(r, 32).setValue(p.commPref);
-            if (p.urgency)        pipeline.getRange(r, 33).setValue(p.urgency);
-            if (p.discount)       pipeline.getRange(r, 19).setValue(p.discount);
-            if (p.tradeInVehicle) pipeline.getRange(r, 34).setValue(p.tradeInVehicle);
-            if (p.tradeInVin)     pipeline.getRange(r, 35).setValue(p.tradeInVin);
-            if (p.tradeInValue)   pipeline.getRange(r, 36).setValue(p.tradeInValue);
-            if (p.initialPrice)   pipeline.getRange(r, 37).setValue(p.initialPrice);
-            if (p.finalPrice)     pipeline.getRange(r, 16).setValue(p.finalPrice);
-            if (p.followUpDate)   pipeline.getRange(r, 15).setValue(new Date(p.followUpDate));
-            pipeline.getRange(r, 14).setValue(today);
+            // Batch write: read row, update fields, write back in one call
+            const numCols = pipeline.getLastColumn();
+            var plRow = pipeline.getRange(r, 1, 1, numCols).getValues()[0];
+            if (p.customerName)   plRow[1]  = p.customerName;
+            if (p.location)       plRow[2]  = p.location;
+            if (p.tier)           plRow[3]  = p.tier;
+            if (p.rep)            plRow[4]  = p.rep;
+            if (p.customerStatus) plRow[5]  = p.customerStatus;
+            if (p.year)           plRow[6]  = p.year;
+            if (p.make)           plRow[7]  = p.make;
+            if (p.model)          plRow[8]  = p.model;
+            if (p.trim)           plRow[9]  = p.trim;
+            if (p.extColor)       plRow[10] = p.extColor;
+            plRow[13] = today;                                          // Col 14: lastContact
+            if (p.followUpDate)   plRow[14] = new Date(p.followUpDate); // Col 15
+            if (p.finalPrice)     plRow[15] = p.finalPrice;             // Col 16
+            if (p.discount)       plRow[18] = p.discount;               // Col 19
+            if (p.phone)          plRow[23] = p.phone;                  // Col 24
+            if (p.email)          plRow[24] = p.email;                  // Col 25
+            if (p.zip)            plRow[25] = p.zip;                    // Col 26
+            if (p.budgetRange)    plRow[27] = p.budgetRange;            // Col 28
+            if (p.timeline)       plRow[28] = p.timeline;               // Col 29
+            if (p.financingType)  plRow[29] = p.financingType;          // Col 30
+            if (p.leadSource)     plRow[30] = p.leadSource;             // Col 31
+            if (p.commPref)       plRow[31] = p.commPref;               // Col 32
+            if (p.urgency)        plRow[32] = p.urgency;                // Col 33
+            if (p.tradeInVehicle) plRow[33] = p.tradeInVehicle;         // Col 34
+            if (p.tradeInVin)     plRow[34] = p.tradeInVin;             // Col 35
+            if (p.tradeInValue)   plRow[35] = p.tradeInValue;           // Col 36
+            if (p.initialPrice)   plRow[36] = p.initialPrice;           // Col 37
+            pipeline.getRange(r, 1, 1, numCols).setValues([plRow]);
           }
         });
       }
@@ -1558,18 +1562,21 @@ function doGet(e) {
           if (i === 0) return;
           if (String(row[0]).trim() === p.customerId) {
             const r = i + 1;
-            if (p.customerName) registry.getRange(r, 4).setValue(p.customerName);
-            if (p.phone)        registry.getRange(r, 5).setValue(p.phone);
-            if (p.email)        registry.getRange(r, 6).setValue(p.email);
-            if (p.tier)         registry.getRange(r, 3).setValue(p.tier);
-            if (p.rep)          registry.getRange(r, 11).setValue(p.rep);
-            if (p.zip)          registry.getRange(r, 9).setValue(p.zip);
+            // Batch write: read row, update fields, write back in one call
+            const regCols = registry.getLastColumn();
+            var regRow = registry.getRange(r, 1, 1, regCols).getValues()[0];
+            if (p.tier)           regRow[2]  = p.tier;           // Col 3
+            if (p.customerName)   regRow[3]  = p.customerName;   // Col 4
+            if (p.phone)          regRow[4]  = p.phone;          // Col 5
+            if (p.email)          regRow[5]  = p.email;          // Col 6
+            if (p.zip)            regRow[8]  = p.zip;            // Col 9
+            if (p.rep)            regRow[10] = p.rep;            // Col 11
             if (p.customerStatus) {
-              const regStat = ({Closed:'Closed', Lost:'Lost'}[p.customerStatus]) || 'Active';
-              registry.getRange(r, 13).setValue(regStat);
+              regRow[12] = ({Closed:'Closed', Lost:'Lost'}[p.customerStatus]) || 'Active'; // Col 13
             }
             const vehicle = [p.year, p.make, p.model, p.trim].filter(Boolean).join(' ');
-            if (vehicle)        registry.getRange(r, 10).setValue(vehicle);
+            if (vehicle)          regRow[9]  = vehicle;          // Col 10
+            registry.getRange(r, 1, 1, regCols).setValues([regRow]);
           }
         });
       }
