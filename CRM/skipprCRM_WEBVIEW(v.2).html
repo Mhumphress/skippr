@@ -553,12 +553,12 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field"><label>Assigned Rep</label><select id="ac-rep"></select></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Year</label><input id="ac-year" placeholder="2026"/></div>
-      <div class="form-field"><label>Make</label><input id="ac-make" placeholder="Toyota"/></div>
+      <div class="form-field"><label>Year</label><select id="ac-year" onchange="onYearChange('ac')"><option value="">— Select Year —</option></select></div>
+      <div class="form-field"><label>Make</label><select id="ac-make" onchange="onMakeChange('ac')"><option value="">— Select —</option></select></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Model</label><input id="ac-model" placeholder="4Runner"/></div>
-      <div class="form-field"><label>Trim</label><input id="ac-trim" placeholder="TRD Pro"/></div>
+      <div class="form-field"><label>Model</label><select id="ac-model"><option value="">— Select —</option></select></div>
+      <div class="form-field"><label>Trim</label><input id="ac-trim" placeholder="e.g. TRD Pro"/></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Exterior Color</label><input id="ac-color" placeholder="e.g. Midnight Black"/></div>
@@ -592,11 +592,11 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field"><label>Assigned Rep</label><select id="ec-rep"></select></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Year</label><input id="ec-year"/></div>
-      <div class="form-field"><label>Make</label><input id="ec-make"/></div>
+      <div class="form-field"><label>Year</label><select id="ec-year" onchange="onYearChange('ec')"><option value="">— Select Year —</option></select></div>
+      <div class="form-field"><label>Make</label><select id="ec-make" onchange="onMakeChange('ec')"><option value="">— Select —</option></select></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Model</label><input id="ec-model"/></div>
+      <div class="form-field"><label>Model</label><select id="ec-model"><option value="">— Select —</option></select></div>
       <div class="form-field"><label>Trim</label><input id="ec-trim"/></div>
     </div>
     <div class="form-row">
@@ -1040,6 +1040,172 @@ const PROXY_URL       = 'https://frosty-boat-6a06.xvzvf8rnsk.workers.dev';
 // ── STATE ─────────────────────────────────────────────────────
 let DB = { customers: [], followUps: [], activity: [], stats: {}, dealers: [], financials: { records: [], summary: {} }, notes: {} };
 const REPS = ['M. Humphress', 'T. Williams'];
+
+// ── VEHICLE DATA (2025–2026 US Market) ───────────────────────
+const VEHICLE_DATA = {
+  '2025': {
+    'Acura': ['Integra','TLX','RDX','MDX','ZDX'],
+    'Alfa Romeo': ['Giulia','Stelvio','Tonale'],
+    'Aston Martin': ['Vantage','DB12','DBX707'],
+    'Audi': ['A3','A4','A5','A6','A7','A8','Q3','Q5','Q7','Q8','Q4 e-tron','Q6 e-tron','Q8 e-tron','e-tron GT','RS e-tron GT','S3','S5','S6','S7','S8','SQ5','SQ7','SQ8','RS 5','RS 6 Avant','RS 7'],
+    'Bentley': ['Continental GT','Continental GTC','Flying Spur','Bentayga','Bentayga EWB'],
+    'BMW': ['2 Series','3 Series','4 Series','5 Series','7 Series','8 Series','X1','X2','X3','X4','X5','X6','X7','Z4','i4','i5','i7','iX','M2','M3','M4','M5','X3 M','X5 M','X6 M','M8'],
+    'Buick': ['Encore GX','Envision','Enclave'],
+    'Cadillac': ['CT4','CT5','Escalade','Escalade-V','XT4','XT5','XT6','LYRIQ','OPTIQ','VISTIQ','Escalade IQ','CELESTIQ'],
+    'Chevrolet': ['Trax','Trailblazer','Equinox','Equinox EV','Blazer','Blazer EV','Traverse','Tahoe','Suburban','Colorado','Silverado 1500','Silverado 2500HD','Silverado 3500HD','Silverado EV','Corvette Stingray','Corvette Z06','Corvette E-Ray','Corvette ZR1','Malibu'],
+    'Chrysler': ['Pacifica','Pacifica Plug-in Hybrid'],
+    'Dodge': ['Charger','Hornet','Durango'],
+    'Ferrari': ['296 GTB','296 GTS','Roma','Roma Spider','SF90 Stradale','SF90 Spider','Purosangue','12Cilindri','12Cilindri Spider'],
+    'Fiat': ['500e'],
+    'Ford': ['Mustang','Mustang Mach-E','Bronco','Bronco Sport','Explorer','Expedition','Escape','Maverick','Ranger','F-150','F-150 Lightning','F-250 Super Duty','F-350 Super Duty','Transit','E-Transit'],
+    'Genesis': ['G70','G80','G90','GV60','GV70','GV80','GV80 Coupe','Electrified G80','Electrified GV70'],
+    'GMC': ['Terrain','Acadia','Yukon','Yukon XL','Canyon','Sierra 1500','Sierra 2500HD','Sierra 3500HD','Sierra EV','Hummer EV Pickup','Hummer EV SUV'],
+    'Honda': ['Civic','Accord','CR-V','HR-V','Pilot','Passport','Ridgeline','Odyssey','Prologue'],
+    'Hyundai': ['Venue','Kona','Kona Electric','Tucson','Tucson Hybrid','Santa Fe','Santa Fe Hybrid','Palisade','Elantra','Elantra Hybrid','Elantra N','Sonata','IONIQ 5','IONIQ 5 N','IONIQ 6','IONIQ 9','Santa Cruz','Nexo'],
+    'Infiniti': ['QX50','QX55','QX60','QX80'],
+    'Jaguar': ['F-PACE'],
+    'Jeep': ['Compass','Wrangler','Wrangler 4xe','Gladiator','Grand Cherokee','Grand Cherokee 4xe','Grand Cherokee L','Grand Wagoneer','Wagoneer S'],
+    'Kia': ['K4','K5','Seltos','Sportage','Sportage Hybrid','Sportage PHEV','Sorento','Sorento Hybrid','Sorento PHEV','Telluride','Carnival','Niro','Niro EV','EV6','EV9','Soul'],
+    'Lamborghini': ['Revuelto','Urus SE'],
+    'Land Rover': ['Range Rover','Range Rover Sport','Range Rover Velar','Range Rover Evoque','Discovery','Discovery Sport','Defender 90','Defender 110','Defender 130'],
+    'Lexus': ['IS','ES','LS','LC 500','LC 500 Convertible','UX','NX','RX','TX','GX','LX','RZ','RC'],
+    'Lincoln': ['Corsair','Nautilus','Aviator','Navigator'],
+    'Lotus': ['Emira','Eletre','Emeya'],
+    'Lucid': ['Air','Gravity'],
+    'Maserati': ['Grecale','Grecale Folgore','GranTurismo','GranTurismo Folgore','GranCabrio','MC20','MC20 Cielo'],
+    'Mazda': ['Mazda3','MX-5 Miata','CX-30','CX-5','CX-50','CX-70','CX-70 PHEV','CX-90','CX-90 PHEV'],
+    'McLaren': ['Artura','Artura Spider','750S','750S Spider','GTS'],
+    'Mercedes-Benz': ['A-Class','C-Class','CLE Coupe','CLE Cabriolet','E-Class','S-Class','Maybach S-Class','AMG GT Coupe','AMG GT 4-Door','GLA','GLB','GLC','GLC Coupe','GLE','GLE Coupe','GLS','Maybach GLS','G-Class','EQB','EQE SUV','EQS Sedan','EQS SUV'],
+    'Mini': ['Cooper 2-Door','Cooper S 2-Door','Cooper 4-Door','Cooper S 4-Door','Cooper Convertible','Countryman S ALL4','Countryman SE ALL4','JCW Countryman ALL4'],
+    'Mitsubishi': ['Outlander','Outlander PHEV','Outlander Sport','Eclipse Cross'],
+    'Nissan': ['Sentra','Altima','Kicks','Rogue','Murano','Pathfinder','Armada','Frontier','Z','ARIYA'],
+    'Polestar': ['Polestar 2','Polestar 3','Polestar 4'],
+    'Porsche': ['911','718 Cayman','718 Boxster','Cayenne','Cayenne Coupe','Macan','Macan Electric','Taycan','Taycan Cross Turismo','Panamera'],
+    'Ram': ['1500','2500','3500','ProMaster'],
+    'Rivian': ['R1T','R1S'],
+    'Rolls-Royce': ['Phantom','Ghost','Cullinan','Spectre'],
+    'Subaru': ['Impreza','WRX','BRZ','Crosstrek','Forester','Outback','Ascent','Solterra','Legacy'],
+    'Tesla': ['Model 3','Model Y','Model S','Model X','Cybertruck'],
+    'Toyota': ['Corolla','Corolla Cross','Camry','Crown','Prius','Prius Prime','GR86','GR Supra','GR Corolla','bZ4X','RAV4','RAV4 Prime','Highlander','4Runner','Sequoia','Land Cruiser','Tacoma','Tundra','Sienna'],
+    'VinFast': ['VF 8','VF 9'],
+    'Volkswagen': ['Jetta','Jetta GLI','Golf GTI','Golf R','Taos','Tiguan','Atlas','Atlas Cross Sport','ID.4','ID. Buzz'],
+    'Volvo': ['XC40','EX40','XC60','XC90','EX30','EX90','V60 Cross Country','V90 Cross Country','EC40'],
+  },
+  '2026': {
+    'Acura': ['Integra','ADX','TLX','RDX','MDX','ZDX'],
+    'Alfa Romeo': ['Giulia','Stelvio','Tonale'],
+    'Aston Martin': ['Vantage','DB12','Vanquish','DBX707','Valhalla'],
+    'Audi': ['A3','A5','A6','A7','A8','Q3','Q5','Q7','Q8','Q4 e-tron','Q6 e-tron','Q8 e-tron','A6 e-tron','e-tron GT','RS e-tron GT','S3','S5','S6','S7','S8','SQ5','SQ7','SQ8','SQ6 e-tron','RS 5','RS 6 Avant','RS 7'],
+    'Bentley': ['Continental GT','Continental GTC','Flying Spur','Bentayga','Bentayga EWB'],
+    'BMW': ['2 Series','3 Series','4 Series','5 Series','7 Series','8 Series','X1','X2','X3','X4','X5','X6','X7','Z4','i4','i5','i7','iX','M2','M3','M4','M5','X3 M','X5 M','X6 M','M8'],
+    'Buick': ['Encore GX','Envision','Enclave'],
+    'Cadillac': ['CT4','CT5','Escalade','Escalade-V','XT4','XT5','XT6','LYRIQ','OPTIQ','VISTIQ','Escalade IQ','CELESTIQ'],
+    'Chevrolet': ['Trax','Trailblazer','Equinox','Equinox EV','Blazer','Blazer EV','Traverse','Tahoe','Suburban','Colorado','Silverado 1500','Silverado 2500HD','Silverado 3500HD','Silverado EV','Corvette Stingray','Corvette Z06','Corvette E-Ray','Corvette ZR1'],
+    'Chrysler': ['Pacifica','Pacifica Plug-in Hybrid'],
+    'Dodge': ['Charger','Charger Daytona EV','Hornet','Durango'],
+    'Ferrari': ['296 GTB','296 GTS','Roma','Roma Spider','SF90 Stradale','SF90 Spider','Purosangue','12Cilindri','12Cilindri Spider','F80'],
+    'Fiat': ['500e'],
+    'Ford': ['Mustang','Mustang Mach-E','Bronco','Bronco Sport','Explorer','Expedition','Escape','Maverick','Ranger','F-150','F-150 Lightning','F-250 Super Duty','F-350 Super Duty','Transit','E-Transit'],
+    'Genesis': ['G70','G80','G90','GV60','GV70','GV80','GV80 Coupe','Electrified G80','Electrified GV70'],
+    'GMC': ['Terrain','Acadia','Yukon','Yukon XL','Canyon','Sierra 1500','Sierra 2500HD','Sierra 3500HD','Sierra EV','Hummer EV Pickup','Hummer EV SUV'],
+    'Honda': ['Civic','Accord','CR-V','HR-V','Pilot','Passport','Ridgeline','Odyssey','Prologue','Prelude'],
+    'Hyundai': ['Venue','Kona','Kona Electric','Tucson','Tucson Hybrid','Santa Fe','Santa Fe Hybrid','Palisade','Elantra','Elantra Hybrid','Elantra N','Sonata','IONIQ 5','IONIQ 5 N','IONIQ 6','IONIQ 9','Santa Cruz'],
+    'Infiniti': ['QX50','QX55','QX60','QX80'],
+    'Jeep': ['Compass','Wrangler','Wrangler 4xe','Gladiator','Grand Cherokee','Grand Cherokee 4xe','Grand Cherokee L','Grand Wagoneer','Wagoneer S','Cherokee','Recon'],
+    'Kia': ['K4','K5','Seltos','Sportage','Sportage Hybrid','Sportage PHEV','Sorento','Sorento Hybrid','Sorento PHEV','Carnival','Niro','Niro EV','EV6','EV9'],
+    'Lamborghini': ['Revuelto','Temerario','Urus SE'],
+    'Land Rover': ['Range Rover','Range Rover Sport','Range Rover Velar','Range Rover Evoque','Discovery','Discovery Sport','Defender 90','Defender 110','Defender 130'],
+    'Lexus': ['IS','ES','LS','LC 500','LC 500 Convertible','UX','NX','RX','TX','GX','LX','RZ'],
+    'Lincoln': ['Corsair','Nautilus','Aviator','Navigator'],
+    'Lotus': ['Emira','Eletre','Emeya'],
+    'Lucid': ['Air','Gravity'],
+    'Maserati': ['Grecale','Grecale Folgore','GranTurismo','GranTurismo Folgore','GranCabrio','MC20','MC20 Cielo'],
+    'Mazda': ['Mazda3','MX-5 Miata','CX-30','CX-5','CX-50','CX-50 Hybrid','CX-70','CX-70 PHEV','CX-90','CX-90 PHEV'],
+    'McLaren': ['Artura','Artura Spider','750S','750S Spider','GTS','W1'],
+    'Mercedes-Benz': ['C-Class','CLA','CLE Coupe','CLE Cabriolet','E-Class','S-Class','Maybach S-Class','AMG GT Coupe','AMG GT 4-Door','GLA','GLB','GLC','GLC Coupe','GLE','GLE Coupe','GLS','Maybach GLS','G-Class','EQB','EQE SUV','EQS Sedan','EQS SUV'],
+    'Mini': ['Cooper 2-Door','Cooper S 2-Door','JCW 2-Door','Cooper 4-Door','Cooper S 4-Door','Cooper Convertible','Cooper S Convertible','Countryman S ALL4','Countryman SE ALL4','JCW Countryman ALL4'],
+    'Mitsubishi': ['Outlander','Outlander PHEV','Outlander Sport','Eclipse Cross'],
+    'Nissan': ['Sentra','Altima','Kicks','Rogue','Murano','Pathfinder','Armada','Frontier','Z','ARIYA'],
+    'Polestar': ['Polestar 2','Polestar 3','Polestar 4','Polestar 5'],
+    'Porsche': ['911','718 Cayman','718 Boxster','Cayenne','Cayenne Coupe','Macan','Macan Electric','Taycan','Taycan Cross Turismo','Panamera'],
+    'Ram': ['1500','1500 Ramcharger','2500','3500','ProMaster'],
+    'Rivian': ['R1T','R1S','R2'],
+    'Rolls-Royce': ['Phantom','Ghost','Cullinan','Spectre'],
+    'Scout': ['Terra','Traveler'],
+    'Subaru': ['Impreza','WRX','BRZ','Crosstrek','Crosstrek Hybrid','Forester','Outback','Ascent','Solterra'],
+    'Tesla': ['Model 3','Model Y','Model S','Model X','Cybertruck'],
+    'Toyota': ['Corolla','Corolla Cross','Camry','Crown','Prius','Prius Prime','GR86','GR Supra','GR Corolla','bZ4X','RAV4','RAV4 Prime','Highlander','4Runner','Sequoia','Land Cruiser','Tacoma','Tundra','Sienna'],
+    'VinFast': ['VF 8','VF 9'],
+    'Volkswagen': ['Jetta','Jetta GLI','Golf GTI','Golf R','Taos','Tiguan','Atlas','Atlas Cross Sport','ID.4','ID. Buzz'],
+    'Volvo': ['XC40','EX40','XC60','XC90','EX30','EX90','V60 Cross Country','V90 Cross Country','EC40'],
+  }
+};
+
+// Helper: populate a <select> with options, optionally pre-selecting a value
+function populateSelect(selectId, items, selected, placeholder) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.innerHTML = '<option value="">' + (placeholder || '— Select —') + '</option>';
+  items.forEach(item => {
+    const o = document.createElement('option');
+    o.value = item; o.textContent = item;
+    if (item === selected) o.selected = true;
+    el.appendChild(o);
+  });
+  el.innerHTML += '<option value="Other">Other</option>';
+}
+
+// Cascading: when year changes, populate makes
+function onYearChange(prefix) {
+  const year = document.getElementById(prefix + '-year').value;
+  const makeEl = document.getElementById(prefix + '-make');
+  const modelEl = document.getElementById(prefix + '-model');
+  makeEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
+  modelEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
+  if (year && year !== 'Other' && VEHICLE_DATA[year]) {
+    populateSelect(prefix + '-make', Object.keys(VEHICLE_DATA[year]).sort(), '', '— Select Make —');
+  }
+}
+
+// Cascading: when make changes, populate models
+function onMakeChange(prefix) {
+  const year = document.getElementById(prefix + '-year').value;
+  const make = document.getElementById(prefix + '-make').value;
+  const modelEl = document.getElementById(prefix + '-model');
+  modelEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
+  if (year && make && make !== 'Other' && VEHICLE_DATA[year] && VEHICLE_DATA[year][make]) {
+    populateSelect(prefix + '-model', VEHICLE_DATA[year][make], '', '— Select Model —');
+  }
+}
+
+// Initialize vehicle dropdowns with existing values (for edit modals)
+function initVehicleDropdowns(prefix, year, make, model) {
+  const years = Object.keys(VEHICLE_DATA);
+  populateSelect(prefix + '-year', years, year, '— Select Year —');
+  if (year && VEHICLE_DATA[year]) {
+    populateSelect(prefix + '-make', Object.keys(VEHICLE_DATA[year]).sort(), make, '— Select Make —');
+    if (make && VEHICLE_DATA[year][make]) {
+      populateSelect(prefix + '-model', VEHICLE_DATA[year][make], model, '— Select Model —');
+    }
+  }
+  // If existing values don't match data (legacy/custom entries), inject them
+  if (year && !years.includes(year)) {
+    const yEl = document.getElementById(prefix + '-year');
+    const o = document.createElement('option'); o.value = year; o.textContent = year; o.selected = true;
+    yEl.insertBefore(o, yEl.lastElementChild);
+  }
+  if (make && VEHICLE_DATA[year] && !VEHICLE_DATA[year][make]) {
+    const mEl = document.getElementById(prefix + '-make');
+    const o = document.createElement('option'); o.value = make; o.textContent = make; o.selected = true;
+    mEl.insertBefore(o, mEl.lastElementChild);
+  }
+  if (model && VEHICLE_DATA[year] && VEHICLE_DATA[year][make] && !VEHICLE_DATA[year][make].includes(model)) {
+    const mdEl = document.getElementById(prefix + '-model');
+    const o = document.createElement('option'); o.value = model; o.textContent = model; o.selected = true;
+    mdEl.insertBefore(o, mdEl.lastElementChild);
+  }
+}
+
 let currentCustomerId    = null;
 let custFilter           = 'active';
 let fuFilter             = 'open';
@@ -2292,9 +2458,10 @@ function renderFinancials() {
 
 // ── ADD CUSTOMER ─────────────────────────────────────────────
 function openAddCustomerModal() {
-  ['ac-name','ac-phone','ac-email','ac-zip','ac-year','ac-make','ac-model','ac-trim','ac-color'].forEach(id => {
+  ['ac-name','ac-phone','ac-email','ac-zip','ac-trim','ac-color'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  initVehicleDropdowns('ac', '', '', '');
   const repSelect = document.getElementById('ac-rep');
   repSelect.innerHTML = '';
   REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
@@ -2317,9 +2484,9 @@ async function submitAddCustomer() {
       zip: document.getElementById('ac-zip').value.trim(),
       tier: document.getElementById('ac-tier').value,
       rep: document.getElementById('ac-rep').value,
-      year: document.getElementById('ac-year').value.trim(),
-      make: document.getElementById('ac-make').value.trim(),
-      model: document.getElementById('ac-model').value.trim(),
+      year: document.getElementById('ac-year').value,
+      make: document.getElementById('ac-make').value,
+      model: document.getElementById('ac-model').value,
       trim: document.getElementById('ac-trim').value.trim(),
       extColor: document.getElementById('ac-color').value.trim(),
       leadSource: document.getElementById('ac-source').value,
@@ -2368,13 +2535,16 @@ function openTileEdit(customerId, section) {
     html += '<div class="form-row">' + tileSelect('Discount','te-discount',discOpts,curDisc) + '</div>';
     html += '<div class="form-row"><div class="form-field"><label>Follow-Up Date</label><input type="datetime-local" id="te-followup" value="' + (c.followUp ? toDatetimeLocal(c.followUp) : '') + '"/></div></div>';
   } else if (section === 'vehicle') {
-    html += '<div class="form-row">' + tileField('Year','te-year',c.year) + tileField('Make','te-make',c.make) + '</div>';
-    html += '<div class="form-row">' + tileField('Model','te-model',c.model) + tileField('Trim','te-trim',c.trim) + '</div>';
+    html += '<div class="form-row"><div class="form-field"><label>Year</label><select id="te-year" onchange="onYearChange(\'te\')"><option value="">— Select —</option></select></div><div class="form-field"><label>Make</label><select id="te-make" onchange="onMakeChange(\'te\')"><option value="">— Select —</option></select></div></div>';
+    html += '<div class="form-row"><div class="form-field"><label>Model</label><select id="te-model"><option value="">— Select —</option></select></div>' + tileField('Trim','te-trim',c.trim) + '</div>';
     html += '<div class="form-row">' + tileField('Ext Color','te-color',c.extColor) + '</div>';
   } else if (section === 'pricing') {
     html += '<div class="form-row">' + tileField('Initial Price ($)','te-initial',c.initialPrice) + tileField('Final Price ($)','te-final',c.finalPrice) + '</div>';
   }
   wrap.innerHTML = html;
+  if (section === 'vehicle') {
+    initVehicleDropdowns('te', c.year || '', c.make || '', c.model || '');
+  }
   document.getElementById('tile-edit-modal').classList.add('open');
 }
 
@@ -2400,9 +2570,9 @@ async function submitTileEdit() {
     if (fu) params.followUpDate = fu;
     if (c) params.customerName = c.name;
   } else if (tileEditSection === 'vehicle') {
-    params.year = document.getElementById('te-year').value.trim();
-    params.make = document.getElementById('te-make').value.trim();
-    params.model = document.getElementById('te-model').value.trim();
+    params.year = document.getElementById('te-year').value;
+    params.make = document.getElementById('te-make').value;
+    params.model = document.getElementById('te-model').value;
     params.trim = document.getElementById('te-trim').value.trim();
     params.extColor = document.getElementById('te-color').value.trim();
     if (c) params.customerName = c.name;
@@ -2451,9 +2621,7 @@ function openEditModal(id) {
   document.getElementById('ec-email').value = c.email || '';
   document.getElementById('ec-zip').value = c.zip || '';
   document.getElementById('ec-tier').value = c.tier || 'Tier 1';
-  document.getElementById('ec-year').value = c.year || '';
-  document.getElementById('ec-make').value = c.make || '';
-  document.getElementById('ec-model').value = c.model || '';
+  initVehicleDropdowns('ec', c.year || '', c.make || '', c.model || '');
   document.getElementById('ec-trim').value = c.trim || '';
   document.getElementById('ec-color').value = c.extColor || '';
   // Set discount — handle custom discounts
@@ -2520,9 +2688,9 @@ async function submitEditCustomer() {
       zip: document.getElementById('ec-zip').value.trim(),
       tier: document.getElementById('ec-tier').value,
       rep: document.getElementById('ec-rep').value,
-      year: document.getElementById('ec-year').value.trim(),
-      make: document.getElementById('ec-make').value.trim(),
-      model: document.getElementById('ec-model').value.trim(),
+      year: document.getElementById('ec-year').value,
+      make: document.getElementById('ec-make').value,
+      model: document.getElementById('ec-model').value,
       trim: document.getElementById('ec-trim').value.trim(),
       extColor: document.getElementById('ec-color').value.trim(),
       discount: buildCustomDiscount('ec-discount','ec-discount-reason','ec-discount-type','ec-discount-amount'),
