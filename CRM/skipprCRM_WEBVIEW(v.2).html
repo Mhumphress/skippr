@@ -1253,45 +1253,57 @@ function onModelChange(prefix) {
 
 // Initialize vehicle dropdowns with existing values (for edit modals)
 function initVehicleDropdowns(prefix, year, make, model, trim) {
+  // Normalize values to strings (backend may return numbers for year)
+  year = year ? String(year).trim() : '';
+  make = make ? String(make).trim() : '';
+  model = model ? String(model).trim() : '';
+  trim = trim ? String(trim).trim() : '';
+
   const years = Object.keys(VEHICLE_DATA);
+  const yearData = VEHICLE_DATA[year] || null;
+  const makeModels = yearData ? yearData[make] || null : null;
+  const trimList = getTrims(make, model);
+
+  // Populate year
   populateSelect(prefix + '-year', years, year, '— Select Year —');
-  if (year && VEHICLE_DATA[year]) {
-    populateSelect(prefix + '-make', Object.keys(VEHICLE_DATA[year]).sort(), make, '— Select Make —');
-    if (make && VEHICLE_DATA[year][make]) {
-      populateSelect(prefix + '-model', VEHICLE_DATA[year][make], model, '— Select Model —');
-      if (model) {
-        const trims = getTrims(make, model);
-        const trimEl = document.getElementById(prefix + '-trim');
-        if (trimEl && trims) {
-          populateSelect(prefix + '-trim', trims, trim, '— Select Trim —');
-        }
-      }
+
+  // Populate make (even if year doesn't match data, still try)
+  if (year && yearData) {
+    populateSelect(prefix + '-make', Object.keys(yearData).sort(), make, '— Select Make —');
+  }
+
+  // Populate model
+  if (make && makeModels) {
+    populateSelect(prefix + '-model', makeModels, model, '— Select Model —');
+  }
+
+  // Populate trim
+  const trimEl = document.getElementById(prefix + '-trim');
+  if (trimEl) {
+    if (trimList) {
+      populateSelect(prefix + '-trim', trimList, trim, '— Select Trim —');
     }
   }
-  // If existing values don't match data (legacy/custom entries), inject them
-  if (year && !years.includes(year)) {
-    const yEl = document.getElementById(prefix + '-year');
-    const o = document.createElement('option'); o.value = year; o.textContent = year; o.selected = true;
-    yEl.insertBefore(o, yEl.lastElementChild);
-  }
-  if (make && VEHICLE_DATA[year] && !VEHICLE_DATA[year][make]) {
-    const mEl = document.getElementById(prefix + '-make');
-    const o = document.createElement('option'); o.value = make; o.textContent = make; o.selected = true;
-    mEl.insertBefore(o, mEl.lastElementChild);
-  }
-  if (model && VEHICLE_DATA[year] && VEHICLE_DATA[year][make] && !VEHICLE_DATA[year][make].includes(model)) {
-    const mdEl = document.getElementById(prefix + '-model');
-    const o = document.createElement('option'); o.value = model; o.textContent = model; o.selected = true;
-    mdEl.insertBefore(o, mdEl.lastElementChild);
-  }
-  if (trim) {
-    const trims = getTrims(make, model);
-    const trimEl = document.getElementById(prefix + '-trim');
-    if (trimEl && trims && !trims.includes(trim)) {
-      const o = document.createElement('option'); o.value = trim; o.textContent = trim; o.selected = true;
-      trimEl.insertBefore(o, trimEl.lastElementChild);
+
+  // Inject legacy/custom values that don't exist in the data
+  function injectIfMissing(selectId, value) {
+    if (!value) return;
+    const el = document.getElementById(selectId);
+    if (!el) return;
+    // Check if value already exists as an option
+    for (let i = 0; i < el.options.length; i++) {
+      if (el.options[i].value === value) { el.value = value; return; }
     }
+    // Not found — inject before "Other"
+    const o = document.createElement('option');
+    o.value = value; o.textContent = value; o.selected = true;
+    el.insertBefore(o, el.lastElementChild);
   }
+
+  injectIfMissing(prefix + '-year', year);
+  injectIfMissing(prefix + '-make', make);
+  injectIfMissing(prefix + '-model', model);
+  injectIfMissing(prefix + '-trim', trim);
 }
 
 let currentCustomerId    = null;
