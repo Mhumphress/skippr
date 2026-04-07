@@ -269,6 +269,9 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
     <div class="nav-item" onclick="nav('dealers')" id="nav-dealers">
       <span class="ico">◆</span> Dealers
     </div>
+    <div class="nav-item" onclick="nav('resources')" id="nav-resources">
+      <span class="ico">◇</span> Resources
+    </div>
     <div class="nav-item" onclick="nav('financials')" id="nav-financials">
       <span class="ico">◈</span> Financials
     </div>
@@ -373,6 +376,138 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <div id="dealer-table-wrap">
           <div class="loading"><div class="spinner"></div><span>Loading dealers...</span></div>
         </div>
+      </div>
+    </div>
+
+    <!-- RESOURCES -->
+    <div class="view" id="view-resources">
+      <h1 class="view-title">Industry <em>Resources</em></h1>
+      <div class="gold-rule"></div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:20px;">
+
+        <!-- Pricing & Research -->
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;">Pricing & Research</div>
+          <a href="https://www.edmunds.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Edmunds</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">True Market Value, invoice pricing, reviews, incentives</div></div>
+          </a>
+          <a href="https://www.kbb.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Kelley Blue Book (KBB)</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Fair Purchase Price, trade-in values, expert reviews</div></div>
+          </a>
+          <a href="https://www.truecar.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">TrueCar</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Real transaction data, average paid prices by area</div></div>
+          </a>
+          <a href="https://www.cars.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Cars.com</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">New & used listings, dealer inventory, price comparisons</div></div>
+          </a>
+        </div>
+
+        <!-- Invoice & Dealer Cost -->
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;">Invoice & Dealer Cost</div>
+          <a href="https://www.motortrend.com/new-cars/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">MotorTrend</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">New car pricing, specs, MSRP vs invoice breakdowns</div></div>
+          </a>
+          <a href="https://www.nadaguides.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">NADAguides</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">MSRP, invoice, used values. Trusted by dealers & lenders</div></div>
+          </a>
+          <a href="https://www.carsdirect.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">CarsDirect</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Guaranteed pricing, dealer cost data, current deals</div></div>
+          </a>
+          <a href="https://www.unhaggle.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Unhaggle</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Dealer cost reports, factory invoice pricing</div></div>
+          </a>
+        </div>
+
+        <!-- Incentives & Rebates -->
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;">Incentives & Rebates</div>
+          <a href="https://www.edmunds.com/car-incentives/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Edmunds Incentives</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Current rebates, financing deals, lease specials by region</div></div>
+          </a>
+          <a href="https://www.kbb.com/new-cars/dealer-incentives/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">KBB Incentives</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Cash back, APR offers, loyalty & conquest programs</div></div>
+          </a>
+          <a href="https://www.realcartips.com/newcars/dealer-incentive-programs.shtml" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">RealCarTips</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Hidden dealer incentives, holdback data, buying strategies</div></div>
+          </a>
+          <a href="https://fueleconomy.gov/feg/taxevb.shtml" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">FuelEconomy.gov EV Credits</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Federal EV/PHEV tax credits — which vehicles qualify</div></div>
+          </a>
+        </div>
+
+        <!-- Inventory Search -->
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;">Inventory Search</div>
+          <a href="https://www.autotrader.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">AutoTrader</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Largest dealer inventory search, new & used</div></div>
+          </a>
+          <a href="https://www.cargurus.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">CarGurus</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Deal ratings (great/good/fair/overpriced), price history</div></div>
+          </a>
+          <a href="https://markups.org/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Markups.org</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Crowdsourced dealer markup tracking — know who's charging over MSRP</div></div>
+          </a>
+          <a href="https://www.costcoauto.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Costco Auto Program</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Pre-negotiated pricing benchmark — useful for comparisons</div></div>
+          </a>
+        </div>
+
+        <!-- Reviews & Comparisons -->
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;">Reviews & Comparisons</div>
+          <a href="https://www.caranddriver.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Car and Driver</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">In-depth reviews, specs, comparison tests</div></div>
+          </a>
+          <a href="https://www.consumerreports.org/cars/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Consumer Reports</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Reliability ratings, owner satisfaction, safety data</div></div>
+          </a>
+          <a href="https://www.iihs.org/ratings" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">IIHS Safety Ratings</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Crash test results, Top Safety Pick awards</div></div>
+          </a>
+          <a href="https://www.nhtsa.gov/ratings" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">NHTSA Safety Ratings</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Government 5-star crash ratings, recalls, complaints</div></div>
+          </a>
+        </div>
+
+        <!-- Finance & Insurance -->
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:14px;">Finance & Insurance</div>
+          <a href="https://www.bankrate.com/loans/auto-loans/rates/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Bankrate Auto Loans</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Current auto loan rates, compare lenders</div></div>
+          </a>
+          <a href="https://www.capitalone.com/cars/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">Capital One Auto</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Pre-qualification, rate estimates, no impact on credit</div></div>
+          </a>
+          <a href="https://www.myfico.com/credit-education/calculators/loan-savings-calculator" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--white);text-decoration:none;transition:color 0.15s;">
+            <span style="font-size:1.1rem;">&#9670;</span>
+            <div><div style="font-weight:500;font-size:0.9rem;">myFICO Loan Calculator</div><div style="font-size:0.72rem;color:var(--gray);margin-top:2px;">Calculate payments by credit score tier</div></div>
+          </a>
+        </div>
+
       </div>
     </div>
 
