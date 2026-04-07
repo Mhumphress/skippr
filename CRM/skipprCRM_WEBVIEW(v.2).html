@@ -697,7 +697,7 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
         <label>Tier / Service Fee</label>
         <select id="inv-tier" onchange="updateInvoiceCalc()">
           <option value="1000">Tier 1 — Expert Advocate ($1,000)</option>
-          <option value="2000">Tier 2 — White Glove Concierge ($2,000)</option>
+          <option value="2500">Tier 2 — White Glove Concierge ($2,500)</option>
         </select>
       </div>
       <div class="form-field">
@@ -1847,7 +1847,7 @@ function renderCustomerDetail(id) {
       ${c.id.startsWith('SKP') ? `<div class="info-card">
         <div class="info-card-title">Invoice Breakdown</div>
         ${(() => {
-          const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2000 : 1000);
+          const fee = parseMoney(c.serviceFee) || (c.tier === 'Tier 2' ? 2500 : 1000);
           const discountAmt = calcDiscountAmount(c.discount, fee);
           const netFee = fee - discountAmt;
           const txns = getCustomerTransactions(c.id);
@@ -2904,7 +2904,7 @@ let invoiceCustomer = {};
 function openInvoiceModal(id, name, tier, discount) {
   invoiceCustomer = { id, name, tier, discount };
   document.getElementById('invoice-modal-sub').textContent = name + ' · ' + id;
-  document.getElementById('inv-tier').value = tier === 'Tier 2' ? '2000' : '1000';
+  document.getElementById('inv-tier').value = tier === 'Tier 2' ? '2500' : '1000';
   document.getElementById('inv-discount').value = discount && discount !== 'None' ? discount : 'None';
   document.getElementById('inv-method').value = '';
   document.getElementById('inv-status').value = id.startsWith('SKC') ? 'Draft' : 'Pending';
@@ -3139,7 +3139,7 @@ function getConvDiscountValue() {
 
 function updateConvertCalc() {
   const tier = document.getElementById('conv-tier').value;
-  const fee = tier === 'Tier 2' ? 2000 : 1000;
+  const fee = tier === 'Tier 2' ? 2500 : 1000;
   const discount = getConvDiscountValue();
   const discountAmt = calcDiscountAmount(discount, fee);
   const total = fee - discountAmt;

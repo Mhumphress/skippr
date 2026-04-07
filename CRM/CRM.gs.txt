@@ -1133,7 +1133,7 @@ function doGet(e) {
           if (i === 0) return;
           if (String(row[0]).trim() === skcId) {
             const r = i + 1;
-            const newFee = p.tier === 'Tier 2' ? 2000 : 1000;
+            const newFee = p.tier === 'Tier 2' ? 2500 : 1000;
             const discountMult = calcDiscountMultiplier(convDiscount, newFee);
             const netFee = Math.round(newFee * discountMult * 100) / 100;
             const taxHeld = Math.round(netFee * 0.60 * 100) / 100;
@@ -1160,7 +1160,7 @@ function doGet(e) {
         });
         // If no draft invoice existed for this SKC, create a new one with payment info
         if (!invoiceUpdated) {
-          const serviceFee = p.tier === 'Tier 2' ? 2000 : 1000;
+          const serviceFee = p.tier === 'Tier 2' ? 2500 : 1000;
           const discountMult2 = calcDiscountMultiplier(convDiscount, serviceFee);
           const netFee2 = Math.round(serviceFee * discountMult2 * 100) / 100;
           const taxHeld2 = Math.round(netFee2 * 0.60 * 100) / 100;
@@ -2121,7 +2121,7 @@ function doGet(e) {
         if (tmpl.hasInvoice) {
           var finSheet = ss.getSheetByName('Financials');
           if (finSheet) {
-            var serviceFee = tmpl.tier === 'Tier 2' ? 2000 : 1000;
+            var serviceFee = tmpl.tier === 'Tier 2' ? 2500 : 1000;
             var discMult = calcDiscountMultiplier(discount, serviceFee);
             var netFee = Math.round(serviceFee * discMult * 100) / 100;
             var processingFee = pick([0, 0, 25, 30, 45]);
