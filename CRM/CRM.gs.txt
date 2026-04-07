@@ -1055,12 +1055,18 @@ function doGet(e) {
 
       const pipeline = ss.getSheetByName('Pipeline');
       // Read trade-in and deal data from old SKC row before closing it
+      let skcYear = '', skcMake = '', skcModel = '', skcTrim = '', skcExtColor = '';
       let skcTradeVehicle = '', skcTradeVin = '', skcTradeValue = '';
       let skcInitialPrice = '', skcSavings = '', skcFinalPrice = '', skcDiscount = '';
       let skcBudget = '', skcTimeline = '', skcFinancing = '', skcLeadSource = '', skcCommPref = '', skcUrgency = '', skcNotes = '';
       if (pipeline) {
         pipeline.getDataRange().getValues().forEach((row, i) => {
           if (i > 0 && String(row[0]).trim() === skcId) {
+            skcYear         = String(row[6]  || '');
+            skcMake         = String(row[7]  || '');
+            skcModel        = String(row[8]  || '');
+            skcTrim         = String(row[9]  || '');
+            skcExtColor     = String(row[10] || '');
             skcTradeVehicle = String(row[33] || '');
             skcTradeVin     = String(row[34] || '');
             skcTradeValue   = String(row[35] || '');
@@ -1102,7 +1108,7 @@ function doGet(e) {
         pipeline.appendRow([
           skpId, p.customerName || '', '',
           p.tier || '', p.rep || '', 'Searching',
-          '', '', '', '', '', '',
+          skcYear, skcMake, skcModel, skcTrim, skcExtColor, '',
           today, today, '',
           skcFinalPrice, skcSavings, '', convDiscount, '',
           'Purchase', skcId, '',
