@@ -557,8 +557,8 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field"><label>Make</label><select id="ac-make" onchange="onMakeChange('ac')"><option value="">— Select —</option></select></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Model</label><select id="ac-model"><option value="">— Select —</option></select></div>
-      <div class="form-field"><label>Trim</label><input id="ac-trim" placeholder="e.g. TRD Pro"/></div>
+      <div class="form-field"><label>Model</label><select id="ac-model" onchange="onModelChange('ac')"><option value="">— Select —</option></select></div>
+      <div class="form-field"><label>Trim</label><select id="ac-trim"><option value="">— Select —</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Exterior Color</label><input id="ac-color" placeholder="e.g. Midnight Black"/></div>
@@ -596,8 +596,8 @@ tbody td.name-cell{color:var(--white);font-weight:500;}
       <div class="form-field"><label>Make</label><select id="ec-make" onchange="onMakeChange('ec')"><option value="">— Select —</option></select></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Model</label><select id="ec-model"><option value="">— Select —</option></select></div>
-      <div class="form-field"><label>Trim</label><input id="ec-trim"/></div>
+      <div class="form-field"><label>Model</label><select id="ec-model" onchange="onModelChange('ec')"><option value="">— Select —</option></select></div>
+      <div class="form-field"><label>Trim</label><select id="ec-trim"><option value="">— Select —</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Ext Color</label><input id="ec-color"/></div>
@@ -1141,6 +1141,62 @@ const VEHICLE_DATA = {
   }
 };
 
+// ── TRIM DATA (2025 US Market — used for both years) ─────────
+const TRIM_DATA = {
+  "Toyota|Corolla":["LE","SE","FX","XSE"],"Toyota|Corolla Cross":["L","LE","XLE"],"Toyota|Camry":["LE","SE","XSE","XLE"],"Toyota|Crown":["XLE","Limited","Nightshade","Platinum"],"Toyota|Prius":["LE","XLE","Nightshade","Limited"],"Toyota|Prius Prime":["SE","XSE","XSE Premium"],"Toyota|GR86":["Base","Premium","Hakone Edition"],"Toyota|GR Supra":["3.0","3.0 Premium"],"Toyota|GR Corolla":["Core","Premium","Premium Plus"],"Toyota|bZ4X":["XLE","Nightshade","Limited"],"Toyota|RAV4":["LE","XLE","XLE Premium","Limited"],"Toyota|RAV4 Prime":["SE","XSE"],"Toyota|Highlander":["LE","XLE","XSE","Limited","Platinum"],"Toyota|4Runner":["SR5","TRD Sport","TRD Sport Premium","TRD Off-Road","TRD Off-Road Premium","Limited","Platinum","TRD Pro","Trailhunter"],"Toyota|Sequoia":["SR5","Limited","Platinum","1794","TRD Pro","Capstone"],"Toyota|Land Cruiser":["1958","Land Cruiser"],"Toyota|Tacoma":["SR","SR5","TRD PreRunner","TRD Sport","TRD Off-Road","Limited","TRD Pro","Trailhunter"],"Toyota|Tundra":["SR","SR5","Limited","Platinum","1794","TRD Pro","Capstone"],"Toyota|Sienna":["LE","XLE","XSE","Woodland Edition","Limited","Platinum"],
+  "Honda|Civic":["LX","Sport","Sport Hybrid","Sport Touring Hybrid","Si","Type R"],"Honda|Accord":["Sport","Sport Hybrid","EX-L","EX-L Hybrid","Sport-L Hybrid","Touring","Touring Hybrid"],"Honda|CR-V":["LX","EX","Sport Hybrid","EX-L","Sport-L Hybrid","Sport Touring Hybrid"],"Honda|HR-V":["LX","Sport","EX-L"],"Honda|Pilot":["Sport","EX-L","TrailSport","Touring","Elite","Black Edition"],"Honda|Passport":["EX-L","TrailSport","Black Edition"],"Honda|Ridgeline":["Sport","RTL","TrailSport","Black Edition"],"Honda|Odyssey":["EX-L","Sport-L","Touring","Elite"],"Honda|Prologue":["EX","Touring","Elite"],"Honda|Prelude":["Base"],
+  "Ford|Mustang":["EcoBoost","EcoBoost Premium","GT","GT Premium","Dark Horse","Dark Horse Premium"],"Ford|Mustang Mach-E":["Select","Premium","GT","Rally"],"Ford|Bronco":["Base","Big Bend","Heritage Edition","Outer Banks","Badlands","Raptor"],"Ford|Bronco Sport":["Big Bend","Heritage","Free Wheeling","Outer Banks","Badlands"],"Ford|Explorer":["Active","ST-Line","ST","Platinum"],"Ford|Expedition":["Active","King Ranch","Tremor","Platinum"],"Ford|Escape":["Active","PHEV","ST-Line","ST-Line Select","ST-Line Elite","Platinum"],"Ford|Maverick":["XL","XLT","Lobo","Lariat","Tremor"],"Ford|Ranger":["XL","XLT","Lariat","Raptor"],"Ford|F-150":["XL","STX","XLT","Lariat","King Ranch","Platinum","Tremor","Raptor","Raptor R"],"Ford|F-150 Lightning":["Pro","XLT","Flash","Lariat","Platinum"],"Ford|F-250 Super Duty":["XL","XLT","Lariat","King Ranch","Platinum"],"Ford|F-350 Super Duty":["XL","XLT","Lariat","King Ranch","Platinum"],"Ford|Transit":["Base"],"Ford|E-Transit":["Base"],
+  "Chevrolet|Trax":["LS","1RS","LT","ACTIV","2RS"],"Chevrolet|Trailblazer":["LS","LT","ACTIV","RS","ACTIV Plus"],"Chevrolet|Equinox":["LT","RS","ACTIV"],"Chevrolet|Equinox EV":["LT","RS"],"Chevrolet|Blazer":["2LT","3LT","RS","Premier"],"Chevrolet|Blazer EV":["LT","RS","SS"],"Chevrolet|Traverse":["LS","LT","RS","Z71","Premier","High Country"],"Chevrolet|Tahoe":["LS","LT","RST","Z71","Premier","High Country"],"Chevrolet|Suburban":["LS","LT","RST","Z71","Premier","High Country"],"Chevrolet|Colorado":["WT","LT","Trail Boss","Z71","ZR2"],"Chevrolet|Silverado 1500":["WT","Custom","LT","RST","Custom Trail Boss","LT Trail Boss","LTZ","High Country","ZR2"],"Chevrolet|Silverado 2500HD":["WT","Custom","LT","LTZ","ZR2","High Country"],"Chevrolet|Silverado 3500HD":["WT","Custom","LT","LTZ","High Country"],"Chevrolet|Silverado EV":["WT","LT","RST"],"Chevrolet|Corvette Stingray":["1LT","2LT","3LT"],"Chevrolet|Corvette Z06":["1LZ","2LZ","3LZ"],"Chevrolet|Corvette E-Ray":["1LZ","2LZ","3LZ"],"Chevrolet|Corvette ZR1":["1LZ","3LZ"],"Chevrolet|Malibu":["LS","RS","LT","2LT"],
+  "Hyundai|Venue":["SE","SEL","Limited"],"Hyundai|Kona":["SE","SEL","SEL Convenience","N Line S","N Line","Limited"],"Hyundai|Kona Electric":["SE","SEL","N Line","Limited"],"Hyundai|Tucson":["SE","SEL","Blue","SEL Convenience","XRT","N Line","Limited"],"Hyundai|Tucson Hybrid":["Blue","SEL Convenience","N Line","Limited"],"Hyundai|Santa Fe":["SE","SEL","XRT","Limited","Calligraphy"],"Hyundai|Santa Fe Hybrid":["SEL","Limited","Calligraphy"],"Hyundai|Palisade":["SE","SEL","XRT","SEL Premium","Limited","Calligraphy","Calligraphy Night"],"Hyundai|Elantra":["SE","SEL Sport","SEL Convenience","N Line","Limited"],"Hyundai|Elantra Hybrid":["Blue","SEL Sport","Limited"],"Hyundai|Elantra N":["N"],"Hyundai|Sonata":["SE","SEL","SEL Convenience","N Line","SEL Hybrid","Limited Hybrid"],"Hyundai|IONIQ 5":["SE Standard Range","SE","SEL","XRT","Limited"],"Hyundai|IONIQ 5 N":["N"],"Hyundai|IONIQ 6":["SE Standard Range","SE","SEL","Limited"],"Hyundai|IONIQ 9":["Long Range RWD","Long Range AWD","Performance AWD"],"Hyundai|Santa Cruz":["SE","SEL","Night","XRT","Limited"],"Hyundai|Nexo":["Blue","Limited"],
+  "Kia|K4":["LX","LXS","EX","GT-Line","GT-Line Turbo"],"Kia|K5":["LXS","GT-Line","EX","GT"],"Kia|Seltos":["LX","S","EX","X-Line","SX"],"Kia|Sportage":["LX","EX","X-Line","SX","SX Prestige","X-Pro","X-Pro Prestige"],"Kia|Sportage Hybrid":["LX","EX","SX Prestige"],"Kia|Sportage PHEV":["X-Line","X-Line SX Prestige"],"Kia|Sorento":["LX","S","EX","SX","X-Line EX","X-Line SX","X-Line SX Prestige","X-Pro SX Prestige"],"Kia|Sorento Hybrid":["EX","SX Prestige"],"Kia|Sorento PHEV":["EX","SX Prestige"],"Kia|Telluride":["LX","S","EX","EX X-Line","SX","SX X-Line","SX X-Pro","SX Prestige","SX Prestige X-Line","SX Prestige X-Pro"],"Kia|Carnival":["LX","LX Seat Package","EX","SX","SX Prestige"],"Kia|Niro":["LX","EX","EX Touring","SX","SX Touring"],"Kia|Niro EV":["Wind","Wave"],"Kia|EV6":["Light","Light Long Range","Wind","GT-Line","GT"],"Kia|EV9":["Light RWD","Light Long Range RWD","Wind AWD","Land AWD","GT-Line AWD"],"Kia|Soul":["LX","S","GT-Line","EX Prestige"],
+  "Nissan|Sentra":["S","SV","SR"],"Nissan|Altima":["S","SV","SR","SL"],"Nissan|Kicks":["S","SV","SR"],"Nissan|Rogue":["S","SV","SL","Rock Creek","Platinum"],"Nissan|Murano":["SV","SL","Platinum"],"Nissan|Pathfinder":["S","SV","SL","Rock Creek","Platinum"],"Nissan|Armada":["SV","SL","Platinum","PRO-4X","Platinum Reserve"],"Nissan|Frontier":["S","SV","PRO-X","PRO-4X","SL"],"Nissan|Z":["Sport","Performance","NISMO"],"Nissan|ARIYA":["Engage","Engage+","Evolve+","Platinum+"],
+  "Subaru|Impreza":["Base","Sport","RS"],"Subaru|WRX":["Premium","Limited","GT","tS"],"Subaru|BRZ":["Premium","Limited","tS"],"Subaru|Crosstrek":["Base","Premium","Sport","Limited","Wilderness"],"Subaru|Forester":["Base","Premium","Sport","Limited","Touring","Wilderness"],"Subaru|Outback":["Base","Premium","Onyx Edition","Limited","Touring","Onyx Edition XT","Wilderness","Limited XT","Touring XT"],"Subaru|Ascent":["Premium","Onyx Edition","Limited","Bronze Edition","Touring","Onyx Edition Touring"],"Subaru|Solterra":["Premium","Limited","Touring","Touring Onyx Edition"],"Subaru|Legacy":["Base","Premium","Limited","Sport","Touring XT"],"Subaru|Crosstrek Hybrid":["Base","Premium"],
+  "Mazda|Mazda3":["2.5 S","2.5 S Select Sport","2.5 S Preferred","2.5 S Carbon Edition","2.5 S Premium","2.5 Carbon Turbo","2.5 Turbo Premium Plus"],"Mazda|MX-5 Miata":["Sport","Club","Grand Touring","35th Anniversary Edition"],"Mazda|CX-30":["2.5 S","2.5 S Select Sport","2.5 S Preferred","2.5 S Carbon Edition","2.5 S Premium","2.5 Carbon Turbo","2.5 Turbo Premium Plus"],"Mazda|CX-5":["2.5 S","2.5 S Select","2.5 S Preferred","2.5 S Carbon Edition","2.5 S Premium Plus","2.5 Carbon Turbo","2.5 Turbo Premium","2.5 Turbo Signature"],"Mazda|CX-50":["2.5 S Select","2.5 S Preferred","2.5 S Premium","2.5 S Premium Plus","2.5 Turbo Meridian","2.5 Turbo Premium","2.5 Turbo Premium Plus"],"Mazda|CX-50 Hybrid":["Preferred","Premium","Premium Plus"],"Mazda|CX-70":["3.3 Turbo Preferred","3.3 Turbo Premium","3.3 Turbo Premium Plus","3.3 Turbo S Premium","3.3 Turbo S Premium Plus"],"Mazda|CX-70 PHEV":["PHEV Premium","PHEV Premium Plus"],"Mazda|CX-90":["3.3 Turbo Select","3.3 Turbo Preferred","3.3 Turbo Premium Sport","3.3 Turbo Premium Plus","3.3 Turbo S Premium","3.3 Turbo S Premium Plus"],"Mazda|CX-90 PHEV":["PHEV Preferred","PHEV Premium Sport","PHEV Premium Plus"],
+  "Volkswagen|Jetta":["S","Sport","SE","SEL"],"Volkswagen|Jetta GLI":["Autobahn"],"Volkswagen|Golf GTI":["S","SE","Autobahn"],"Volkswagen|Golf R":["Base","Black Edition"],"Volkswagen|Taos":["S","SE","SE Black","SEL"],"Volkswagen|Tiguan":["S","SE","SE R-Line Black","SEL R-Line"],"Volkswagen|Atlas":["SE","SE with Technology","SE with Technology Peak Edition","SEL","SEL Premium R-Line"],"Volkswagen|Atlas Cross Sport":["SE","SE with Technology","SEL","SEL R-Line Black","SEL Premium R-Line"],"Volkswagen|ID.4":["Standard","Pro","S","Pro S","Pro S Plus"],"Volkswagen|ID. Buzz":["Pro S","Pro S Plus","1st Edition"],
+  "BMW|2 Series":["230i Coupe","230i xDrive Coupe","M240i Coupe","M240i xDrive Coupe"],"BMW|3 Series":["330i","330i xDrive","M340i","M340i xDrive"],"BMW|4 Series":["430i Coupe","430i xDrive Coupe","M440i Coupe","M440i xDrive Coupe","430i Convertible","430i xDrive Gran Coupe","M440i xDrive Gran Coupe"],"BMW|5 Series":["530i","530i xDrive","540i xDrive","550e xDrive"],"BMW|7 Series":["740i","740i xDrive","760i xDrive"],"BMW|8 Series":["840i Gran Coupe","840i xDrive Gran Coupe","M850i xDrive Gran Coupe"],"BMW|X1":["xDrive28i","M35i xDrive"],"BMW|X2":["xDrive28i","M35i xDrive"],"BMW|X3":["xDrive30i","M50 xDrive"],"BMW|X4":["xDrive30i","M40i"],"BMW|X5":["xDrive40i","xDrive50e","M60i xDrive"],"BMW|X6":["xDrive40i","M60i xDrive"],"BMW|X7":["xDrive40i","M60i xDrive"],"BMW|Z4":["sDrive30i","M40i"],"BMW|i4":["eDrive35","eDrive40","xDrive40","M50"],"BMW|i5":["eDrive40","xDrive40","M60"],"BMW|i7":["xDrive60","M70 xDrive"],"BMW|iX":["xDrive50","M60"],"BMW|M2":["Base"],"BMW|M3":["Base","Competition","Competition xDrive"],"BMW|M4":["Base","Competition","Competition xDrive","Competition Convertible"],"BMW|M5":["Base"],"BMW|X3 M":["Base"],"BMW|X5 M":["Competition"],"BMW|X6 M":["Competition"],"BMW|M8":["Competition Gran Coupe"],
+  "Mercedes-Benz|A-Class":["A 220","A 220 4MATIC","AMG A 35 4MATIC"],"Mercedes-Benz|C-Class":["C 300","C 300 4MATIC","AMG C 43 4MATIC","AMG C 63 S E PERFORMANCE"],"Mercedes-Benz|CLA":["CLA 250","CLA 250 4MATIC"],"Mercedes-Benz|CLE Coupe":["CLE 300 4MATIC","AMG CLE 53 4MATIC+"],"Mercedes-Benz|CLE Cabriolet":["CLE 300 4MATIC","AMG CLE 53 4MATIC+"],"Mercedes-Benz|E-Class":["E 350 4MATIC","E 450 4MATIC","AMG E 53 Hybrid 4MATIC+"],"Mercedes-Benz|S-Class":["S 450 4MATIC","S 580 4MATIC","AMG S 63 E PERFORMANCE"],"Mercedes-Benz|Maybach S-Class":["S 580 4MATIC","S 680 4MATIC"],"Mercedes-Benz|AMG GT Coupe":["AMG GT 43","AMG GT 55 4MATIC+","AMG GT 63 4MATIC+"],"Mercedes-Benz|AMG GT 4-Door":["AMG GT 43","AMG GT 55 4MATIC+","AMG GT 63 4MATIC+","AMG GT 63 S E PERFORMANCE"],"Mercedes-Benz|GLA":["GLA 250","GLA 250 4MATIC","AMG GLA 35 4MATIC"],"Mercedes-Benz|GLB":["GLB 250","GLB 250 4MATIC","AMG GLB 35 4MATIC"],"Mercedes-Benz|GLC":["GLC 300","GLC 300 4MATIC","GLC 350e 4MATIC","AMG GLC 43","AMG GLC 63 S E PERFORMANCE"],"Mercedes-Benz|GLC Coupe":["GLC 300 4MATIC","AMG GLC 43 4MATIC","AMG GLC 63 S E PERFORMANCE"],"Mercedes-Benz|GLE":["GLE 350","GLE 350 4MATIC","GLE 450e 4MATIC","GLE 580 4MATIC","AMG GLE 53 4MATIC+","AMG GLE 63 S 4MATIC+"],"Mercedes-Benz|GLE Coupe":["GLE 450 4MATIC","AMG GLE 53 4MATIC+","AMG GLE 63 S 4MATIC+"],"Mercedes-Benz|GLS":["GLS 450 4MATIC","GLS 580 4MATIC","AMG GLS 63 4MATIC+"],"Mercedes-Benz|Maybach GLS":["GLS 600 4MATIC"],"Mercedes-Benz|G-Class":["G 550","AMG G 63"],"Mercedes-Benz|EQB":["EQB 250+","EQB 300 4MATIC","EQB 350 4MATIC"],"Mercedes-Benz|EQE SUV":["EQE 350+ SUV","EQE 350 4MATIC SUV","EQE 500 4MATIC SUV","AMG EQE 53 4MATIC+ SUV"],"Mercedes-Benz|EQS Sedan":["EQS 450+","EQS 450 4MATIC","EQS 580 4MATIC","AMG EQS 53 4MATIC+"],"Mercedes-Benz|EQS SUV":["EQS 450+ SUV","EQS 450 4MATIC SUV","EQS 580 4MATIC SUV","AMG EQS 53 4MATIC+ SUV"],
+  "Audi|A3":["40 TFSI","40 TFSI quattro"],"Audi|A4":["40 TFSI","40 TFSI quattro","45 TFSI quattro"],"Audi|A5":["40 TFSI","45 TFSI quattro"],"Audi|A6":["45 TFSI","45 TFSI quattro","55 TFSI quattro"],"Audi|A7":["55 TFSI quattro"],"Audi|A8":["55 TFSI quattro","60 TFSI e quattro"],"Audi|Q3":["40 TFSI","40 TFSI quattro"],"Audi|Q5":["40 TFSI quattro","45 TFSI quattro"],"Audi|Q7":["45 TFSI","45 TFSI quattro","55 TFSI quattro"],"Audi|Q8":["55 TFSI quattro"],"Audi|Q4 e-tron":["40","50 quattro","Sportback 40","Sportback 50 quattro"],"Audi|Q6 e-tron":["quattro","SQ6 e-tron"],"Audi|Q8 e-tron":["50 quattro","55 quattro","SQ8 e-tron"],"Audi|A6 e-tron":["quattro","S6 e-tron"],"Audi|e-tron GT":["Base","Performance"],"Audi|RS e-tron GT":["Base","Performance"],"Audi|S3":["Base"],"Audi|S5":["Coupe","Sportback"],"Audi|S6":["Base"],"Audi|S7":["Base"],"Audi|S8":["Base"],"Audi|SQ5":["Base"],"Audi|SQ7":["Base"],"Audi|SQ8":["Base"],"Audi|SQ6 e-tron":["Base"],"Audi|RS 5":["Coupe","Sportback"],"Audi|RS 6 Avant":["Base","Performance"],"Audi|RS 7":["Base","Performance"],
+  "Lexus|IS":["IS 300","IS 300 AWD","IS 350 F SPORT","IS 350 F SPORT AWD","IS 500 F SPORT Performance"],"Lexus|ES":["ES 250 AWD","ES 300h","ES 350","ES 350 F SPORT"],"Lexus|LS":["LS 500","LS 500 F SPORT","LS 500h","LS 500h F SPORT"],"Lexus|LC 500":["Base","Inspiration Series"],"Lexus|LC 500 Convertible":["Base","Inspiration Series"],"Lexus|UX":["UX 250h","UX 300h","UX 300h F SPORT"],"Lexus|NX":["NX 250","NX 350","NX 350h","NX 350h AWD","NX 450h+ F SPORT","NX 450h+ Luxury"],"Lexus|RX":["RX 350","RX 350 F SPORT","RX 350h","RX 350h F SPORT","RX 500h F SPORT Performance"],"Lexus|TX":["TX 350","TX 500h","TX 500h F SPORT","TX 550h+ F SPORT Performance"],"Lexus|GX":["GX 550 Premium","GX 550 Premium+","GX 550 Luxury","GX 550 Luxury+","GX 550 Overtrail","GX 550 Overtrail+"],"Lexus|LX":["LX 600 Standard","LX 600 Premium","LX 600 F SPORT","LX 600 Luxury","LX 700h F SPORT Performance"],"Lexus|RZ":["RZ 300e","RZ 300e Premium","RZ 450e"],"Lexus|RC":["RC 300","RC 300 F SPORT","RC 350 F SPORT","RC F"],
+  "Genesis|G70":["2.0T","2.0T AWD","3.3T AWD","3.3T Sport AWD"],"Genesis|G80":["2.5T","2.5T AWD","3.5T AWD","3.5T Sport AWD"],"Genesis|G90":["3.5T AWD","3.5T e-Supercharger AWD"],"Genesis|GV60":["Standard","Advanced","Performance"],"Genesis|GV70":["2.5T","2.5T AWD","3.5T Sport AWD"],"Genesis|GV80":["2.5T","2.5T AWD","3.5T AWD","3.5T Sport AWD"],"Genesis|GV80 Coupe":["2.5T AWD","3.5T AWD","3.5T Sport AWD"],"Genesis|Electrified G80":["Base"],"Genesis|Electrified GV70":["Base"],
+  "Acura|Integra":["A-Spec","A-Spec Technology","Type S"],"Acura|ADX":["Base","A-Spec","Advance"],"Acura|TLX":["Base","Technology","A-Spec","Advance","Type S","Type S PMC Edition"],"Acura|RDX":["Base","Technology","A-Spec","Advance","A-Spec Advance"],"Acura|MDX":["Base","Technology","A-Spec","Advance","A-Spec Advance","Type S","Type S Advance"],"Acura|ZDX":["A-Spec","A-Spec AWD","Type S"],
+  "Infiniti|QX50":["Pure","Luxe","Sensory","Autograph"],"Infiniti|QX55":["Luxe","Essential","Sensory"],"Infiniti|QX60":["Pure","Luxe","Sensory","Autograph"],"Infiniti|QX80":["Sensory","Autograph","Autograph Four Seasons"],
+  "Lincoln|Corsair":["Standard","Reserve"],"Lincoln|Nautilus":["Standard","Reserve"],"Lincoln|Aviator":["Standard","Reserve"],"Lincoln|Navigator":["Standard","Reserve","Black Label"],
+  "Cadillac|CT4":["Luxury","Premium Luxury","Sport","V-Series","V-Series Blackwing"],"Cadillac|CT5":["Luxury","Premium Luxury","Sport","V-Series","V-Series Blackwing"],"Cadillac|Escalade":["Luxury","Premium Luxury","Premium Luxury Platinum","Sport","Sport Platinum"],"Cadillac|Escalade-V":["Base"],"Cadillac|XT4":["Luxury","Premium Luxury","Sport"],"Cadillac|XT5":["Luxury","Premium Luxury","Sport"],"Cadillac|XT6":["Luxury","Premium Luxury","Sport"],"Cadillac|LYRIQ":["Tech","Sport","Luxury"],"Cadillac|OPTIQ":["Luxury","Sport"],"Cadillac|VISTIQ":["Luxury","Sport"],"Cadillac|Escalade IQ":["Luxury","Sport"],"Cadillac|CELESTIQ":["Base"],
+  "Volvo|XC40":["B4 Core","B4 Plus","B4 Ultimate"],"Volvo|EX40":["Single Motor","Twin Motor"],"Volvo|XC60":["B5 Core","B5 Plus","B5 Ultimate","T8 Polestar Engineered"],"Volvo|XC90":["B5 Core","B5 Plus","B5 Ultimate","T8 Plus","T8 Ultimate"],"Volvo|EX30":["Single Motor","Single Motor Plus","Twin Motor","Twin Motor Performance"],"Volvo|EX90":["Single Motor","Twin Motor","Twin Motor Performance"],"Volvo|V60 Cross Country":["B5","B5 Plus"],"Volvo|V90 Cross Country":["B5 Plus","B5 Ultimate"],"Volvo|EC40":["Single Motor","Twin Motor"],
+  "GMC|Terrain":["SLE","AT4","Denali"],"GMC|Acadia":["SLE","AT4","Denali"],"GMC|Yukon":["SLE","SLT","AT4","AT4X","Denali","Denali Ultimate"],"GMC|Yukon XL":["SLE","SLT","AT4","Denali","Denali Ultimate"],"GMC|Canyon":["Elevation","AT4","AT4X","Denali"],"GMC|Sierra 1500":["Pro","SLE","Elevation","SLT","AT4","AT4X","Denali","Denali Ultimate"],"GMC|Sierra 2500HD":["Pro","SLE","SLT","AT4","AT4X","Denali","Denali Ultimate"],"GMC|Sierra 3500HD":["Pro","SLE","SLT","AT4","Denali","Denali Ultimate"],"GMC|Sierra EV":["Elevation","AT4","Denali Edition 1"],"GMC|Hummer EV Pickup":["2X","3X"],"GMC|Hummer EV SUV":["2X","3X"],
+  "Ram|1500":["Tradesman","Big Horn","Laramie","Rebel","Limited","RHO","Tungsten","REV"],"Ram|1500 Ramcharger":["Laramie","Limited","Tungsten"],"Ram|2500":["Tradesman","Big Horn","Laramie","Rebel","Limited","Power Wagon"],"Ram|3500":["Tradesman","Big Horn","Laramie","Limited"],"Ram|ProMaster":["1500 Low Roof","1500 High Roof","2500 High Roof","3500 High Roof","3500 EXT High Roof"],
+  "Jeep|Compass":["Sport","Latitude","Latitude Lux","Trailhawk","Limited"],"Jeep|Wrangler":["Sport","Sport S","Willys","Sahara","Rubicon","Rubicon 392"],"Jeep|Wrangler 4xe":["Willys","Sahara","Rubicon"],"Jeep|Gladiator":["Sport","Sport S","Willys","Rubicon","Rubicon X","Mojave"],"Jeep|Grand Cherokee":["Laredo","Altitude","Limited","Trailhawk","Overland","Summit","Summit Reserve","SRT"],"Jeep|Grand Cherokee 4xe":["Limited","Trailhawk","Overland","Summit","Summit Reserve"],"Jeep|Grand Cherokee L":["Laredo","Altitude","Limited","Overland","Summit","Summit Reserve"],"Jeep|Grand Wagoneer":["Series I","Series II","Series III","Hurricane 510","Hurricane 600"],"Jeep|Wagoneer S":["Launch Edition","Base"],"Jeep|Cherokee":["Latitude","Latitude Lux","Limited","Trailhawk"],"Jeep|Recon":["Base"],
+  "Land Rover|Range Rover":["SE","HSE","Autobiography","SV","First Edition"],"Land Rover|Range Rover Sport":["SE","Dynamic SE","Dynamic HSE","Autobiography","SV Edition One"],"Land Rover|Range Rover Velar":["P250 S","P250 Dynamic SE","P340 Dynamic SE","P400 Dynamic HSE"],"Land Rover|Range Rover Evoque":["S","Dynamic SE","Autobiography"],"Land Rover|Discovery":["S","Dynamic SE","Dynamic HSE","Metropolitan Edition"],"Land Rover|Discovery Sport":["S","Dynamic SE","Dynamic HSE"],"Land Rover|Defender 90":["Base","S","X-Dynamic SE","X-Dynamic HSE","X","V8"],"Land Rover|Defender 110":["Base","S","X-Dynamic SE","X-Dynamic HSE","X","V8","Outbound"],"Land Rover|Defender 130":["SE","X-Dynamic HSE","X","Outbound"],
+  "Dodge|Charger":["SXT","SXT AWD","R/T","Scat Pack","Daytona EV"],"Dodge|Charger Daytona EV":["R/T","Scat Pack"],"Dodge|Hornet":["GT","GT Plus","R/T","R/T Plus"],"Dodge|Durango":["SXT","GT","R/T","R/T Plus","Citadel","SRT Hellcat"],
+  "Buick|Encore GX":["Preferred","Sport Touring","Avenir"],"Buick|Envision":["Preferred","Sport Touring","Avenir"],"Buick|Enclave":["Preferred","Sport Touring","Avenir"],
+  "Chrysler|Pacifica":["Touring","Touring L","Limited","Pinnacle"],"Chrysler|Pacifica Plug-in Hybrid":["Select","S Appearance","Pinnacle"],
+  "Mitsubishi|Outlander":["ES","SE","SE Launch Edition","SEL","40th Anniversary Edition","SEL Touring"],"Mitsubishi|Outlander PHEV":["ES","SE","SEL","40th Anniversary Edition","SEL Touring"],"Mitsubishi|Outlander Sport":["ES","SE","LE"],"Mitsubishi|Eclipse Cross":["ES","SE","SEL"],
+  "Tesla|Model 3":["Base","Long Range","Long Range AWD","Performance"],"Tesla|Model Y":["Base","Long Range","Long Range AWD","Performance"],"Tesla|Model S":["AWD","Plaid"],"Tesla|Model X":["AWD","Plaid"],"Tesla|Cybertruck":["Long Range RWD","AWD","Cyberbeast"],
+  "Rivian|R1T":["Adventure Dual Standard","Adventure Dual Large","Adventure Dual Max","Ascend Tri Max","Ascend Quad"],"Rivian|R1S":["Adventure Dual Standard","Adventure Dual Large","Adventure Dual Max","Ascend Tri Max"],"Rivian|R2":["Base"],
+  "Lucid|Air":["Pure","Touring","Grand Touring","Sapphire"],"Lucid|Gravity":["Touring","Grand Touring"],
+  "Polestar|Polestar 2":["Long Range Single Motor","Long Range Dual Motor"],"Polestar|Polestar 3":["Long Range Dual Motor","Long Range Dual Motor with Performance Pack"],"Polestar|Polestar 4":["Long Range Single Motor","Long Range Dual Motor"],"Polestar|Polestar 5":["Base"],
+  "Porsche|911":["Carrera","Carrera T","Carrera S","Carrera GTS","Carrera 4","Carrera 4S","Carrera 4 GTS","Targa 4","Targa 4S","Targa 4 GTS","Turbo","Turbo S","Turbo S Cabriolet","GT3","GT3 RS","GT3 Touring","S/T"],"Porsche|718 Cayman":["Cayman","Cayman S","Cayman GTS 4.0","Cayman GT4","Cayman GT4 RS"],"Porsche|718 Boxster":["Boxster","Boxster S","Boxster GTS 4.0","Spyder","Spyder RS"],"Porsche|Cayenne":["Base","E-Hybrid","S","S E-Hybrid","GTS","Turbo E-Hybrid"],"Porsche|Cayenne Coupe":["Base","E-Hybrid","S","S E-Hybrid","GTS","Turbo E-Hybrid"],"Porsche|Macan":["Base","T","S","GTS"],"Porsche|Macan Electric":["Macan","Macan 4","Macan 4S","Macan Turbo"],"Porsche|Taycan":["Base","4S","GTS","Turbo","Turbo S","Turbo GT"],"Porsche|Taycan Cross Turismo":["4","4S","GTS","Turbo","Turbo S"],"Porsche|Panamera":["Base","4","4 E-Hybrid","4S E-Hybrid","GTS","Turbo S E-Hybrid","Turbo E-Hybrid"],
+  "Mini|Cooper 2-Door":["Classic","Signature","Iconic"],"Mini|Cooper S 2-Door":["Signature","Iconic"],"Mini|JCW 2-Door":["Base"],"Mini|Cooper 4-Door":["Classic","Signature","Iconic"],"Mini|Cooper S 4-Door":["Signature","Iconic"],"Mini|Cooper Convertible":["Classic","Signature","Iconic"],"Mini|Cooper S Convertible":["Signature","Iconic"],"Mini|Countryman S ALL4":["Classic","Signature","Iconic"],"Mini|Countryman SE ALL4":["Signature","Iconic"],"Mini|JCW Countryman ALL4":["Base"],
+  "VinFast|VF 8":["Eco","Plus"],"VinFast|VF 9":["Eco","Plus"],
+  "Fiat|500e":["Inspired By Beauty","Inspired By Music","Inspired By Los Angeles"],
+  "Ferrari|296 GTB":["Base","Assetto Fiorano"],"Ferrari|296 GTS":["Base","Assetto Fiorano"],"Ferrari|Roma":["Base"],"Ferrari|Roma Spider":["Base"],"Ferrari|SF90 Stradale":["Base","Assetto Fiorano"],"Ferrari|SF90 Spider":["Base","Assetto Fiorano"],"Ferrari|Purosangue":["Base"],"Ferrari|12Cilindri":["Base"],"Ferrari|12Cilindri Spider":["Base"],"Ferrari|F80":["Base"],
+  "Lamborghini|Revuelto":["Base"],"Lamborghini|Temerario":["Base"],"Lamborghini|Urus SE":["Base"],
+  "McLaren|Artura":["Base"],"McLaren|Artura Spider":["Base"],"McLaren|750S":["Base"],"McLaren|750S Spider":["Base"],"McLaren|GTS":["Base"],"McLaren|W1":["Base"],
+  "Aston Martin|Vantage":["Base"],"Aston Martin|DB12":["Base","Volante"],"Aston Martin|Vanquish":["Base"],"Aston Martin|DBX707":["Base"],"Aston Martin|Valhalla":["Base"],
+  "Bentley|Continental GT":["Base","Speed","S"],"Bentley|Continental GTC":["Base","Speed","S"],"Bentley|Flying Spur":["Base","Speed","S"],"Bentley|Bentayga":["Base","S","Azure"],"Bentley|Bentayga EWB":["Base","Azure","First Edition"],
+  "Rolls-Royce|Phantom":["Base","Extended"],"Rolls-Royce|Ghost":["Base","Extended"],"Rolls-Royce|Cullinan":["Base","Black Badge"],"Rolls-Royce|Spectre":["Base"],
+  "Maserati|Grecale":["GT","Modena","Trofeo"],"Maserati|Grecale Folgore":["Folgore"],"Maserati|GranTurismo":["Modena","Trofeo"],"Maserati|GranTurismo Folgore":["Folgore"],"Maserati|GranCabrio":["Modena","Trofeo"],"Maserati|MC20":["Base"],"Maserati|MC20 Cielo":["Base"],
+  "Lotus|Emira":["I4","I4 First Edition","V6","V6 First Edition"],"Lotus|Eletre":["Base","S","R"],"Lotus|Emeya":["Base","S","R"],
+  "Alfa Romeo|Giulia":["Sprint","Ti","Veloce","Quadrifoglio"],"Alfa Romeo|Stelvio":["Sprint","Ti","Veloce","Quadrifoglio"],"Alfa Romeo|Tonale":["Sprint","Ti","Veloce","PHEV"],
+  "Jaguar|F-PACE":["P250 S","P250 R-Dynamic SE","P400 R-Dynamic SE","P400 R-Dynamic HSE","SVR 575"],
+  "Scout|Terra":["Base"],"Scout|Traveler":["Base"],
+};
+
+// Helper: get trims for a make+model combo
+function getTrims(make, model) {
+  return TRIM_DATA[make + '|' + model] || null;
+}
+
 // Helper: populate a <select> with options, optionally pre-selecting a value
 function populateSelect(selectId, items, selected, placeholder) {
   const el = document.getElementById(selectId);
@@ -1155,37 +1211,61 @@ function populateSelect(selectId, items, selected, placeholder) {
   el.innerHTML += '<option value="Other">Other</option>';
 }
 
-// Cascading: when year changes, populate makes
+// Cascading: when year changes, populate makes; reset model + trim
 function onYearChange(prefix) {
   const year = document.getElementById(prefix + '-year').value;
   const makeEl = document.getElementById(prefix + '-make');
   const modelEl = document.getElementById(prefix + '-model');
+  const trimEl = document.getElementById(prefix + '-trim');
   makeEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
   modelEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
+  if (trimEl) trimEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
   if (year && year !== 'Other' && VEHICLE_DATA[year]) {
     populateSelect(prefix + '-make', Object.keys(VEHICLE_DATA[year]).sort(), '', '— Select Make —');
   }
 }
 
-// Cascading: when make changes, populate models
+// Cascading: when make changes, populate models; reset trim
 function onMakeChange(prefix) {
   const year = document.getElementById(prefix + '-year').value;
   const make = document.getElementById(prefix + '-make').value;
   const modelEl = document.getElementById(prefix + '-model');
+  const trimEl = document.getElementById(prefix + '-trim');
   modelEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
+  if (trimEl) trimEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
   if (year && make && make !== 'Other' && VEHICLE_DATA[year] && VEHICLE_DATA[year][make]) {
     populateSelect(prefix + '-model', VEHICLE_DATA[year][make], '', '— Select Model —');
   }
 }
 
+// Cascading: when model changes, populate trims
+function onModelChange(prefix) {
+  const make = document.getElementById(prefix + '-make').value;
+  const model = document.getElementById(prefix + '-model').value;
+  const trimEl = document.getElementById(prefix + '-trim');
+  if (!trimEl) return;
+  trimEl.innerHTML = '<option value="">— Select —</option><option value="Other">Other</option>';
+  if (make && model && make !== 'Other' && model !== 'Other') {
+    const trims = getTrims(make, model);
+    if (trims) populateSelect(prefix + '-trim', trims, '', '— Select Trim —');
+  }
+}
+
 // Initialize vehicle dropdowns with existing values (for edit modals)
-function initVehicleDropdowns(prefix, year, make, model) {
+function initVehicleDropdowns(prefix, year, make, model, trim) {
   const years = Object.keys(VEHICLE_DATA);
   populateSelect(prefix + '-year', years, year, '— Select Year —');
   if (year && VEHICLE_DATA[year]) {
     populateSelect(prefix + '-make', Object.keys(VEHICLE_DATA[year]).sort(), make, '— Select Make —');
     if (make && VEHICLE_DATA[year][make]) {
       populateSelect(prefix + '-model', VEHICLE_DATA[year][make], model, '— Select Model —');
+      if (model) {
+        const trims = getTrims(make, model);
+        const trimEl = document.getElementById(prefix + '-trim');
+        if (trimEl && trims) {
+          populateSelect(prefix + '-trim', trims, trim, '— Select Trim —');
+        }
+      }
     }
   }
   // If existing values don't match data (legacy/custom entries), inject them
@@ -1203,6 +1283,14 @@ function initVehicleDropdowns(prefix, year, make, model) {
     const mdEl = document.getElementById(prefix + '-model');
     const o = document.createElement('option'); o.value = model; o.textContent = model; o.selected = true;
     mdEl.insertBefore(o, mdEl.lastElementChild);
+  }
+  if (trim) {
+    const trims = getTrims(make, model);
+    const trimEl = document.getElementById(prefix + '-trim');
+    if (trimEl && trims && !trims.includes(trim)) {
+      const o = document.createElement('option'); o.value = trim; o.textContent = trim; o.selected = true;
+      trimEl.insertBefore(o, trimEl.lastElementChild);
+    }
   }
 }
 
@@ -2458,10 +2546,10 @@ function renderFinancials() {
 
 // ── ADD CUSTOMER ─────────────────────────────────────────────
 function openAddCustomerModal() {
-  ['ac-name','ac-phone','ac-email','ac-zip','ac-trim','ac-color'].forEach(id => {
+  ['ac-name','ac-phone','ac-email','ac-zip','ac-color'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  initVehicleDropdowns('ac', '', '', '');
+  initVehicleDropdowns('ac', '', '', '', '');
   const repSelect = document.getElementById('ac-rep');
   repSelect.innerHTML = '';
   REPS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSelect.appendChild(o); });
@@ -2487,7 +2575,7 @@ async function submitAddCustomer() {
       year: document.getElementById('ac-year').value,
       make: document.getElementById('ac-make').value,
       model: document.getElementById('ac-model').value,
-      trim: document.getElementById('ac-trim').value.trim(),
+      trim: document.getElementById('ac-trim').value,
       extColor: document.getElementById('ac-color').value.trim(),
       leadSource: document.getElementById('ac-source').value,
       urgency: document.getElementById('ac-urgency').value,
@@ -2536,14 +2624,14 @@ function openTileEdit(customerId, section) {
     html += '<div class="form-row"><div class="form-field"><label>Follow-Up Date</label><input type="datetime-local" id="te-followup" value="' + (c.followUp ? toDatetimeLocal(c.followUp) : '') + '"/></div></div>';
   } else if (section === 'vehicle') {
     html += '<div class="form-row"><div class="form-field"><label>Year</label><select id="te-year" onchange="onYearChange(\'te\')"><option value="">— Select —</option></select></div><div class="form-field"><label>Make</label><select id="te-make" onchange="onMakeChange(\'te\')"><option value="">— Select —</option></select></div></div>';
-    html += '<div class="form-row"><div class="form-field"><label>Model</label><select id="te-model"><option value="">— Select —</option></select></div>' + tileField('Trim','te-trim',c.trim) + '</div>';
+    html += '<div class="form-row"><div class="form-field"><label>Model</label><select id="te-model" onchange="onModelChange(\'te\')"><option value="">— Select —</option></select></div><div class="form-field"><label>Trim</label><select id="te-trim"><option value="">— Select —</option></select></div></div>';
     html += '<div class="form-row">' + tileField('Ext Color','te-color',c.extColor) + '</div>';
   } else if (section === 'pricing') {
     html += '<div class="form-row">' + tileField('Initial Price ($)','te-initial',c.initialPrice) + tileField('Final Price ($)','te-final',c.finalPrice) + '</div>';
   }
   wrap.innerHTML = html;
   if (section === 'vehicle') {
-    initVehicleDropdowns('te', c.year || '', c.make || '', c.model || '');
+    initVehicleDropdowns('te', c.year || '', c.make || '', c.model || '', c.trim || '');
   }
   document.getElementById('tile-edit-modal').classList.add('open');
 }
@@ -2573,7 +2661,7 @@ async function submitTileEdit() {
     params.year = document.getElementById('te-year').value;
     params.make = document.getElementById('te-make').value;
     params.model = document.getElementById('te-model').value;
-    params.trim = document.getElementById('te-trim').value.trim();
+    params.trim = document.getElementById('te-trim').value;
     params.extColor = document.getElementById('te-color').value.trim();
     if (c) params.customerName = c.name;
   } else if (tileEditSection === 'pricing') {
@@ -2621,8 +2709,7 @@ function openEditModal(id) {
   document.getElementById('ec-email').value = c.email || '';
   document.getElementById('ec-zip').value = c.zip || '';
   document.getElementById('ec-tier').value = c.tier || 'Tier 1';
-  initVehicleDropdowns('ec', c.year || '', c.make || '', c.model || '');
-  document.getElementById('ec-trim').value = c.trim || '';
+  initVehicleDropdowns('ec', c.year || '', c.make || '', c.model || '', c.trim || '');
   document.getElementById('ec-color').value = c.extColor || '';
   // Set discount — handle custom discounts
   const disc = c.discount || 'None';
@@ -2691,7 +2778,7 @@ async function submitEditCustomer() {
       year: document.getElementById('ec-year').value,
       make: document.getElementById('ec-make').value,
       model: document.getElementById('ec-model').value,
-      trim: document.getElementById('ec-trim').value.trim(),
+      trim: document.getElementById('ec-trim').value,
       extColor: document.getElementById('ec-color').value.trim(),
       discount: buildCustomDiscount('ec-discount','ec-discount-reason','ec-discount-type','ec-discount-amount'),
       budgetRange: document.getElementById('ec-budget').value.trim(),

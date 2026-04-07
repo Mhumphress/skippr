@@ -613,6 +613,9 @@
     .footer-social a:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
     .footer-social svg { width: 14px; height: 14px; fill: rgba(255,255,255,0.4); transition: fill 0.2s; }
     .footer-social a:hover svg { fill: var(--gold); }
+    .footer-legal { display: flex; gap: 1.5rem; margin-top: 0.5rem; }
+    .footer-legal a { color: rgba(255,255,255,0.3); text-decoration: none; font-size: 0.7rem; letter-spacing: 0.08em; transition: color 0.2s; }
+    .footer-legal a:hover { color: var(--gold); }
 
     /* ── HAMBURGER ── */
     .hamburger {
@@ -843,7 +846,7 @@
           <label>Anything else?</label>
           <textarea name="message" placeholder="Tell us about your situation, timeline, or any questions you have..."></textarea>
         </div>
-        <p class="form-note">By submitting, you agree to be contacted by Skippr regarding your inquiry.</p>
+        <p class="form-note">By submitting, you agree to be contacted by Skippr regarding your inquiry. See our <a href="terms.html" style="color:var(--gold); text-decoration:none;">Terms of Service</a> and <a href="privacy.html" style="color:var(--gold); text-decoration:none;">Privacy Policy</a>.</p>
         <button type="submit" class="form-submit">Send Message →</button>
         <div class="form-success" id="formSuccess">
           ✦ &nbsp;Thanks! We'll be in touch within 24 hours to schedule your free consultation.
@@ -867,6 +870,10 @@
     <a href="https://x.com/skipprUS" target="_blank" rel="noopener" aria-label="X">
       <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
     </a>
+  </div>
+  <div class="footer-legal">
+    <a href="terms.html">Terms of Service</a>
+    <a href="privacy.html">Privacy Policy</a>
   </div>
   <p class="footer-copy">© 2026 Skippr. All rights reserved.</p>
 </footer>
