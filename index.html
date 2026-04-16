@@ -23,8 +23,29 @@
   <link rel="canonical" href="https://skippr.us/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'Playfair Display';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url(fonts/playfair-display-latin.woff2) format('woff2');
+    }
+    @font-face {
+      font-family: 'Playfair Display';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(fonts/playfair-display-latin.woff2) format('woff2');
+    }
+    @font-face {
+      font-family: 'Playfair Display';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url(fonts/playfair-display-latin.woff2) format('woff2');
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -289,6 +310,7 @@
       font-size: 3.5rem;
       font-weight: 300;
       color: rgba(201,168,76,0.25);
+      font-palette: normal;
       line-height: 1;
       margin-bottom: 0.8rem;
     }
@@ -392,6 +414,7 @@
       font-family: var(--font-number);
       font-size: 1.6rem;
       color: rgba(255,255,255,0.5);
+      font-palette: normal;
       text-decoration: line-through;
       text-decoration-color: #c0392b;
       text-decoration-thickness: 2px;
@@ -417,6 +440,7 @@
       font-size: 3.5rem;
       font-weight: 300;
       color: var(--white);
+      font-palette: normal;
       line-height: 1;
       margin-bottom: 0.4rem;
     }
