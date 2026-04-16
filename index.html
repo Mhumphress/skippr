@@ -856,12 +856,12 @@
           <input type="email" name="email" placeholder="john@example.com" required />
         </div>
         <div class="form-group">
-          <label>Phone (optional)</label>
-          <input type="tel" name="phone" placeholder="(555) 000-0000" />
+          <label>Phone</label>
+          <input type="tel" name="phone" placeholder="(555) 000-0000" required />
         </div>
         <div class="form-group">
           <label>Package Interest</label>
-          <select name="package">
+          <select name="package" required>
             <option value="">Select a package...</option>
             <option>Tier 1 - Expert Advocate ($750 — Limited Offer)</option>
             <option>Tier 2 - White Glove Concierge ($2,500)</option>
@@ -869,17 +869,17 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Vehicle in Mind? (optional)</label>
-          <input type="text" name="vehicle" placeholder="e.g. 2025 Toyota Tacoma TRD Pro, White" />
+          <label>Vehicle in Mind?</label>
+          <input type="text" name="vehicle" placeholder="e.g. 2025 Toyota Tacoma TRD Pro, White" required />
         </div>
         <div class="form-group">
           <label>Anything else?</label>
-          <textarea name="message" placeholder="Tell us about your situation, timeline, or any questions you have..."></textarea>
+          <textarea name="message" placeholder="Tell us about your situation, timeline, or any questions you have..." required></textarea>
         </div>
         <p class="form-note">By submitting, you agree to be contacted by Skippr regarding your inquiry. See our <a href="terms.html" style="color:var(--gold); text-decoration:none;">Terms of Service</a> and <a href="privacy.html" style="color:var(--gold); text-decoration:none;">Privacy Policy</a>.</p>
         <button type="submit" class="form-submit">Send Message →</button>
         <div class="form-success" id="formSuccess">
-          ✦ &nbsp;Thanks! We'll be in touch within 24 hours to schedule your free consultation.
+          ✦ &nbsp;Thank you for your submission! You should hear from us within 48 hours.
         </div>
       </form>
     </div>
@@ -932,9 +932,7 @@
         headers: { 'Accept': 'application/json' }
       });
       if (res.ok) {
-        document.getElementById('formSuccess').style.display = 'block';
-        btn.style.display = 'none';
-        this.reset();
+        window.location.href = 'thank-you.html';
       } else {
         btn.textContent = 'Something went wrong - try again';
         btn.disabled = false;

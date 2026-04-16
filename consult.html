@@ -230,7 +230,7 @@
 
     <main class="consult-form-area">
       <div class="form-card">
-        <form action="https://formspree.io/f/mpqoqabj" method="POST">
+        <form id="consultForm" action="https://formspree.io/f/mpqoqabj" method="POST">
           <div class="form-row">
             <div class="input-group">
               <label>Full Name</label>
@@ -245,31 +245,35 @@
           <div class="form-row">
             <div class="input-group">
               <label>Phone Number</label>
-              <input type="tel" name="phone" placeholder="(555) 000-0000">
+              <input type="tel" name="phone" placeholder="(555) 000-0000" required>
             </div>
           </div>
 
           <div class="input-group">
             <label>Service Interest</label>
-            <select name="service">
-              <option value="tier-1">Tier 1 - Expert Advocate ($750 — Limited Offer)</option>
-              <option value="tier-2">Tier 2 - White Glove Concierge ($2,500)</option>
-              <option value="custom">General Inquiry</option>
+            <select name="service" required>
+              <option value="">Select a service...</option>
+              <option data-tier="tier-1">Tier 1 - Expert Advocate ($750 — Limited Offer)</option>
+              <option data-tier="tier-2">Tier 2 - White Glove Concierge ($2,500)</option>
+              <option data-tier="custom">General Inquiry</option>
             </select>
           </div>
 
           <div class="input-group">
             <label>Desired Vehicle</label>
-            <input type="text" name="vehicle" placeholder="e.g. 2026 Toyota 4Runner">
+            <input type="text" name="vehicle" placeholder="e.g. 2026 Toyota 4Runner" required>
           </div>
 
           <div class="input-group">
-            <label>Your Message (Optional)</label>
-            <textarea name="message" rows="3" placeholder="Tell us about any specific specs or trade-ins..."></textarea>
+            <label>Your Message</label>
+            <textarea name="message" rows="3" placeholder="Tell us about any specific specs or trade-ins..." required></textarea>
           </div>
 
           <button type="submit" class="submit-btn">Request Invitation</button>
           <p style="text-align:center; margin-top:1.2rem; font-size:0.7rem; color:var(--gray); line-height:1.6;">By submitting, you agree to our <a href="terms.html" style="color:var(--gold); text-decoration:none;">Terms of Service</a> and <a href="privacy.html" style="color:var(--gold); text-decoration:none;">Privacy Policy</a>.</p>
+          <div class="form-success" id="formSuccess" style="display:none; background:rgba(201,168,76,0.1); border:1px solid var(--gold); padding:1.2rem 1.5rem; font-size:0.9rem; color:var(--gold); font-weight:300; margin-top:1rem;">
+            ✦ &nbsp;Thank you for your submission! You should hear from us within 48 hours.
+          </div>
         </form>
       </div>
     </main>
@@ -285,12 +289,37 @@
   document.getElementById('hamburger').addEventListener('click', toggleMenu);
   document.getElementById('mobileMenuClose').addEventListener('click', toggleMenu);
 
+  // Pre-select service based on URL param (e.g. ?tier=tier-1)
   const tier = new URLSearchParams(window.location.search).get('tier');
   if (tier) {
     const select = document.querySelector('select[name="service"]');
-    const option = select.querySelector('option[value="' + tier + '"]');
+    const option = select.querySelector('option[data-tier="' + tier + '"]');
     if (option) option.selected = true;
   }
+
+  // Form submit via Formspree AJAX
+  document.getElementById('consultForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('.submit-btn');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+    try {
+      const res = await fetch(this.action, {
+        method: 'POST',
+        body: new FormData(this),
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        window.location.href = 'thank-you.html';
+      } else {
+        btn.textContent = 'Something went wrong - try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Network error - try again';
+      btn.disabled = false;
+    }
+  });
 </script>
 </body>
 </html>
