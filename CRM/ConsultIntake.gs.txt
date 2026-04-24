@@ -63,6 +63,27 @@ function buildLeads(ss) {
   sh.getRange(1, 1, sh.getMaxRows(), headers.length).createFilter();
 }
 
+// ── APPEND LEAD ─────────────────────────────────────────────
+function appendLead(ss, data) {
+  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
+  if (!sh) throw new Error("Leads sheet not found. Run setup() first.");
+  const tsString = formatTimestamp(data.timestamp);
+  const originCell = "origin: " + data.origin +
+    (data.userAgent ? "; UA: " + data.userAgent : "");
+  sh.appendRow([
+    tsString,
+    data.name,
+    data.email,
+    data.phone,
+    data.service,
+    data.vehicle,
+    data.message,
+    "New",
+    "",
+    originCell
+  ]);
+}
+
 // ── HELPERS ─────────────────────────────────────────────────
 function formatTimestamp(date) {
   return Utilities.formatDate(date, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm 'ET'");
@@ -92,4 +113,32 @@ function test_firstNameOf() {
     }
   });
   Logger.log("✅ test_firstNameOf passed (" + cases.length + " cases)");
+}
+
+function test_appendLead() {
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
+  if (!sh) throw new Error("Leads sheet missing; run setup() first.");
+  const beforeRows = sh.getLastRow();
+
+  const testData = {
+    timestamp: new Date(),
+    name: "_TEST_ Sarah Thompson",
+    email: "test@example.com",
+    phone: "(555) 000-0000",
+    service: "Tier 1 - Expert Advocate",
+    vehicle: "Test Vehicle",
+    message: "Test message — safe to delete.",
+    origin: "https://skippr.us",
+    userAgent: "test",
+  };
+  appendLead(ss, testData);
+
+  const afterRows = sh.getLastRow();
+  if (afterRows !== beforeRows + 1) {
+    throw new Error("Expected rows+1, before=" + beforeRows + " after=" + afterRows);
+  }
+  // Clean up: delete the test row.
+  sh.deleteRow(afterRows);
+  Logger.log("✅ test_appendLead passed (row added then cleaned up).");
 }
