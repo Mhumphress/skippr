@@ -65,7 +65,9 @@ function handleConsultSubmission(params) {
   data.timestamp = new Date();
 
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  data.leadId = appendToPipeline(ss, data);
+  data.leadId = reserveNextSkcId(ss, data.tier);
+  appendToRegistry(ss, data.leadId, data);
+  appendToPipeline(ss, data.leadId, data);
 
   sendAutoReply(data);
   sendInternalNotification(data);
@@ -75,32 +77,57 @@ function handleConsultSubmission(params) {
 
 // ── SETUP CHECK ─────────────────────────────────────────────
 // Run this once after pasting the script. Verifies the target CRM
-// spreadsheet has the Pipeline + Settings tabs (which the main CRM
-// script's setupCRM() creates). Does NOT create any new tabs here.
+// spreadsheet has Registry + Pipeline + Settings tabs (all created
+// by the main CRM script's setupCRM()). Does NOT create any tabs.
 function setup() {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
   const missing = [];
+  if (!ss.getSheetByName("Registry")) missing.push("Registry");
   if (!ss.getSheetByName("Pipeline")) missing.push("Pipeline");
   if (!ss.getSheetByName("Settings")) missing.push("Settings");
   if (missing.length) {
     throw new Error("Missing sheet(s) in CRM spreadsheet: " + missing.join(", ") +
                     ". Run the main CRM's setupCRM() first.");
   }
-  Logger.log("✅ Setup check passed. CRM spreadsheet has Pipeline and Settings tabs.");
+  Logger.log("✅ Setup check passed. CRM spreadsheet has Registry, Pipeline, and Settings tabs.");
   Logger.log("Note: the old 📥 Leads tab is no longer used by this script — safe to delete from the spreadsheet.");
 }
 
-// ── PIPELINE APPEND ─────────────────────────────────────────
-// Appends a new lead row to the Pipeline sheet in the same
-// 37-column schema the main CRM uses (see buildPipeline in CRM.gs).
-// Generates a fresh SKC ID under a DocumentLock so concurrent
-// submissions + manual CRM use can't collide on the counter.
-function appendToPipeline(ss, data) {
+// ── REGISTRY + PIPELINE APPEND ──────────────────────────────
+// Registry is the source of truth for the CRM PWA at crm.skippr.us
+// (see getActiveCustomers in CRM.gs). Pipeline carries the workflow
+// details. We append to both so leads appear in the PWA immediately
+// AND the main CRM's deal-tracking flow sees them.
+
+function appendToRegistry(ss, id, data) {
+  const registry = ss.getSheetByName("Registry");
+  if (!registry) throw new Error("Registry sheet not found. Run setup() first.");
+
+  // 15-column Registry schema (see buildRegistry in CRM.gs).
+  registry.appendRow([
+    id,                   // A  — Customer ID
+    "Consultation",       // B  — Type
+    data.tier,            // C  — Tier
+    data.name,            // D  — Customer Name
+    data.phone,           // E  — Phone
+    data.email,           // F  — Email
+    "",                   // G  — City (not captured by forms)
+    "",                   // H  — State (not captured by forms)
+    "",                   // I  — Zip (not captured by forms)
+    data.vehicle,         // J  — Vehicle
+    "",                   // K  — Assigned Rep (filled in manually)
+    data.timestamp,       // L  — Date Created
+    "Active",             // M  — Status
+    "",                   // N  — Converted From
+    "",                   // O  — Drive File URL
+  ]);
+}
+
+function appendToPipeline(ss, id, data) {
   const pipeline = ss.getSheetByName("Pipeline");
   if (!pipeline) throw new Error("Pipeline sheet not found. Run setup() first.");
 
-  const id = reserveNextSkcId(ss, data.tier);
-
+  // 37-column Pipeline schema (see buildPipeline in CRM.gs).
   const row = new Array(37).fill("");
   row[0]  = id;                         // A  — Customer ID
   row[1]  = data.name;                  // B  — Customer Name
@@ -114,7 +141,6 @@ function appendToPipeline(ss, data) {
   row[30] = "Website";                  // AE — Lead Source
 
   pipeline.appendRow(row);
-  return id;
 }
 
 function reserveNextSkcId(ss, tier) {
@@ -411,8 +437,10 @@ function test_doPost_happyPath() {
     throw new Error("Set CONFIG.TEST_CUSTOMER_EMAIL first (top of file).");
   }
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const registry = ss.getSheetByName("Registry");
   const pipeline = ss.getSheetByName("Pipeline");
-  const beforeRows = pipeline.getLastRow();
+  const beforeReg = registry.getLastRow();
+  const beforePipe = pipeline.getLastRow();
 
   const fakeEvent = {
     parameter: {
@@ -433,21 +461,35 @@ function test_doPost_happyPath() {
     throw new Error("Expected id starting SKC-T1-, got " + result.id);
   }
 
-  const afterRows = pipeline.getLastRow();
-  if (afterRows !== beforeRows + 1) {
-    throw new Error("Expected pipeline rows+1, before=" + beforeRows + " after=" + afterRows);
+  const afterReg = registry.getLastRow();
+  const afterPipe = pipeline.getLastRow();
+  if (afterReg !== beforeReg + 1) {
+    throw new Error("Expected registry rows+1, before=" + beforeReg + " after=" + afterReg);
   }
-  const newRow = pipeline.getRange(afterRows, 1, 1, 37).getValues()[0];
-  if (newRow[0] !== result.id) throw new Error("Col A ID mismatch: " + newRow[0]);
-  if (newRow[1] !== "_TEST_ Sarah Thompson") throw new Error("Col B name mismatch: " + newRow[1]);
-  if (newRow[3] !== "Tier 1") throw new Error("Col D tier mismatch: " + newRow[3]);
-  if (newRow[5] !== "New") throw new Error("Col F status mismatch: " + newRow[5]);
-  if (newRow[20] !== "Consultation") throw new Error("Col U workflow mismatch: " + newRow[20]);
-  if (newRow[24] !== CONFIG.TEST_CUSTOMER_EMAIL) throw new Error("Col Y email mismatch: " + newRow[24]);
-  if (newRow[30] !== "Website") throw new Error("Col AE lead source mismatch: " + newRow[30]);
+  if (afterPipe !== beforePipe + 1) {
+    throw new Error("Expected pipeline rows+1, before=" + beforePipe + " after=" + afterPipe);
+  }
 
-  pipeline.deleteRow(afterRows);
-  Logger.log("✅ test_doPost_happyPath passed. ID: " + result.id + ". Two emails sent.");
+  const regRow = registry.getRange(afterReg, 1, 1, 15).getValues()[0];
+  if (regRow[0] !== result.id) throw new Error("Registry Col A ID mismatch: " + regRow[0]);
+  if (regRow[1] !== "Consultation") throw new Error("Registry Col B type mismatch: " + regRow[1]);
+  if (regRow[2] !== "Tier 1") throw new Error("Registry Col C tier mismatch: " + regRow[2]);
+  if (regRow[3] !== "_TEST_ Sarah Thompson") throw new Error("Registry Col D name mismatch: " + regRow[3]);
+  if (regRow[5] !== CONFIG.TEST_CUSTOMER_EMAIL) throw new Error("Registry Col F email mismatch: " + regRow[5]);
+  if (regRow[12] !== "Active") throw new Error("Registry Col M status mismatch: " + regRow[12]);
+
+  const pipeRow = pipeline.getRange(afterPipe, 1, 1, 37).getValues()[0];
+  if (pipeRow[0] !== result.id) throw new Error("Pipeline Col A ID mismatch: " + pipeRow[0]);
+  if (pipeRow[1] !== "_TEST_ Sarah Thompson") throw new Error("Pipeline Col B name mismatch: " + pipeRow[1]);
+  if (pipeRow[3] !== "Tier 1") throw new Error("Pipeline Col D tier mismatch: " + pipeRow[3]);
+  if (pipeRow[5] !== "New") throw new Error("Pipeline Col F status mismatch: " + pipeRow[5]);
+  if (pipeRow[20] !== "Consultation") throw new Error("Pipeline Col U workflow mismatch: " + pipeRow[20]);
+  if (pipeRow[24] !== CONFIG.TEST_CUSTOMER_EMAIL) throw new Error("Pipeline Col Y email mismatch: " + pipeRow[24]);
+  if (pipeRow[30] !== "Website") throw new Error("Pipeline Col AE lead source mismatch: " + pipeRow[30]);
+
+  pipeline.deleteRow(afterPipe);
+  registry.deleteRow(afterReg);
+  Logger.log("✅ test_doPost_happyPath passed. ID: " + result.id + ". Registry + Pipeline rows verified; two emails sent.");
 }
 
 function test_doPost_contactFormShape() {
@@ -455,8 +497,10 @@ function test_doPost_contactFormShape() {
     throw new Error("Set CONFIG.TEST_CUSTOMER_EMAIL first (top of file).");
   }
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const registry = ss.getSheetByName("Registry");
   const pipeline = ss.getSheetByName("Pipeline");
-  const beforeRows = pipeline.getLastRow();
+  const beforeReg = registry.getLastRow();
+  const beforePipe = pipeline.getLastRow();
 
   const fakeEvent = {
     parameter: {
@@ -478,22 +522,32 @@ function test_doPost_contactFormShape() {
     throw new Error("Expected id starting SKC-T2-, got " + result.id);
   }
 
-  const afterRows = pipeline.getLastRow();
-  if (afterRows !== beforeRows + 1) throw new Error("Expected pipeline rows+1");
-  const newRow = pipeline.getRange(afterRows, 1, 1, 37).getValues()[0];
-  if (newRow[0] !== result.id) throw new Error("Col A ID mismatch: " + newRow[0]);
-  if (newRow[1] !== "_TEST_ Contact Form User") throw new Error("Col B name concat wrong: " + newRow[1]);
-  if (newRow[3] !== "Tier 2") throw new Error("Col D tier mismatch: " + newRow[3]);
-  if (newRow[20] !== "Consultation") throw new Error("Col U workflow mismatch: " + newRow[20]);
+  const afterReg = registry.getLastRow();
+  const afterPipe = pipeline.getLastRow();
+  if (afterReg !== beforeReg + 1) throw new Error("Expected registry rows+1");
+  if (afterPipe !== beforePipe + 1) throw new Error("Expected pipeline rows+1");
 
-  pipeline.deleteRow(afterRows);
-  Logger.log("✅ test_doPost_contactFormShape passed. ID: " + result.id);
+  const regRow = registry.getRange(afterReg, 1, 1, 15).getValues()[0];
+  if (regRow[0] !== result.id) throw new Error("Registry Col A ID mismatch: " + regRow[0]);
+  if (regRow[2] !== "Tier 2") throw new Error("Registry Col C tier mismatch: " + regRow[2]);
+  if (regRow[3] !== "_TEST_ Contact Form User") throw new Error("Registry Col D name concat wrong: " + regRow[3]);
+
+  const pipeRow = pipeline.getRange(afterPipe, 1, 1, 37).getValues()[0];
+  if (pipeRow[0] !== result.id) throw new Error("Pipeline Col A ID mismatch: " + pipeRow[0]);
+  if (pipeRow[3] !== "Tier 2") throw new Error("Pipeline Col D tier mismatch: " + pipeRow[3]);
+  if (pipeRow[20] !== "Consultation") throw new Error("Pipeline Col U workflow mismatch: " + pipeRow[20]);
+
+  pipeline.deleteRow(afterPipe);
+  registry.deleteRow(afterReg);
+  Logger.log("✅ test_doPost_contactFormShape passed. ID: " + result.id + ". Registry + Pipeline rows verified.");
 }
 
 function test_doPost_honeypot() {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const registry = ss.getSheetByName("Registry");
   const pipeline = ss.getSheetByName("Pipeline");
-  const beforeRows = pipeline.getLastRow();
+  const beforeReg = registry.getLastRow();
+  const beforePipe = pipeline.getLastRow();
 
   const fakeEvent = {
     parameter: {
@@ -511,11 +565,9 @@ function test_doPost_honeypot() {
   const result = JSON.parse(response.getContent());
   if (!result.ok) throw new Error("Expected silent ok:true; got " + JSON.stringify(result));
 
-  const afterRows = pipeline.getLastRow();
-  if (afterRows !== beforeRows) {
-    throw new Error("Honeypot should not have written a row. before=" + beforeRows + " after=" + afterRows);
-  }
-  Logger.log("✅ test_doPost_honeypot passed (no row written, no emails sent).");
+  if (registry.getLastRow() !== beforeReg) throw new Error("Honeypot wrote to Registry");
+  if (pipeline.getLastRow() !== beforePipe) throw new Error("Honeypot wrote to Pipeline");
+  Logger.log("✅ test_doPost_honeypot passed (no rows written, no emails sent).");
 }
 
 function test_doPost_missingField() {
