@@ -3,8 +3,10 @@
 //
 //  This is a STANDALONE Apps Script project, separate from the
 //  container-bound Skippr CRM script. It targets the same CRM
-//  spreadsheet via openById, and exposes a doPost(e) Web App
-//  endpoint that the skippr.us consult form posts to.
+//  spreadsheet via openById, writes new leads directly into the
+//  Pipeline sheet (so they appear in the CRM PWA at crm.skippr.us),
+//  and exposes a doPost(e) Web App endpoint that both the consult
+//  form and the homepage contact form post to.
 //
 //  Deploy: Apps Script editor → Deploy → New deployment →
 //          Web app → Execute as: me, Who has access: Anyone.
@@ -16,19 +18,11 @@ const CONFIG = {
   SUPPORT_EMAIL: "support@skippr.us",
   SENDER_NAME: "Skippr Concierge",
   TIMEZONE: "America/Indianapolis",
-  LEADS_SHEET_NAME: "📥 Leads",
   ALLOWED_ORIGINS: ["https://skippr.us", "https://skippr.pages.dev"],
   TEST_CUSTOMER_EMAIL: "REPLACE_WITH_YOUR_PERSONAL_EMAIL",
   SHIMMER_GIF_FILE_ID: "1AiRTiplmIjYQgbKELNN0akjXlUQGwnj2",
   SIGNATURE_PHONE: "585-469-1987",
   SIGNATURE_TITLE: "Customer Care  |  Skippr",
-};
-
-// ── COLORS (match existing CRM theme) ───────────────────────
-const COLORS = {
-  HEADER_BG: "#111111",
-  HEADER_FG: "#C9A84C",
-  GOLD:      "#C9A84C",
 };
 
 // ── ENTRY POINT ─────────────────────────────────────────────
@@ -61,93 +55,106 @@ function handleConsultSubmission(params) {
     return { ok: false, error: "Bad origin: " + origin };
   }
 
-  // Validate required fields.
-  const required = ["name", "email", "phone", "service", "vehicle", "message"];
-  for (let i = 0; i < required.length; i++) {
-    const field = required[i];
-    if (!params[field] || String(params[field]).trim() === "") {
-      return { ok: false, error: "Missing field: " + field };
-    }
-  }
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(params.email).trim())) {
-    return { ok: false, error: "Invalid email" };
-  }
+  const data = normalizeFormData(params);
 
-  const data = {
-    name: String(params.name).trim(),
-    email: String(params.email).trim(),
-    phone: String(params.phone).trim(),
-    service: String(params.service).trim(),
-    vehicle: String(params.vehicle).trim(),
-    message: String(params.message).trim(),
-    origin: origin,
-    userAgent: String(params._ua || ""),
-    timestamp: new Date(),
-  };
+  const validation = validateLeadData(data);
+  if (!validation.ok) return validation;
+
+  data.tier      = parseTier(data.serviceOrPackage);
   data.firstName = firstNameOf(data.name);
+  data.timestamp = new Date();
 
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  appendLead(ss, data);
+  data.leadId = appendToPipeline(ss, data);
+
   sendAutoReply(data);
   sendInternalNotification(data);
 
-  return { ok: true };
+  return { ok: true, id: data.leadId };
 }
 
-// ── SETUP & SHEET BUILDING ──────────────────────────────────
+// ── SETUP CHECK ─────────────────────────────────────────────
+// Run this once after pasting the script. Verifies the target CRM
+// spreadsheet has the Pipeline + Settings tabs (which the main CRM
+// script's setupCRM() creates). Does NOT create any new tabs here.
 function setup() {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  buildLeads(ss);
-  Logger.log("✅ Setup complete. " + CONFIG.LEADS_SHEET_NAME + " tab is ready.");
-}
-
-function buildLeads(ss) {
-  let sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
-  if (sh) {
-    Logger.log(CONFIG.LEADS_SHEET_NAME + " already exists; refreshing formatting only.");
-  } else {
-    sh = ss.insertSheet(CONFIG.LEADS_SHEET_NAME);
+  const missing = [];
+  if (!ss.getSheetByName("Pipeline")) missing.push("Pipeline");
+  if (!ss.getSheetByName("Settings")) missing.push("Settings");
+  if (missing.length) {
+    throw new Error("Missing sheet(s) in CRM spreadsheet: " + missing.join(", ") +
+                    ". Run the main CRM's setupCRM() first.");
   }
-  sh.setTabColor(COLORS.GOLD);
-
-  const headers = [
-    "Timestamp", "Name", "Email", "Phone", "Service Tier",
-    "Desired Vehicle", "Message", "Status", "Assigned Rep", "Origin / Notes"
-  ];
-  const widths = [160, 160, 200, 130, 240, 200, 360, 100, 140, 260];
-  widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
-
-  const headerRange = sh.getRange(1, 1, 1, headers.length);
-  headerRange.setValues([headers]);
-  headerRange.setBackground(COLORS.HEADER_BG);
-  headerRange.setFontColor(COLORS.HEADER_FG);
-  headerRange.setFontWeight("bold");
-  headerRange.setHorizontalAlignment("left");
-  sh.setFrozenRows(1);
-
-  if (sh.getFilter()) sh.getFilter().remove();
-  sh.getRange(1, 1, sh.getMaxRows(), headers.length).createFilter();
+  Logger.log("✅ Setup check passed. CRM spreadsheet has Pipeline and Settings tabs.");
+  Logger.log("Note: the old 📥 Leads tab is no longer used by this script — safe to delete from the spreadsheet.");
 }
 
-// ── APPEND LEAD ─────────────────────────────────────────────
-function appendLead(ss, data) {
-  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
-  if (!sh) throw new Error("Leads sheet not found. Run setup() first.");
-  const tsString = formatTimestamp(data.timestamp);
-  const originCell = "origin: " + data.origin +
-    (data.userAgent ? "; UA: " + data.userAgent : "");
-  sh.appendRow([
-    tsString,
-    data.name,
-    data.email,
-    data.phone,
-    data.service,
-    data.vehicle,
-    data.message,
-    "New",
-    "",
-    originCell
-  ]);
+// ── PIPELINE APPEND ─────────────────────────────────────────
+// Appends a new lead row to the Pipeline sheet in the same
+// 37-column schema the main CRM uses (see buildPipeline in CRM.gs).
+// Generates a fresh SKC ID under a DocumentLock so concurrent
+// submissions + manual CRM use can't collide on the counter.
+function appendToPipeline(ss, data) {
+  const pipeline = ss.getSheetByName("Pipeline");
+  if (!pipeline) throw new Error("Pipeline sheet not found. Run setup() first.");
+
+  const id = reserveNextSkcId(ss, data.tier);
+
+  const row = new Array(37).fill("");
+  row[0]  = id;                         // A  — Customer ID
+  row[1]  = data.name;                  // B  — Customer Name
+  row[3]  = data.tier;                  // D  — Tier
+  row[5]  = "New";                      // F  — Status
+  row[12] = data.timestamp;             // M  — Date Added
+  row[20] = "Consultation";             // U  — Workflow Type
+  row[23] = data.phone;                 // X  — Phone
+  row[24] = data.email;                 // Y  — Email
+  row[26] = buildPipelineNotes(data);   // AA — Notes
+  row[30] = "Website";                  // AE — Lead Source
+
+  pipeline.appendRow(row);
+  return id;
+}
+
+function reserveNextSkcId(ss, tier) {
+  const lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    const settings = ss.getSheetByName("Settings");
+    if (!settings) throw new Error("Settings sheet not found.");
+    const rows = settings.getDataRange().getValues();
+    let counterRow = -1;
+    let currentNum = 500;
+
+    rows.forEach((row, i) => {
+      if (String(row[0]).includes("Next ID Counter") || row[0] === "ID Counter") {
+        counterRow = i + 1;
+        currentNum = parseInt(row[1], 10) || 500;
+      }
+    });
+
+    const padded = String(currentNum).padStart(4, "0");
+    const newId  = "SKC-" + tierCode(tier) + "-" + padded;
+
+    if (counterRow > 0) {
+      settings.getRange(counterRow, 2).setValue(currentNum + 1);
+    } else {
+      settings.appendRow(["ID Counter", currentNum + 1, "Auto-incremented — do not edit"]);
+    }
+
+    SpreadsheetApp.flush();
+    return newId;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function buildPipelineNotes(data) {
+  return "Source: " + data.formType + " form\n" +
+         "Package selected: " + (data.serviceOrPackage || "(none)") + "\n" +
+         "Vehicle of interest: " + (data.vehicle || "(none)") + "\n\n" +
+         "Message:\n" + data.message;
 }
 
 // ── SEND AUTO-REPLY ─────────────────────────────────────────
@@ -208,14 +215,16 @@ function sendAutoReply(data) {
 
 // ── SEND INTERNAL NOTIFICATION ──────────────────────────────
 function sendInternalNotification(data) {
-  const subject = "New consult lead — " + data.name + " (" + data.service + ")";
+  const subject = "New lead " + (data.leadId || "") + " — " + data.name + " (" + data.tier + ")";
   const body =
-    "A new consultation request just came in.\n\n" +
+    "A new " + data.formType + " form submission just came in.\n\n" +
+    "Lead ID: " + (data.leadId || "(not assigned)") + "\n" +
+    "Tier:    " + data.tier + "\n\n" +
     "Name:    " + data.name + "\n" +
     "Email:   " + data.email + "\n" +
     "Phone:   " + data.phone + "\n" +
-    "Service: " + data.service + "\n" +
-    "Vehicle: " + data.vehicle + "\n\n" +
+    "Vehicle: " + data.vehicle + "\n" +
+    "Package: " + data.serviceOrPackage + "\n\n" +
     "Message:\n" + data.message + "\n\n" +
     "(Submitted " + formatTimestamp(data.timestamp) + " from " + data.origin + ")\n";
 
@@ -229,6 +238,53 @@ function sendInternalNotification(data) {
 }
 
 // ── HELPERS ─────────────────────────────────────────────────
+function normalizeFormData(params) {
+  let name = String(params.name || "").trim();
+  let formType = "consult";
+  if (!name) {
+    const first = String(params.first_name || "").trim();
+    const last  = String(params.last_name  || "").trim();
+    name = (first + " " + last).trim();
+    formType = "contact";
+  }
+  return {
+    name: name,
+    email: String(params.email || "").trim(),
+    phone: String(params.phone || "").trim(),
+    serviceOrPackage: String(params.service || params.package || "").trim(),
+    vehicle: String(params.vehicle || "").trim(),
+    message: String(params.message || "").trim(),
+    origin: String(params._origin || "").trim(),
+    formType: formType,
+  };
+}
+
+function validateLeadData(data) {
+  const missing = [];
+  if (!data.name) missing.push("name");
+  if (!data.email) missing.push("email");
+  if (!data.phone) missing.push("phone");
+  if (!data.vehicle) missing.push("vehicle");
+  if (!data.message) missing.push("message");
+  if (missing.length) {
+    return { ok: false, error: "Missing field: " + missing[0] };
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email)) {
+    return { ok: false, error: "Invalid email" };
+  }
+  return { ok: true };
+}
+
+function parseTier(serviceOrPackage) {
+  const m = String(serviceOrPackage).match(/Tier\s*(\d)/i);
+  if (m && (m[1] === "1" || m[1] === "2")) return "Tier " + m[1];
+  return "Tier 1";
+}
+
+function tierCode(tier) {
+  return tier === "Tier 2" ? "T2" : "T1";
+}
+
 function formatTimestamp(date) {
   return Utilities.formatDate(date, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm 'ET'");
 }
@@ -268,32 +324,56 @@ function test_firstNameOf() {
   Logger.log("✅ test_firstNameOf passed (" + cases.length + " cases)");
 }
 
-function test_appendLead() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
-  if (!sh) throw new Error("Leads sheet missing; run setup() first.");
-  const beforeRows = sh.getLastRow();
+function test_parseTier() {
+  const cases = [
+    ["Tier 1 - Expert Advocate ($750 — Limited Offer)", "Tier 1"],
+    ["Tier 2 - White Glove Concierge ($2,500)", "Tier 2"],
+    ["General Inquiry", "Tier 1"],
+    ["Not sure yet - just exploring", "Tier 1"],
+    ["", "Tier 1"],
+    ["Something random", "Tier 1"],
+    ["tier 2", "Tier 2"],
+  ];
+  cases.forEach(pair => {
+    const got = parseTier(pair[0]);
+    if (got !== pair[1]) {
+      throw new Error("parseTier(" + JSON.stringify(pair[0]) + ") => " + got + ", want " + pair[1]);
+    }
+  });
+  Logger.log("✅ test_parseTier passed (" + cases.length + " cases)");
+}
 
-  const testData = {
-    timestamp: new Date(),
-    name: "_TEST_ Sarah Thompson",
-    email: "test@example.com",
+function test_normalizeFormData_consultShape() {
+  const got = normalizeFormData({
+    name: "Sarah Thompson",
+    email: "sarah@example.com",
     phone: "(555) 000-0000",
-    service: "Tier 1 - Expert Advocate",
-    vehicle: "Test Vehicle",
-    message: "Test message — safe to delete.",
-    origin: "https://skippr.us",
-    userAgent: "test",
-  };
-  appendLead(ss, testData);
+    service: "Tier 2 - White Glove Concierge ($2,500)",
+    vehicle: "2026 Lexus GX 550",
+    message: "Hello",
+    _origin: "https://skippr.us",
+  });
+  if (got.name !== "Sarah Thompson") throw new Error("name wrong: " + got.name);
+  if (got.serviceOrPackage !== "Tier 2 - White Glove Concierge ($2,500)") throw new Error("serviceOrPackage wrong: " + got.serviceOrPackage);
+  if (got.formType !== "consult") throw new Error("formType wrong: " + got.formType);
+  Logger.log("✅ test_normalizeFormData_consultShape passed");
+}
 
-  const afterRows = sh.getLastRow();
-  if (afterRows !== beforeRows + 1) {
-    throw new Error("Expected rows+1, before=" + beforeRows + " after=" + afterRows);
-  }
-  // Clean up: delete the test row.
-  sh.deleteRow(afterRows);
-  Logger.log("✅ test_appendLead passed (row added then cleaned up).");
+function test_normalizeFormData_contactShape() {
+  const got = normalizeFormData({
+    first_name: "Sarah",
+    last_name: "Thompson",
+    email: "sarah@example.com",
+    phone: "(555) 000-0000",
+    package: "Not sure yet - just exploring",
+    vehicle: "anything",
+    message: "Hello",
+    _origin: "https://skippr.us",
+  });
+  if (got.name !== "Sarah Thompson") throw new Error("name wrong: " + got.name);
+  if (got.serviceOrPackage !== "Not sure yet - just exploring") throw new Error("serviceOrPackage wrong: " + got.serviceOrPackage);
+  if (got.formType !== "contact") throw new Error("formType wrong: " + got.formType);
+  Logger.log("✅ test_normalizeFormData_contactShape passed");
 }
 
 function test_sendAutoReply() {
@@ -309,16 +389,19 @@ function test_sendAutoReply() {
 
 function test_sendInternalNotification() {
   sendInternalNotification({
+    leadId: "SKC-T1-TEST",
     name: "_TEST_ Sarah Thompson",
     email: "test@example.com",
     phone: "(555) 000-0000",
-    service: "_TEST_ Tier 1",
+    tier: "Tier 1",
+    serviceOrPackage: "_TEST_ Tier 1",
     vehicle: "Test Vehicle",
     message: "Test internal notification — safe to delete.",
+    formType: "consult",
     timestamp: new Date(),
     origin: "https://skippr.us",
   });
-  Logger.log("✅ test_sendInternalNotification: email queued to " + CONFIG.SUPPORT_EMAIL + ". Check inbox (subject starts with 'New consult lead — _TEST_').");
+  Logger.log("✅ test_sendInternalNotification: email queued to " + CONFIG.SUPPORT_EMAIL + ". Check inbox (subject starts with 'New lead SKC-T1-TEST').");
 }
 
 function test_doPost_happyPath() {
@@ -326,8 +409,8 @@ function test_doPost_happyPath() {
     throw new Error("Set CONFIG.TEST_CUSTOMER_EMAIL first (top of file).");
   }
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
-  const beforeRows = sh.getLastRow();
+  const pipeline = ss.getSheetByName("Pipeline");
+  const beforeRows = pipeline.getLastRow();
 
   const fakeEvent = {
     parameter: {
@@ -336,7 +419,7 @@ function test_doPost_happyPath() {
       phone: "(555) 000-0000",
       service: "Tier 1 - Expert Advocate",
       vehicle: "Test Vehicle",
-      message: "Happy-path integration test.",
+      message: "Happy-path integration test — safe to delete.",
       _origin: "https://skippr.us",
       company_website: "",
     }
@@ -344,19 +427,71 @@ function test_doPost_happyPath() {
   const response = doPost(fakeEvent);
   const result = JSON.parse(response.getContent());
   if (!result.ok) throw new Error("Expected ok:true, got " + JSON.stringify(result));
-
-  const afterRows = sh.getLastRow();
-  if (afterRows !== beforeRows + 1) {
-    throw new Error("Expected rows+1, before=" + beforeRows + " after=" + afterRows);
+  if (!result.id || result.id.indexOf("SKC-T1-") !== 0) {
+    throw new Error("Expected id starting SKC-T1-, got " + result.id);
   }
-  sh.deleteRow(afterRows);
-  Logger.log("✅ test_doPost_happyPath passed. Two emails sent — check " + CONFIG.TEST_CUSTOMER_EMAIL + " and " + CONFIG.SUPPORT_EMAIL);
+
+  const afterRows = pipeline.getLastRow();
+  if (afterRows !== beforeRows + 1) {
+    throw new Error("Expected pipeline rows+1, before=" + beforeRows + " after=" + afterRows);
+  }
+  const newRow = pipeline.getRange(afterRows, 1, 1, 37).getValues()[0];
+  if (newRow[0] !== result.id) throw new Error("Col A ID mismatch: " + newRow[0]);
+  if (newRow[1] !== "_TEST_ Sarah Thompson") throw new Error("Col B name mismatch: " + newRow[1]);
+  if (newRow[3] !== "Tier 1") throw new Error("Col D tier mismatch: " + newRow[3]);
+  if (newRow[5] !== "New") throw new Error("Col F status mismatch: " + newRow[5]);
+  if (newRow[20] !== "Consultation") throw new Error("Col U workflow mismatch: " + newRow[20]);
+  if (newRow[24] !== CONFIG.TEST_CUSTOMER_EMAIL) throw new Error("Col Y email mismatch: " + newRow[24]);
+  if (newRow[30] !== "Website") throw new Error("Col AE lead source mismatch: " + newRow[30]);
+
+  pipeline.deleteRow(afterRows);
+  Logger.log("✅ test_doPost_happyPath passed. ID: " + result.id + ". Two emails sent.");
+}
+
+function test_doPost_contactFormShape() {
+  if (!CONFIG.TEST_CUSTOMER_EMAIL || CONFIG.TEST_CUSTOMER_EMAIL.indexOf("REPLACE") !== -1) {
+    throw new Error("Set CONFIG.TEST_CUSTOMER_EMAIL first (top of file).");
+  }
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const pipeline = ss.getSheetByName("Pipeline");
+  const beforeRows = pipeline.getLastRow();
+
+  const fakeEvent = {
+    parameter: {
+      first_name: "_TEST_",
+      last_name: "Contact Form User",
+      email: CONFIG.TEST_CUSTOMER_EMAIL,
+      phone: "(555) 000-0000",
+      package: "Tier 2 - White Glove Concierge ($2,500)",
+      vehicle: "Test Vehicle",
+      message: "Contact form test — safe to delete.",
+      _origin: "https://skippr.us",
+      company_website: "",
+    }
+  };
+  const response = doPost(fakeEvent);
+  const result = JSON.parse(response.getContent());
+  if (!result.ok) throw new Error("Expected ok:true, got " + JSON.stringify(result));
+  if (!result.id || result.id.indexOf("SKC-T2-") !== 0) {
+    throw new Error("Expected id starting SKC-T2-, got " + result.id);
+  }
+
+  const afterRows = pipeline.getLastRow();
+  if (afterRows !== beforeRows + 1) throw new Error("Expected pipeline rows+1");
+  const newRow = pipeline.getRange(afterRows, 1, 1, 37).getValues()[0];
+  if (newRow[0] !== result.id) throw new Error("Col A ID mismatch: " + newRow[0]);
+  if (newRow[1] !== "_TEST_ Contact Form User") throw new Error("Col B name concat wrong: " + newRow[1]);
+  if (newRow[3] !== "Tier 2") throw new Error("Col D tier mismatch: " + newRow[3]);
+  if (newRow[20] !== "Consultation") throw new Error("Col U workflow mismatch: " + newRow[20]);
+
+  pipeline.deleteRow(afterRows);
+  Logger.log("✅ test_doPost_contactFormShape passed. ID: " + result.id);
 }
 
 function test_doPost_honeypot() {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
-  const beforeRows = sh.getLastRow();
+  const pipeline = ss.getSheetByName("Pipeline");
+  const beforeRows = pipeline.getLastRow();
 
   const fakeEvent = {
     parameter: {
@@ -374,7 +509,7 @@ function test_doPost_honeypot() {
   const result = JSON.parse(response.getContent());
   if (!result.ok) throw new Error("Expected silent ok:true; got " + JSON.stringify(result));
 
-  const afterRows = sh.getLastRow();
+  const afterRows = pipeline.getLastRow();
   if (afterRows !== beforeRows) {
     throw new Error("Honeypot should not have written a row. before=" + beforeRows + " after=" + afterRows);
   }
