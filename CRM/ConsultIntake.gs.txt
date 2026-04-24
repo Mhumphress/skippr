@@ -28,6 +28,69 @@ const COLORS = {
   GOLD:      "#C9A84C",
 };
 
+// ── ENTRY POINT ─────────────────────────────────────────────
+function doPost(e) {
+  try {
+    const params = (e && e.parameter) || {};
+    const result = handleConsultSubmission(params);
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    Logger.log("doPost error: " + err + "\n" + (err.stack || ""));
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ── ORCHESTRATOR ────────────────────────────────────────────
+function handleConsultSubmission(params) {
+  // Honeypot: if bots filled the hidden field, silently discard.
+  if (params.company_website && String(params.company_website).trim() !== "") {
+    Logger.log("Honeypot triggered; submission silently dropped.");
+    return { ok: true };
+  }
+
+  // Origin check.
+  const origin = String(params._origin || "").trim();
+  if (CONFIG.ALLOWED_ORIGINS.indexOf(origin) === -1) {
+    return { ok: false, error: "Bad origin: " + origin };
+  }
+
+  // Validate required fields.
+  const required = ["name", "email", "phone", "service", "vehicle", "message"];
+  for (let i = 0; i < required.length; i++) {
+    const field = required[i];
+    if (!params[field] || String(params[field]).trim() === "") {
+      return { ok: false, error: "Missing field: " + field };
+    }
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(params.email).trim())) {
+    return { ok: false, error: "Invalid email" };
+  }
+
+  const data = {
+    name: String(params.name).trim(),
+    email: String(params.email).trim(),
+    phone: String(params.phone).trim(),
+    service: String(params.service).trim(),
+    vehicle: String(params.vehicle).trim(),
+    message: String(params.message).trim(),
+    origin: origin,
+    userAgent: String(params._ua || ""),
+    timestamp: new Date(),
+  };
+  data.firstName = firstNameOf(data.name);
+
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  appendLead(ss, data);
+  sendAutoReply(data);
+  sendInternalNotification(data);
+
+  return { ok: true };
+}
+
 // ── SETUP & SHEET BUILDING ──────────────────────────────────
 function setup() {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
@@ -208,4 +271,107 @@ function test_sendInternalNotification() {
     origin: "https://skippr.us",
   });
   Logger.log("✅ test_sendInternalNotification: email queued to " + CONFIG.SUPPORT_EMAIL + ". Check inbox (subject starts with 'New consult lead — _TEST_').");
+}
+
+function test_doPost_happyPath() {
+  if (!CONFIG.TEST_CUSTOMER_EMAIL || CONFIG.TEST_CUSTOMER_EMAIL.indexOf("REPLACE") !== -1) {
+    throw new Error("Set CONFIG.TEST_CUSTOMER_EMAIL first (top of file).");
+  }
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
+  const beforeRows = sh.getLastRow();
+
+  const fakeEvent = {
+    parameter: {
+      name: "_TEST_ Sarah Thompson",
+      email: CONFIG.TEST_CUSTOMER_EMAIL,
+      phone: "(555) 000-0000",
+      service: "Tier 1 - Expert Advocate",
+      vehicle: "Test Vehicle",
+      message: "Happy-path integration test.",
+      _origin: "https://skippr.us",
+      company_website: "",
+    }
+  };
+  const response = doPost(fakeEvent);
+  const result = JSON.parse(response.getContent());
+  if (!result.ok) throw new Error("Expected ok:true, got " + JSON.stringify(result));
+
+  const afterRows = sh.getLastRow();
+  if (afterRows !== beforeRows + 1) {
+    throw new Error("Expected rows+1, before=" + beforeRows + " after=" + afterRows);
+  }
+  sh.deleteRow(afterRows);
+  Logger.log("✅ test_doPost_happyPath passed. Two emails sent — check " + CONFIG.TEST_CUSTOMER_EMAIL + " and " + CONFIG.SUPPORT_EMAIL);
+}
+
+function test_doPost_honeypot() {
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
+  const beforeRows = sh.getLastRow();
+
+  const fakeEvent = {
+    parameter: {
+      name: "Bot Name",
+      email: "bot@example.com",
+      phone: "555",
+      service: "Tier 1",
+      vehicle: "Spam",
+      message: "Spam",
+      _origin: "https://skippr.us",
+      company_website: "bot-filled-this",
+    }
+  };
+  const response = doPost(fakeEvent);
+  const result = JSON.parse(response.getContent());
+  if (!result.ok) throw new Error("Expected silent ok:true; got " + JSON.stringify(result));
+
+  const afterRows = sh.getLastRow();
+  if (afterRows !== beforeRows) {
+    throw new Error("Honeypot should not have written a row. before=" + beforeRows + " after=" + afterRows);
+  }
+  Logger.log("✅ test_doPost_honeypot passed (no row written, no emails sent).");
+}
+
+function test_doPost_missingField() {
+  const fakeEvent = {
+    parameter: {
+      name: "Sarah",
+      phone: "(555) 000-0000",
+      service: "Tier 1",
+      vehicle: "Test",
+      message: "Test",
+      _origin: "https://skippr.us",
+      company_website: "",
+    }
+  };
+  const response = doPost(fakeEvent);
+  const result = JSON.parse(response.getContent());
+  if (result.ok) throw new Error("Expected ok:false when email missing; got " + JSON.stringify(result));
+  if (!result.error || result.error.indexOf("email") === -1) {
+    throw new Error("Expected error about email; got " + JSON.stringify(result));
+  }
+  Logger.log("✅ test_doPost_missingField passed: " + result.error);
+}
+
+function test_doPost_badOrigin() {
+  const fakeEvent = {
+    parameter: {
+      name: "Sarah",
+      email: "test@example.com",
+      phone: "(555) 000-0000",
+      service: "Tier 1",
+      vehicle: "Test",
+      message: "Test",
+      _origin: "https://evil.example.com",
+      company_website: "",
+    }
+  };
+  const response = doPost(fakeEvent);
+  const result = JSON.parse(response.getContent());
+  if (result.ok) throw new Error("Expected ok:false on bad origin; got " + JSON.stringify(result));
+  if (!result.error || result.error.indexOf("origin") === -1) {
+    throw new Error("Expected origin error; got " + JSON.stringify(result));
+  }
+  Logger.log("✅ test_doPost_badOrigin passed: " + result.error);
 }
