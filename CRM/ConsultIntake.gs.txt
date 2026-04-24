@@ -118,7 +118,9 @@ function appendToPipeline(ss, data) {
 }
 
 function reserveNextSkcId(ss, tier) {
-  const lock = LockService.getDocumentLock();
+  // Must use getScriptLock (not getDocumentLock) — standalone scripts
+  // have no document binding, so getDocumentLock returns null.
+  const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     const settings = ss.getSheetByName("Settings");
