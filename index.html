@@ -864,7 +864,7 @@
     </div>
 
     <div>
-      <form class="contact-form" id="contactForm" action="https://formspree.io/f/mpqoqabj" method="POST">
+      <form class="contact-form" id="contactForm" action="https://script.google.com/macros/s/AKfycbzR6QRU-sX6aYlFO3ScvUPfWw8DjZePLG4bJPEw1laLuTKhyjKMAR08-ZvMP5NM-6Fo/exec" method="POST">
         <div class="form-row">
           <div class="form-group">
             <label>First Name</label>
@@ -901,6 +901,7 @@
           <textarea name="message" placeholder="Tell us about your situation, timeline, or any questions you have..." required></textarea>
         </div>
         <p class="form-note">By submitting, you agree to be contacted by Skippr regarding your inquiry. See our <a href="terms.html" style="color:var(--gold); text-decoration:none;">Terms of Service</a> and <a href="privacy.html" style="color:var(--gold); text-decoration:none;">Privacy Policy</a>.</p>
+        <input type="text" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
         <button type="submit" class="form-submit">Send Message →</button>
         <div class="form-success" id="formSuccess">
           ✦ &nbsp;Thank you for your submission! You should hear from us within 48 hours.
@@ -950,9 +951,11 @@
     btn.textContent = 'Sending…';
     btn.disabled = true;
     try {
+      const formData = new FormData(this);
+      formData.append('_origin', window.location.origin);
       const res = await fetch(this.action, {
         method: 'POST',
-        body: new FormData(this),
+        body: formData,
         headers: { 'Accept': 'application/json' }
       });
       if (res.ok) {
