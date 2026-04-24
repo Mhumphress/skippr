@@ -84,6 +84,26 @@ function appendLead(ss, data) {
   ]);
 }
 
+// ── SEND AUTO-REPLY ─────────────────────────────────────────
+function sendAutoReply(data) {
+  const body =
+    data.firstName + ",\n\n" +
+    "Thank you for reaching out. We've received your consultation request and\n" +
+    "a member of our team will be in touch within 48 hours.\n\n" +
+    "If your inquiry is time-sensitive, simply reply to this message — it\n" +
+    "lands directly in our inbox.\n\n" +
+    "— The Skippr Team\n" +
+    "support@skippr.us · skippr.us\n";
+
+  MailApp.sendEmail({
+    to: data.email,
+    subject: "Your Skippr request has been received",
+    body: body,
+    name: CONFIG.SENDER_NAME,
+    replyTo: CONFIG.SUPPORT_EMAIL,
+  });
+}
+
 // ── HELPERS ─────────────────────────────────────────────────
 function formatTimestamp(date) {
   return Utilities.formatDate(date, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm 'ET'");
@@ -141,4 +161,15 @@ function test_appendLead() {
   // Clean up: delete the test row.
   sh.deleteRow(afterRows);
   Logger.log("✅ test_appendLead passed (row added then cleaned up).");
+}
+
+function test_sendAutoReply() {
+  if (!CONFIG.TEST_CUSTOMER_EMAIL || CONFIG.TEST_CUSTOMER_EMAIL.indexOf("REPLACE") !== -1) {
+    throw new Error("Set CONFIG.TEST_CUSTOMER_EMAIL first (top of file).");
+  }
+  sendAutoReply({
+    firstName: "Sarah",
+    email: CONFIG.TEST_CUSTOMER_EMAIL,
+  });
+  Logger.log("✅ test_sendAutoReply: email queued to " + CONFIG.TEST_CUSTOMER_EMAIL + ". Check inbox.");
 }
