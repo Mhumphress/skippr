@@ -104,6 +104,28 @@ function sendAutoReply(data) {
   });
 }
 
+// ── SEND INTERNAL NOTIFICATION ──────────────────────────────
+function sendInternalNotification(data) {
+  const subject = "New consult lead — " + data.name + " (" + data.service + ")";
+  const body =
+    "A new consultation request just came in.\n\n" +
+    "Name:    " + data.name + "\n" +
+    "Email:   " + data.email + "\n" +
+    "Phone:   " + data.phone + "\n" +
+    "Service: " + data.service + "\n" +
+    "Vehicle: " + data.vehicle + "\n\n" +
+    "Message:\n" + data.message + "\n\n" +
+    "(Submitted " + formatTimestamp(data.timestamp) + " from " + data.origin + ")\n";
+
+  MailApp.sendEmail({
+    to: CONFIG.SUPPORT_EMAIL,
+    subject: subject,
+    body: body,
+    name: CONFIG.SENDER_NAME,
+    replyTo: data.email,
+  });
+}
+
 // ── HELPERS ─────────────────────────────────────────────────
 function formatTimestamp(date) {
   return Utilities.formatDate(date, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm 'ET'");
@@ -172,4 +194,18 @@ function test_sendAutoReply() {
     email: CONFIG.TEST_CUSTOMER_EMAIL,
   });
   Logger.log("✅ test_sendAutoReply: email queued to " + CONFIG.TEST_CUSTOMER_EMAIL + ". Check inbox.");
+}
+
+function test_sendInternalNotification() {
+  sendInternalNotification({
+    name: "_TEST_ Sarah Thompson",
+    email: "test@example.com",
+    phone: "(555) 000-0000",
+    service: "_TEST_ Tier 1",
+    vehicle: "Test Vehicle",
+    message: "Test internal notification — safe to delete.",
+    timestamp: new Date(),
+    origin: "https://skippr.us",
+  });
+  Logger.log("✅ test_sendInternalNotification: email queued to " + CONFIG.SUPPORT_EMAIL + ". Check inbox (subject starts with 'New consult lead — _TEST_').");
 }
