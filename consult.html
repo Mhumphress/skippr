@@ -230,7 +230,7 @@
 
     <main class="consult-form-area">
       <div class="form-card">
-        <form id="consultForm" action="https://formspree.io/f/mpqoqabj" method="POST">
+        <form id="consultForm" action="https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_ID/exec" method="POST">
           <div class="form-row">
             <div class="input-group">
               <label>Full Name</label>
@@ -269,6 +269,7 @@
             <textarea name="message" rows="3" placeholder="Tell us about any specific specs or trade-ins..." required></textarea>
           </div>
 
+          <input type="text" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
           <button type="submit" class="submit-btn">Request Invitation</button>
           <p style="text-align:center; margin-top:1.2rem; font-size:0.7rem; color:var(--gray); line-height:1.6;">By submitting, you agree to our <a href="terms.html" style="color:var(--gold); text-decoration:none;">Terms of Service</a> and <a href="privacy.html" style="color:var(--gold); text-decoration:none;">Privacy Policy</a>.</p>
           <div class="form-success" id="formSuccess" style="display:none; background:rgba(201,168,76,0.1); border:1px solid var(--gold); padding:1.2rem 1.5rem; font-size:0.9rem; color:var(--gold); font-weight:300; margin-top:1rem;">
@@ -304,9 +305,11 @@
     btn.textContent = 'Sending…';
     btn.disabled = true;
     try {
+      const formData = new FormData(this);
+      formData.append('_origin', window.location.origin);
       const res = await fetch(this.action, {
         method: 'POST',
-        body: new FormData(this),
+        body: formData,
         headers: { 'Accept': 'application/json' }
       });
       if (res.ok) {
