@@ -1,0 +1,69 @@
+// ============================================================
+//  SKIPPR CONSULT INTAKE — Google Apps Script (Standalone)
+//
+//  This is a STANDALONE Apps Script project, separate from the
+//  container-bound Skippr CRM script. It targets the same CRM
+//  spreadsheet via openById, and exposes a doPost(e) Web App
+//  endpoint that the skippr.us consult form posts to.
+//
+//  Deploy: Apps Script editor → Deploy → New deployment →
+//          Web app → Execute as: me, Who has access: Anyone.
+// ============================================================
+
+// ── CONFIG — edit these before running setup() ──────────────
+const CONFIG = {
+  SHEET_ID: "REPLACE_WITH_CRM_SPREADSHEET_ID",
+  SUPPORT_EMAIL: "support@skippr.us",
+  SENDER_NAME: "Skippr Concierge",
+  TIMEZONE: "America/Indianapolis",
+  LEADS_SHEET_NAME: "📥 Leads",
+  ALLOWED_ORIGINS: ["https://skippr.us", "https://skippr.pages.dev"],
+  TEST_CUSTOMER_EMAIL: "REPLACE_WITH_YOUR_PERSONAL_EMAIL",
+};
+
+// ── COLORS (match existing CRM theme) ───────────────────────
+const COLORS = {
+  HEADER_BG: "#111111",
+  HEADER_FG: "#C9A84C",
+  GOLD:      "#C9A84C",
+};
+
+// ── SETUP & SHEET BUILDING ──────────────────────────────────
+function setup() {
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  buildLeads(ss);
+  Logger.log("✅ Setup complete. " + CONFIG.LEADS_SHEET_NAME + " tab is ready.");
+}
+
+function buildLeads(ss) {
+  let sh = ss.getSheetByName(CONFIG.LEADS_SHEET_NAME);
+  if (sh) {
+    Logger.log(CONFIG.LEADS_SHEET_NAME + " already exists; refreshing formatting only.");
+  } else {
+    sh = ss.insertSheet(CONFIG.LEADS_SHEET_NAME);
+  }
+  sh.setTabColor(COLORS.GOLD);
+
+  const headers = [
+    "Timestamp", "Name", "Email", "Phone", "Service Tier",
+    "Desired Vehicle", "Message", "Status", "Assigned Rep", "Origin / Notes"
+  ];
+  const widths = [160, 160, 200, 130, 240, 200, 360, 100, 140, 260];
+  widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
+
+  const headerRange = sh.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  headerRange.setBackground(COLORS.HEADER_BG);
+  headerRange.setFontColor(COLORS.HEADER_FG);
+  headerRange.setFontWeight("bold");
+  headerRange.setHorizontalAlignment("left");
+  sh.setFrozenRows(1);
+
+  if (sh.getFilter()) sh.getFilter().remove();
+  sh.getRange(1, 1, sh.getMaxRows(), headers.length).createFilter();
+}
+
+// ── HELPERS ─────────────────────────────────────────────────
+function formatTimestamp(date) {
+  return Utilities.formatDate(date, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm 'ET'");
+}
