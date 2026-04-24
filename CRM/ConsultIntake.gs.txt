@@ -19,6 +19,9 @@ const CONFIG = {
   LEADS_SHEET_NAME: "📥 Leads",
   ALLOWED_ORIGINS: ["https://skippr.us", "https://skippr.pages.dev"],
   TEST_CUSTOMER_EMAIL: "REPLACE_WITH_YOUR_PERSONAL_EMAIL",
+  SHIMMER_GIF_FILE_ID: "1AiRTiplmIjYQgbKELNN0akjXlUQGwnj2",
+  SIGNATURE_PHONE: "585-469-1987",
+  SIGNATURE_TITLE: "Customer Care  |  Skippr",
 };
 
 // ── COLORS (match existing CRM theme) ───────────────────────
@@ -149,21 +152,57 @@ function appendLead(ss, data) {
 
 // ── SEND AUTO-REPLY ─────────────────────────────────────────
 function sendAutoReply(data) {
-  const body =
+  const firstNameSafe = escapeHtml(data.firstName);
+
+  const htmlBody =
+    '<div style="font-family:\'Segoe UI\',-apple-system,BlinkMacSystemFont,Arial,sans-serif;color:#0A0A0A;font-size:14px;line-height:1.6;max-width:560px;">' +
+      '<p style="margin:0 0 16px 0;">' + firstNameSafe + ',</p>' +
+      '<p style="margin:0 0 16px 0;">Thank you for reaching out. We&#39;ve received your consultation request and a member of our team will be in touch within 48 hours.</p>' +
+      '<p style="margin:0 0 28px 0;">If your inquiry is time-sensitive, simply reply to this message &mdash; it lands directly in our inbox.</p>' +
+      '<div style="color:#888;font-size:13px;margin-top:8px;">--</div>' +
+      '<table cellpadding="0" cellspacing="0" border="0" style="font-family:\'Segoe UI\',-apple-system,BlinkMacSystemFont,Arial,sans-serif;margin-top:6px;">' +
+        '<tr><td style="font-size:15px;font-weight:700;color:#0A0A0A;padding-bottom:2px;">' + CONFIG.SENDER_NAME + '</td></tr>' +
+        '<tr><td style="font-size:13px;color:#666;padding-bottom:10px;">' + CONFIG.SIGNATURE_TITLE + '</td></tr>' +
+        '<tr><td style="border-top:1px solid #e0e0e0;padding-top:10px;font-size:13px;color:#0A0A0A;">' +
+          '<span style="color:#C9A84C;font-size:14px;">&#128222;</span>&nbsp;&nbsp;' + CONFIG.SIGNATURE_PHONE +
+        '</td></tr>' +
+        '<tr><td style="font-size:13px;color:#0A0A0A;padding:3px 0;">' +
+          '<span style="color:#C9A84C;font-size:14px;">&#9993;</span>&nbsp;&nbsp;' +
+          '<a href="mailto:' + CONFIG.SUPPORT_EMAIL + '" style="color:#0A0A0A;text-decoration:none;">' + CONFIG.SUPPORT_EMAIL + '</a>' +
+        '</td></tr>' +
+        '<tr><td style="font-size:13px;color:#0A0A0A;padding:3px 0;">' +
+          '<span style="color:#C9A84C;font-size:14px;">&#127760;</span>&nbsp;&nbsp;' +
+          '<a href="https://www.skippr.us" style="color:#0A0A0A;text-decoration:none;">www.skippr.us</a>' +
+        '</td></tr>' +
+        '<tr><td style="padding-top:14px;">' +
+          '<img src="cid:shimmer" alt="Skippr" width="190" style="display:block;max-width:100%;height:auto;border:0;">' +
+        '</td></tr>' +
+      '</table>' +
+    '</div>';
+
+  const textBody =
     data.firstName + ",\n\n" +
     "Thank you for reaching out. We've received your consultation request and\n" +
     "a member of our team will be in touch within 48 hours.\n\n" +
     "If your inquiry is time-sensitive, simply reply to this message — it\n" +
     "lands directly in our inbox.\n\n" +
-    "— The Skippr Team\n" +
-    "support@skippr.us · skippr.us\n";
+    "--\n" +
+    CONFIG.SENDER_NAME + "\n" +
+    CONFIG.SIGNATURE_TITLE + "\n" +
+    "Phone: " + CONFIG.SIGNATURE_PHONE + "\n" +
+    "Email: " + CONFIG.SUPPORT_EMAIL + "\n" +
+    "Web:   www.skippr.us\n";
 
   MailApp.sendEmail({
     to: data.email,
     subject: "Your Skippr request has been received",
-    body: body,
+    htmlBody: htmlBody,
+    body: textBody,
     name: CONFIG.SENDER_NAME,
     replyTo: CONFIG.SUPPORT_EMAIL,
+    inlineImages: {
+      shimmer: DriveApp.getFileById(CONFIG.SHIMMER_GIF_FILE_ID).getBlob(),
+    },
   });
 }
 
@@ -196,6 +235,15 @@ function formatTimestamp(date) {
 
 function firstNameOf(fullName) {
   return String(fullName || "").trim().split(/\s+/)[0] || "Hi";
+}
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // ── TESTS (invoked manually from the Apps Script editor) ────
