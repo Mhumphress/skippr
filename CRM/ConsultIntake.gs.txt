@@ -67,3 +67,29 @@ function buildLeads(ss) {
 function formatTimestamp(date) {
   return Utilities.formatDate(date, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm 'ET'");
 }
+
+function firstNameOf(fullName) {
+  return String(fullName || "").trim().split(/\s+/)[0] || "Hi";
+}
+
+// ── TESTS (invoked manually from the Apps Script editor) ────
+
+function test_firstNameOf() {
+  const cases = [
+    ["Sarah Thompson", "Sarah"],
+    ["Sarah", "Sarah"],
+    ["  Sarah  Thompson  ", "Sarah"],
+    ["Dr. Sarah Thompson", "Dr."],
+    ["", "Hi"],
+    [null, "Hi"],
+  ];
+  cases.forEach(pair => {
+    const input = pair[0];
+    const expected = pair[1];
+    const got = firstNameOf(input);
+    if (got !== expected) {
+      throw new Error("firstNameOf(" + JSON.stringify(input) + ") => " + got + ", want " + expected);
+    }
+  });
+  Logger.log("✅ test_firstNameOf passed (" + cases.length + " cases)");
+}
